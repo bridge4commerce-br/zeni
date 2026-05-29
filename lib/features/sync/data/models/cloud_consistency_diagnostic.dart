@@ -47,14 +47,32 @@ class CloudConsistencyDiagnostic {
   final List<ChildBalanceDiagnostic> childBalanceDiagnostics;
   final List<String> warnings;
 
-  bool get hasDivergence {
+  bool get hasCatalogDivergence {
     return localChildrenCount != remoteChildrenCount ||
         localMissionsCount != remoteMissionsCount ||
-        localRewardsCount != remoteRewardsCount ||
-        localMissionLogsCount != remoteMissionLogsCount ||
-        localRewardRequestsCount != remoteRewardRequestsCount ||
-        localStarBalance != remoteDerivedBalance ||
-        childBalanceDiagnostics.any((item) => !item.isMatching) ||
+        localRewardsCount != remoteRewardsCount;
+  }
+
+  bool get hasHistoricalDivergence {
+    return localMissionLogsCount != remoteMissionLogsCount ||
+        localRewardRequestsCount != remoteRewardRequestsCount;
+  }
+
+  bool get hasBalanceDivergence {
+    return localStarBalance != remoteDerivedBalance ||
+        childBalanceDiagnostics.any((item) => !item.isMatching);
+  }
+
+  bool get hasOnlyExpectedPartialRestoreDivergence {
+    return !hasCatalogDivergence &&
+        (hasHistoricalDivergence || hasBalanceDivergence) &&
+        warnings.isEmpty;
+  }
+
+  bool get hasDivergence {
+    return hasCatalogDivergence ||
+        hasHistoricalDivergence ||
+        hasBalanceDivergence ||
         warnings.isNotEmpty;
   }
 

@@ -632,21 +632,36 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             const SizedBox(height: ZeniSpacing.xs),
             Text(
               widget.childBalanceDiagnostics.any((item) => !item.isMatching)
-                  ? 'Diferença encontrada entre saldo local e saldo na nuvem.'
+                  ? widget
+                                .cloudConsistencyDiagnostic
+                                ?.hasOnlyExpectedPartialRestoreDivergence ??
+                            false
+                        ? 'Saldo ainda não restaurado neste aparelho. Use a nuvem apenas para conferência nesta etapa.'
+                        : 'Diferença encontrada entre saldo local e saldo na nuvem.'
                   : 'Saldo local e saldo na nuvem conferem.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:
                     widget.childBalanceDiagnostics.any(
                       (item) => !item.isMatching,
                     )
-                    ? Theme.of(context).colorScheme.error
+                    ? widget
+                                  .cloudConsistencyDiagnostic
+                                  ?.hasOnlyExpectedPartialRestoreDivergence ??
+                              false
+                          ? ZeniColors.primaryDark
+                          : Theme.of(context).colorScheme.error
                     : ZeniColors.primaryDark,
               ),
             ),
             const SizedBox(height: ZeniSpacing.xs),
             for (final item in widget.childBalanceDiagnostics) ...[
               Text(
-                '${item.childName}: Saldo local: ${item.localBalance} estrelas · Saldo na nuvem: ${item.remoteBalance} estrelas · Eventos no ledger: ${item.ledgerEventsCount}',
+                widget
+                            .cloudConsistencyDiagnostic
+                            ?.hasOnlyExpectedPartialRestoreDivergence ??
+                        false
+                    ? '${item.childName}: Saldo na nuvem para conferência: ${item.remoteBalance} estrelas · Saldo local neste aparelho: ${item.localBalance} estrelas'
+                    : '${item.childName}: Saldo local: ${item.localBalance} estrelas · Saldo na nuvem: ${item.remoteBalance} estrelas · Eventos no ledger: ${item.ledgerEventsCount}',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
@@ -676,13 +691,39 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
           Text(
             widget.cloudConsistencyDiagnostic!.isAligned
                 ? 'Dados locais e nuvem parecem alinhados.'
+                : widget
+                      .cloudConsistencyDiagnostic!
+                      .hasOnlyExpectedPartialRestoreDivergence
+                ? 'Cadastros disponíveis neste aparelho'
                 : 'Encontramos diferenças para conferir.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: widget.cloudConsistencyDiagnostic!.isAligned
+              color:
+                  widget.cloudConsistencyDiagnostic!.isAligned ||
+                      widget
+                          .cloudConsistencyDiagnostic!
+                          .hasOnlyExpectedPartialRestoreDivergence
                   ? ZeniColors.primaryDark
                   : Theme.of(context).colorScheme.error,
             ),
           ),
+          if (widget
+              .cloudConsistencyDiagnostic!
+              .hasOnlyExpectedPartialRestoreDivergence) ...[
+            const SizedBox(height: ZeniSpacing.xs),
+            Text(
+              'Crianças, missões e mimos estão sincronizados.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.xs),
+            Text(
+              'Saldo, histórico e sequência ainda não foram restaurados nesta etapa.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+            ),
+          ],
           const SizedBox(height: ZeniSpacing.xs),
           Text(
             'Crianças: ${widget.cloudConsistencyDiagnostic!.localChildrenCount}/${widget.cloudConsistencyDiagnostic!.remoteChildrenCount} · Missões: ${widget.cloudConsistencyDiagnostic!.localMissionsCount}/${widget.cloudConsistencyDiagnostic!.remoteMissionsCount} · Mimos: ${widget.cloudConsistencyDiagnostic!.localRewardsCount}/${widget.cloudConsistencyDiagnostic!.remoteRewardsCount}',
@@ -699,7 +740,11 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
           ),
           const SizedBox(height: ZeniSpacing.xs),
           Text(
-            'Saldo local total: ${widget.cloudConsistencyDiagnostic!.localStarBalance} estrelas · Saldo remoto total: ${widget.cloudConsistencyDiagnostic!.remoteDerivedBalance} estrelas',
+            widget
+                    .cloudConsistencyDiagnostic!
+                    .hasOnlyExpectedPartialRestoreDivergence
+                ? 'Saldo na nuvem para conferência: ${widget.cloudConsistencyDiagnostic!.remoteDerivedBalance} estrelas · Saldo local neste aparelho: ${widget.cloudConsistencyDiagnostic!.localStarBalance} estrelas'
+                : 'Saldo local total: ${widget.cloudConsistencyDiagnostic!.localStarBalance} estrelas · Saldo remoto total: ${widget.cloudConsistencyDiagnostic!.remoteDerivedBalance} estrelas',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),

@@ -83,6 +83,9 @@ class ZeniAppState {
   bool get shouldShowOnboarding =>
       !appSettings.hasCompletedOnboarding && !hasUserContent;
 
+  bool get shouldShowInitialStartChoice =>
+      appSettings.hasCompletedOnboarding && !hasUserContent;
+
   ChildProfile? childById(String childId) {
     for (final child in children) {
       if (child.id == childId) {

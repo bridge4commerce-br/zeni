@@ -7,10 +7,12 @@ import 'package:uuid/uuid.dart';
 
 import '../../features/balance/data/models/star_ledger_entry.dart';
 import '../../features/family/data/models/child_profile.dart';
+import '../../features/family/data/models/family.dart';
 import '../../features/family/data/models/family_member.dart';
 import '../../features/rewards/data/models/reward.dart';
 import '../../features/rewards/data/models/reward_request.dart';
 import '../../features/settings/data/models/app_settings.dart';
+import '../../features/sync/data/models/device_bootstrap_result.dart';
 import '../../features/tasks/data/models/mission.dart';
 import '../../features/tasks/data/models/mission_log.dart';
 import '../domain/zeni_enums.dart';
@@ -287,6 +289,79 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     return reward;
   }
 
+  Future<void> completeInstitutionalOnboarding() async {
+    final current = _requireState();
+    final updated = current.copyWith(
+      appSettings: _normalizeAppSettings(
+        current.appSettings.copyWith(hasCompletedOnboarding: true),
+      ),
+    );
+    await _save(updated);
+  }
+
+  Future<DeviceBootstrapApplyResult> applyDeviceBootstrapIfEmpty(
+    DeviceBootstrapPayload payload,
+  ) async {
+    final current = _requireState();
+    if (current.hasUserContent) {
+      return const DeviceBootstrapApplyResult.failure(
+        'Este aparelho já possui dados locais.',
+      );
+    }
+
+    final parentMembers = current.familyMembers
+        .where((member) => member.role == ZeniUserRole.parent)
+        .toList();
+    final normalizedParentMembers = parentMembers.isEmpty
+        ? <FamilyMember>[
+            FamilyMember(
+              id: 'local-parent',
+              familyId: payload.family.id,
+              name: 'Responsável',
+              role: ZeniUserRole.parent,
+              isOwner: true,
+              createdAt: payload.family.createdAt,
+            ),
+          ]
+        : [
+            for (final member in parentMembers)
+              member.copyWith(
+                familyId: payload.family.id,
+                childProfileId: null,
+                isOwner: true,
+              ),
+          ];
+
+    final childMembers = [
+      for (final child in payload.children)
+        FamilyMember(
+          id: 'member-${child.id}',
+          familyId: payload.family.id,
+          name: child.name,
+          role: ZeniUserRole.child,
+          childProfileId: child.id,
+          isOwner: false,
+          createdAt: child.createdAt,
+        ),
+    ];
+
+    final updated = current.copyWith(
+      family: _normalizeImportedFamily(
+        currentFamily: current.family,
+        importedFamily: payload.family,
+      ),
+      children: payload.children,
+      familyMembers: [...normalizedParentMembers, ...childMembers],
+      missions: payload.missions,
+      rewards: payload.rewards,
+      appSettings: _normalizeAppSettings(
+        current.appSettings.copyWith(hasCompletedOnboarding: true),
+      ),
+    );
+    await _save(updated);
+    return const DeviceBootstrapApplyResult.success();
+  }
+
   Future<ChildProfile> completeInitialOnboardingSetup({
     required String childName,
     required String childEmoji,
@@ -316,8 +391,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     );
 
     final trimmedMissionTitle = missionTitle?.trim() ?? '';
-    final mission =
-        createSuggestedMission && trimmedMissionTitle.isNotEmpty
+    final mission = createSuggestedMission && trimmedMissionTitle.isNotEmpty
         ? _buildMission(
             familyId: current.family.id,
             childId: childId,
@@ -335,8 +409,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
         : null;
 
     final trimmedRewardTitle = rewardTitle?.trim() ?? '';
-    final reward =
-        createSuggestedReward && trimmedRewardTitle.isNotEmpty
+    final reward = createSuggestedReward && trimmedRewardTitle.isNotEmpty
         ? _buildReward(
             familyId: current.family.id,
             childId: childId,
@@ -353,7 +426,9 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     final updated = current.copyWith(
       children: [...current.children, child],
       familyMembers: [...current.familyMembers, member],
-      missions: mission == null ? current.missions : [mission, ...current.missions],
+      missions: mission == null
+          ? current.missions
+          : [mission, ...current.missions],
       rewards: reward == null ? current.rewards : [reward, ...current.rewards],
       appSettings: _normalizeAppSettings(
         current.appSettings.copyWith(
@@ -928,6 +1003,16 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       renewal: renewal,
       createdAt: createdAt,
       updatedAt: updatedAt,
+    );
+  }
+
+  Family _normalizeImportedFamily({
+    required Family currentFamily,
+    required Family importedFamily,
+  }) {
+    return importedFamily.copyWith(
+      inviteCode: currentFamily.inviteCode,
+      createdAt: importedFamily.createdAt,
     );
   }
 

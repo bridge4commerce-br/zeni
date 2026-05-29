@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../profile/presentation/pages/profile_choice_page.dart';
+import 'initial_start_choice_page.dart';
 import 'onboarding_flow_page.dart';
 
 class AppEntryPage extends ConsumerWidget {
@@ -22,6 +23,10 @@ class AppEntryPage extends ConsumerWidget {
       data: (state) {
         if (state.shouldShowOnboarding) {
           return const OnboardingFlowPage();
+        }
+
+        if (state.shouldShowInitialStartChoice) {
+          return const InitialStartChoicePage();
         }
 
         return const ProfileChoicePage();

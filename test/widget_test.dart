@@ -10,22 +10,42 @@ import 'package:zeni/core/accessibility/zeni_accessibility_settings.dart';
 import 'package:zeni/core/domain/zeni_enums.dart';
 import 'package:zeni/core/state/zeni_app_state.dart';
 import 'package:zeni/core/state/zeni_app_state_controller.dart';
+import 'package:zeni/core/supabase/zeni_supabase.dart';
 import 'package:zeni/features/auth/data/repositories/zeni_auth_repository.dart';
 import 'package:zeni/features/auth/data/repositories/zeni_account_repository.dart';
 import 'package:zeni/features/auth/local/parent_biometric_auth.dart';
+import 'package:zeni/features/auth/presentation/providers/zeni_account_providers.dart';
 import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.dart';
 import 'package:zeni/features/auth/presentation/widgets/auth_provider_button.dart';
 import 'package:zeni/features/child/presentation/pages/child_shell_page.dart';
 import 'package:zeni/core/widgets/zeni_flying_star_overlay.dart';
+import 'package:zeni/features/family/data/models/child_profile.dart';
+import 'package:zeni/features/family/data/repositories/remote_children_repository.dart';
+import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
+import 'package:zeni/features/rewards/data/models/reward.dart';
+import 'package:zeni/features/rewards/data/repositories/remote_rewards_repository.dart';
+import 'package:zeni/features/rewards/presentation/providers/remote_rewards_providers.dart';
 import 'package:zeni/features/rewards/presentation/widgets/reward_compact_child_card.dart';
 import 'package:zeni/features/settings/data/models/app_settings.dart';
 import 'package:zeni/features/sync/data/models/cloud_consistency_diagnostic.dart';
 import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
+import 'package:zeni/features/tasks/data/repositories/remote_missions_repository.dart';
+import 'package:zeni/features/tasks/presentation/providers/remote_missions_providers.dart';
 import 'package:zeni/features/tasks/presentation/widgets/task_compact_child_card.dart';
 
 void main() {
+  Future<void> enableSupabaseForTests() {
+    return ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://zeni.test.supabase.co',
+        anonKey: 'anon-key',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+  }
+
   Future<void> openParentSettings(WidgetTester tester) async {
     await tester.scrollUntilVisible(find.text('Entrar como responsável'), 300);
     await tester.pumpAndSettle();
@@ -130,16 +150,30 @@ void main() {
     );
   }
 
-  Future<void> completeOnboarding(
+  Future<void> completeInstitutionalOnboarding(WidgetTester tester) async {
+    await tester.scrollUntilVisible(find.text('Continuar'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openNewFamilySetup(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      find.text('Começar nova família').first,
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Começar nova família').first);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> completeInitialFamilySetup(
     WidgetTester tester, {
     String childName = 'Luna',
     bool skipPin = false,
     bool createMission = true,
     bool createReward = true,
   }) async {
-    await tester.tap(find.text('Começar configuração'));
-    await tester.pumpAndSettle();
-
     await tester.enterText(find.byType(TextField).first, childName);
     await tester.pumpAndSettle();
 
@@ -343,11 +377,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bem-vindo ao Zeni'), findsOneWidget);
-    expect(find.text('Começar configuração'), findsOneWidget);
+    expect(find.text('Continuar'), findsOneWidget);
     expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
   });
 
-  testWidgets('finishing onboarding persists the flag and first child', (
+  testWidgets('finishing institutional onboarding persists the flag only', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -359,61 +393,41 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await completeOnboarding(tester);
+    await completeInstitutionalOnboarding(tester);
 
     final state = container.read(zeniAppStateControllerProvider).asData!.value;
-    final child = state.children.single;
-    final mission = state.missions.single;
-    final reward = state.rewards.single;
     final preferences = await SharedPreferences.getInstance();
     final persistedState =
         jsonDecode(preferences.getString('zeni_app_state_v1')!)
             as Map<String, dynamic>;
 
     expect(state.appSettings.hasCompletedOnboarding, isTrue);
-    expect(state.children, hasLength(1));
-    expect(child.name, 'Luna');
-    expect(state.missions, hasLength(1));
-    expect(state.rewards, hasLength(1));
-    expect(mission.childId, child.id);
-    expect(mission.isActive, isTrue);
-    expect(mission.occursToday(), isTrue);
-    expect(reward.childId, child.id);
-    expect(reward.isActive, isTrue);
-    expect(persistedState['children'] as List<dynamic>, hasLength(1));
-    expect(persistedState['missions'] as List<dynamic>, hasLength(1));
-    expect(persistedState['rewards'] as List<dynamic>, hasLength(1));
-    expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
-    expect(find.text('Luna'), findsOneWidget);
+    expect(state.children, isEmpty);
+    expect(state.missions, isEmpty);
+    expect(state.rewards, isEmpty);
+    expect(persistedState['children'] as List<dynamic>, isEmpty);
+    expect(persistedState['missions'] as List<dynamic>, isEmpty);
+    expect(persistedState['rewards'] as List<dynamic>, isEmpty);
+    expect(find.text('Como você quer começar?'), findsOneWidget);
   });
 
-  testWidgets('onboarding with skipped PIN completes without creating a PIN', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+  testWidgets(
+    'after institutional onboarding the initial choice page appears',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
 
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const ZeniApp()),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+      await tester.pumpAndSettle();
 
-    await completeOnboarding(tester, skipPin: true);
+      await completeInstitutionalOnboarding(tester);
 
-    final settings = container
-        .read(zeniAppStateControllerProvider)
-        .asData!
-        .value
-        .appSettings;
+      expect(find.text('Como você quer começar?'), findsOneWidget);
+      expect(find.text('Começar nova família'), findsWidgets);
+      expect(find.text('Já tenho conta'), findsOneWidget);
+    },
+  );
 
-    expect(settings.hasCompletedOnboarding, isTrue);
-    expect(settings.hasParentPin, isFalse);
-    expect(settings.parentPin, isNull);
-    expect(settings.parentPinHash, isNull);
-  });
-
-  testWidgets('skipping PIN advances onboarding to the mission step', (
+  testWidgets('starting a new family opens the initial family setup flow', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -421,7 +435,23 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Começar configuração'));
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
+
+    expect(find.text('Primeira criança'), findsWidgets);
+    expect(find.text('Nome da criança'), findsOneWidget);
+  });
+
+  testWidgets('skipping PIN advances the family setup to the mission step', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Luna');
     await tester.pumpAndSettle();
@@ -438,7 +468,7 @@ void main() {
   });
 
   testWidgets(
-    'mission and reward created in onboarding appear for the child and parent',
+    'child mission and reward are created only in the new family path',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
@@ -449,7 +479,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await completeOnboarding(tester, childName: 'Luna');
+      await completeInstitutionalOnboarding(tester);
+      await openNewFamilySetup(tester);
+      await completeInitialFamilySetup(tester, childName: 'Luna');
 
       await tester.tap(find.text('Luna'));
       await tester.pumpAndSettle();
@@ -483,14 +515,16 @@ void main() {
   );
 
   testWidgets(
-    'reopening after onboarding keeps child, mission and reward persisted',
+    'reopening after new family setup keeps child mission and reward persisted',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
 
       await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
       await tester.pumpAndSettle();
 
-      await completeOnboarding(tester, childName: 'Luna');
+      await completeInstitutionalOnboarding(tester);
+      await openNewFamilySetup(tester);
+      await completeInitialFamilySetup(tester, childName: 'Luna');
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -515,7 +549,7 @@ void main() {
   );
 
   testWidgets(
-    'onboarding can finish intentionally without suggested mission and reward',
+    'new family setup can finish intentionally without suggested mission and reward',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
@@ -526,7 +560,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await completeOnboarding(
+      await completeInstitutionalOnboarding(tester);
+      await openNewFamilySetup(tester);
+      await completeInitialFamilySetup(
         tester,
         createMission: false,
         createReward: false,
@@ -544,92 +580,243 @@ void main() {
     },
   );
 
-  testWidgets('reopening the app does not show onboarding again', (
-    tester,
-  ) async {
-    final now = DateTime.now();
-    SharedPreferences.setMockInitialValues({
-      'zeni_app_state_v1': jsonEncode({
-        'family': {
-          'id': 'local-family',
-          'name': 'Minha família',
-          'inviteCode': 'ZENI00',
-          'createdAt': now.toIso8601String(),
-        },
-        'children': [
-          {
-            'id': 'child-1',
-            'familyId': 'local-family',
-            'name': 'Luna',
-            'emoji': '🦊',
-            'avatarUrl': null,
-            'birthDate': null,
-            'starBalance': 0,
-            'streakCount': 0,
+  testWidgets(
+    'already completed onboarding with existing data still opens profile choice',
+    (tester) async {
+      final now = DateTime.now();
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode({
+          'family': {
+            'id': 'local-family',
+            'name': 'Minha família',
+            'inviteCode': 'ZENI00',
+            'createdAt': now.toIso8601String(),
+          },
+          'children': [
+            {
+              'id': 'child-1',
+              'familyId': 'local-family',
+              'name': 'Luna',
+              'emoji': '🦊',
+              'avatarUrl': null,
+              'birthDate': null,
+              'starBalance': 0,
+              'streakCount': 0,
+              'ttsEnabled': false,
+              'isActive': true,
+              'createdAt': now.toIso8601String(),
+            },
+          ],
+          'familyMembers': [
+            {
+              'id': 'local-parent',
+              'familyId': 'local-family',
+              'name': 'Responsável',
+              'email': null,
+              'role': 'parent',
+              'childProfileId': null,
+              'isOwner': true,
+              'createdAt': now.toIso8601String(),
+            },
+            {
+              'id': 'member-child-1',
+              'familyId': 'local-family',
+              'name': 'Luna',
+              'email': null,
+              'role': 'child',
+              'childProfileId': 'child-1',
+              'isOwner': false,
+              'createdAt': now.toIso8601String(),
+            },
+          ],
+          'missions': [],
+          'missionLogs': [],
+          'rewards': [],
+          'rewardRequests': [],
+          'starLedgerEntries': [],
+          'appSettings': {
+            'themeMode': 'system',
+            'dyslexiaFontEnabled': false,
+            'textScale': 1.0,
+            'vibrationEnabled': true,
+            'notificationsEnabled': true,
             'ttsEnabled': false,
-            'isActive': true,
-            'createdAt': now.toIso8601String(),
+            'readAloudByChildProfile': false,
+            'hasCompletedOnboarding': true,
+            'parentBiometricsEnabled': false,
           },
+        }),
+      });
+
+      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Bem-vindo ao Zeni'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'existing local data is not forced through institutional onboarding',
+    (tester) async {
+      seedMockAppState();
+
+      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Bem-vindo ao Zeni'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'already have account feedback is inline and does not create local data',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
+
+      await completeInstitutionalOnboarding(tester);
+      await tester.tap(find.text('Já tenho conta'));
+      await tester.pumpAndSettle();
+
+      final state = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+
+      expect(
+        find.text(
+          'Vamos restaurar a estrutura da sua família. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Conta da família'), findsOneWidget);
+      expect(state.children, isEmpty);
+      expect(state.missions, isEmpty);
+      expect(state.rewards, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'already have account opens login flow and restores remote structure',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await enableSupabaseForTests();
+      addTearDown(ZeniSupabaseBootstrap.resetForTests);
+
+      final fakeAuthRepository = _FakeZeniAuthRepository();
+      final fakeAccountRepository = _FakeZeniAccountRepository(
+        summary: const RemoteFamilySummary(
+          familyId: 'remote-family',
+          familyName: 'Família Remota',
+          role: 'owner',
+        ),
+      );
+      final fakeRemoteChildrenRepository = _FakeRemoteChildrenRepository(
+        children: const [
+          RemoteChildSummary(
+            id: 'remote-child-1',
+            familyId: 'remote-family',
+            localId: 'local-child-1',
+            name: 'Luna',
+            avatarKey: '🦊',
+          ),
         ],
-        'familyMembers': [
-          {
-            'id': 'local-parent',
-            'familyId': 'local-family',
-            'name': 'Responsável',
-            'email': null,
-            'role': 'parent',
-            'childProfileId': null,
-            'isOwner': true,
-            'createdAt': now.toIso8601String(),
-          },
-          {
-            'id': 'member-child-1',
-            'familyId': 'local-family',
-            'name': 'Luna',
-            'email': null,
-            'role': 'child',
-            'childProfileId': 'child-1',
-            'isOwner': false,
-            'createdAt': now.toIso8601String(),
-          },
+      );
+      final fakeRemoteMissionsRepository = _FakeRemoteMissionsRepository(
+        missions: const [
+          RemoteMissionSummary(
+            id: 'remote-mission-1',
+            familyId: 'remote-family',
+            childId: 'remote-child-1',
+            localId: 'local-mission-1',
+            title: 'Arrumar a cama',
+            stars: 10,
+            requiresApproval: true,
+            recurrenceType: 'daily',
+            recurrenceDays: <int>[],
+            isActive: true,
+          ),
         ],
-        'missions': [],
-        'missionLogs': [],
-        'rewards': [],
-        'rewardRequests': [],
-        'starLedgerEntries': [],
-        'appSettings': {
-          'themeMode': 'system',
-          'dyslexiaFontEnabled': false,
-          'textScale': 1.0,
-          'vibrationEnabled': true,
-          'notificationsEnabled': true,
-          'ttsEnabled': false,
-          'readAloudByChildProfile': false,
-          'hasCompletedOnboarding': true,
-          'parentBiometricsEnabled': false,
-        },
-      }),
-    });
+      );
+      final fakeRemoteRewardsRepository = _FakeRemoteRewardsRepository(
+        rewards: const [
+          RemoteRewardSummary(
+            id: 'remote-reward-1',
+            familyId: 'remote-family',
+            childId: 'remote-child-1',
+            localId: 'local-reward-1',
+            title: 'Escolher o filme',
+            cost: 40,
+            imageKey: '🎬',
+            isActive: true,
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
-    await tester.pumpAndSettle();
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+          accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            fakeRemoteChildrenRepository,
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            fakeRemoteMissionsRepository,
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            fakeRemoteRewardsRepository,
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await fakeAuthRepository.dispose();
+        container.dispose();
+      });
 
-    expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
-    expect(find.text('Bem-vindo ao Zeni'), findsNothing);
-  });
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
 
-  testWidgets('existing local data is not forced through onboarding', (
-    tester,
-  ) async {
-    seedMockAppState();
+      await completeInstitutionalOnboarding(tester);
+      await tester.tap(find.text('Já tenho conta'));
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
-    await tester.pumpAndSettle();
+      expect(find.text('Conta da família'), findsOneWidget);
 
-    expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
-    expect(find.text('Bem-vindo ao Zeni'), findsNothing);
-  });
+      await tester.enterText(
+        find.byKey(const Key('auth-email-input')),
+        'responsavel@zeni.app',
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth-password-input')),
+        '123456',
+      );
+      await tester.ensureVisible(find.text('Entrar').last);
+      await tester.tap(find.text('Entrar').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Luna'), findsOneWidget);
+      expect(find.text('Entrar como responsável'), findsOneWidget);
+
+      final state = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      expect(state.children, hasLength(1));
+      expect(state.missions, hasLength(1));
+      expect(state.rewards, hasLength(1));
+      expect(state.appSettings.hasCompletedOnboarding, isTrue);
+    },
+  );
 
   testWidgets('tapping child opens child mode shell', (tester) async {
     seedMockAppState();
@@ -1881,6 +2068,80 @@ void main() {
     );
   });
 
+  testWidgets(
+    'settings shows informational partial restore message when catalogs align and remote balance diverges',
+    (tester) async {
+      await tester.pumpWidget(
+        buildStaticSettingsHarness(
+          authState: const ZeniAuthState.authenticated(
+            ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+          ),
+          remoteFamilySummary: const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Minha família',
+            role: 'owner',
+          ),
+          hasRemoteChildBalanceData: true,
+          childBalanceDiagnostics: const [
+            ChildBalanceDiagnostic(
+              childName: 'Luna',
+              localBalance: 0,
+              remoteBalance: 55,
+              ledgerEventsCount: 4,
+            ),
+          ],
+          cloudConsistencyDiagnostic: const CloudConsistencyDiagnostic(
+            localChildrenCount: 2,
+            remoteChildrenCount: 2,
+            localMissionsCount: 2,
+            remoteMissionsCount: 2,
+            localRewardsCount: 1,
+            remoteRewardsCount: 1,
+            localMissionLogsCount: 0,
+            remoteMissionLogsCount: 3,
+            localRewardRequestsCount: 0,
+            remoteRewardRequestsCount: 0,
+            localStarBalance: 0,
+            remoteDerivedBalance: 55,
+            childBalanceDiagnostics: [
+              ChildBalanceDiagnostic(
+                childName: 'Luna',
+                localBalance: 0,
+                remoteBalance: 55,
+                ledgerEventsCount: 4,
+              ),
+            ],
+            warnings: [],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Cadastros disponíveis neste aparelho'), findsOneWidget);
+      expect(
+        find.text('Crianças, missões e mimos estão sincronizados.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Saldo, histórico e sequência ainda não foram restaurados nesta etapa.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Saldo na nuvem para conferência: 55 estrelas · Saldo local neste aparelho: 0 estrelas',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Encontramos diferenças para conferir.'), findsNothing);
+      expect(
+        find.text('Diferença encontrada entre saldo local e saldo na nuvem.'),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('settings shows cloud consistency as aligned when counts match', (
     tester,
   ) async {
@@ -2809,5 +3070,126 @@ class _FakeZeniAuthRepository implements ZeniAuthRepository {
 
   Future<void> dispose() {
     return _controller.close();
+  }
+}
+
+class _FakeZeniAccountRepository implements ZeniAccountRepository {
+  _FakeZeniAccountRepository({required this.summary});
+
+  final RemoteFamilySummary? summary;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {
+    return summary;
+  }
+
+  @override
+  Future<ZeniEnsureRemoteFamilyResult>
+  ensureRemoteFamilyForCurrentUser() async {
+    if (summary == null) {
+      return const ZeniEnsureRemoteFamilyResult.failure(
+        'Nenhuma família remota preparada foi encontrada.',
+      );
+    }
+
+    return ZeniEnsureRemoteFamilyResult.success(summary!);
+  }
+
+  @override
+  Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
+    required String familyId,
+    required String name,
+  }) async {
+    if (summary == null) {
+      return const ZeniUpdateRemoteFamilyResult.failure(
+        'Nenhuma família remota preparada foi encontrada.',
+      );
+    }
+
+    return ZeniUpdateRemoteFamilyResult.success(
+      RemoteFamilySummary(
+        familyId: familyId,
+        familyName: name,
+        role: summary!.role,
+        email: summary!.email,
+      ),
+    );
+  }
+}
+
+class _FakeRemoteChildrenRepository implements RemoteChildrenRepository {
+  _FakeRemoteChildrenRepository({required this.children});
+
+  final List<RemoteChildSummary> children;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<List<RemoteChildSummary>> getRemoteChildren({
+    required String familyId,
+  }) async {
+    return children;
+  }
+
+  @override
+  Future<ZeniEnsureRemoteChildrenResult> ensureRemoteChildren({
+    required String familyId,
+    required List<ChildProfile> localChildren,
+  }) async {
+    return ZeniEnsureRemoteChildrenResult.success(children);
+  }
+}
+
+class _FakeRemoteMissionsRepository implements RemoteMissionsRepository {
+  _FakeRemoteMissionsRepository({required this.missions});
+
+  final List<RemoteMissionSummary> missions;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<List<RemoteMissionSummary>> getRemoteMissions({
+    required String familyId,
+  }) async {
+    return missions;
+  }
+
+  @override
+  Future<ZeniEnsureRemoteMissionsResult> ensureRemoteMissions({
+    required String familyId,
+    required List<Mission> localMissions,
+    required Map<String, String> remoteChildIdByLocalChildId,
+  }) async {
+    return ZeniEnsureRemoteMissionsResult.success(missions);
+  }
+}
+
+class _FakeRemoteRewardsRepository implements RemoteRewardsRepository {
+  _FakeRemoteRewardsRepository({required this.rewards});
+
+  final List<RemoteRewardSummary> rewards;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<List<RemoteRewardSummary>> getRemoteRewards({
+    required String familyId,
+  }) async {
+    return rewards;
+  }
+
+  @override
+  Future<ZeniEnsureRemoteRewardsResult> ensureRemoteRewards({
+    required String familyId,
+    required List<Reward> localRewards,
+    required Map<String, String> remoteChildIdByLocalChildId,
+  }) async {
+    return ZeniEnsureRemoteRewardsResult.success(rewards);
   }
 }
