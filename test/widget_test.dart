@@ -2124,7 +2124,7 @@ void main() {
       );
       expect(
         find.text(
-          'Saldo, histórico e sequência ainda não foram restaurados nesta etapa.',
+          'Saldo, histórico e sequência ainda não foram restaurados neste aparelho.',
         ),
         findsOneWidget,
       );

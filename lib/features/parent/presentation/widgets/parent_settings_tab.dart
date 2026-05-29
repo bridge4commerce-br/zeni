@@ -718,7 +718,7 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ),
             const SizedBox(height: ZeniSpacing.xs),
             Text(
-              'Saldo, histórico e sequência ainda não foram restaurados nesta etapa.',
+              'Saldo, histórico e sequência ainda não foram restaurados neste aparelho.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
