@@ -245,6 +245,9 @@ class SupabaseRemoteStarLedgerRepository implements RemoteStarLedgerRepository {
       occurredAt: DateTime.parse(
         data['occurred_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
+      createdAt: data['created_at'] == null
+          ? null
+          : DateTime.parse(data['created_at'] as String),
     );
   }
 

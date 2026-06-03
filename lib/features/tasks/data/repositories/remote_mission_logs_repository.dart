@@ -14,6 +14,7 @@ class RemoteMissionLogSummary {
     this.completedAt,
     this.approvedAt,
     this.rejectedAt,
+    this.photoUrl,
     this.note,
   });
 
@@ -29,6 +30,7 @@ class RemoteMissionLogSummary {
   final DateTime? completedAt;
   final DateTime? approvedAt;
   final DateTime? rejectedAt;
+  final String? photoUrl;
   final String? note;
 }
 

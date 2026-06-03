@@ -11,6 +11,7 @@ class RemoteStarLedgerEntrySummary {
     required this.direction,
     required this.amount,
     required this.occurredAt,
+    this.createdAt,
     this.sourceId,
     this.reason,
   });
@@ -26,6 +27,7 @@ class RemoteStarLedgerEntrySummary {
   final int amount;
   final String? reason;
   final DateTime occurredAt;
+  final DateTime? createdAt;
 }
 
 class ZeniEnsureRemoteStarLedgerResult {

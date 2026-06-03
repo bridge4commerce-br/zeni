@@ -196,6 +196,7 @@ class SupabaseRemoteMissionLogsRepository
       rejectedAt: data['rejected_at'] == null
           ? null
           : DateTime.parse(data['rejected_at'] as String),
+      photoUrl: data['photo_url'] as String?,
       note: data['note'] as String?,
     );
   }

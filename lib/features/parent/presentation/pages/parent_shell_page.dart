@@ -36,8 +36,10 @@ import '../../../rewards/presentation/providers/remote_rewards_providers.dart';
 import '../../../rewards/presentation/providers/remote_reward_requests_providers.dart';
 import '../../../rewards/presentation/widgets/reward_detail_form.dart';
 import '../../../settings/data/models/app_settings.dart';
+import '../../../sync/data/models/historical_restore_result.dart';
 import '../../../sync/presentation/providers/cloud_consistency_providers.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
+import '../../../sync/presentation/providers/historical_restore_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
@@ -831,6 +833,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             cloudConsistencyDiagnosticAsync.asError != null
             ? 'Não foi possível conferir a nuvem agora.'
             : null;
+        final historicalRestoreActionState =
+            ref.watch(historicalRestoreActionStateProvider).asData?.value ??
+            const HistoricalRestoreActionState(
+              isVisible: false,
+              isEnabled: false,
+            );
 
         final pages = [
           _ParentDashboardPage(
@@ -941,6 +949,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             lastStarLedgerSyncAt: appData.appSettings.lastStarLedgerSyncAt,
             lastFullSyncAt: appData.appSettings.lastFullSyncAt,
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+            showHistoricalRestoreAction:
+                historicalRestoreActionState.isVisible,
+            canRunHistoricalRestore: historicalRestoreActionState.isEnabled,
             onOpenAccount: _openAccountSheet,
             onSignOut: _signOutAccount,
             onUpdateRemoteFamilyName: ({required familyId, required name}) {
@@ -952,6 +963,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               return ref
                   .read(zeniCloudSyncControllerProvider)
                   .syncCloudDataNow();
+            },
+            onHistoricalRestore: () {
+              return ref
+                  .read(historicalRestoreControllerProvider)
+                  .restoreHistoryIfSafe();
             },
           ),
         ];

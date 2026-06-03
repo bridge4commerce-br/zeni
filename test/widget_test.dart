@@ -29,6 +29,7 @@ import 'package:zeni/features/rewards/presentation/providers/remote_rewards_prov
 import 'package:zeni/features/rewards/presentation/widgets/reward_compact_child_card.dart';
 import 'package:zeni/features/settings/data/models/app_settings.dart';
 import 'package:zeni/features/sync/data/models/cloud_consistency_diagnostic.dart';
+import 'package:zeni/features/sync/data/models/historical_restore_result.dart';
 import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
 import 'package:zeni/features/tasks/data/repositories/remote_missions_repository.dart';
@@ -136,6 +137,8 @@ void main() {
           lastStarLedgerSyncAt: appSettings.lastStarLedgerSyncAt,
           lastFullSyncAt: appSettings.lastFullSyncAt,
           isSupabaseConfigured: isSupabaseConfigured,
+          showHistoricalRestoreAction: false,
+          canRunHistoricalRestore: false,
           onOpenAccount: () {},
           onSignOut: () {},
           onUpdateRemoteFamilyName:
@@ -145,6 +148,11 @@ void main() {
           onSyncCloudData:
               onSyncCloudData ??
               () async => const ZeniCloudSyncResult.failure('indisponível'),
+          onHistoricalRestore: () async =>
+              const HistoricalRestoreResult.failure(
+                status: HistoricalRestoreResultStatus.applyBlocked,
+                message: 'indisponível',
+              ),
         ),
       ),
     );
@@ -1843,6 +1851,8 @@ void main() {
                 lastStarLedgerSyncAt: null,
                 lastFullSyncAt: null,
                 isSupabaseConfigured: true,
+                showHistoricalRestoreAction: false,
+                canRunHistoricalRestore: false,
                 onOpenAccount: () {},
                 onSignOut: () {},
                 onUpdateRemoteFamilyName:
@@ -1858,6 +1868,11 @@ void main() {
                     },
                 onSyncCloudData: () async =>
                     const ZeniCloudSyncResult.success(),
+                onHistoricalRestore: () async =>
+                    const HistoricalRestoreResult.failure(
+                      status: HistoricalRestoreResultStatus.applyBlocked,
+                      message: 'indisponível',
+                    ),
               ),
             );
           },

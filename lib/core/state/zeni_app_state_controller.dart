@@ -13,6 +13,7 @@ import '../../features/rewards/data/models/reward.dart';
 import '../../features/rewards/data/models/reward_request.dart';
 import '../../features/settings/data/models/app_settings.dart';
 import '../../features/sync/data/models/device_bootstrap_result.dart';
+import '../../features/sync/data/models/historical_restore_result.dart';
 import '../../features/tasks/data/models/mission.dart';
 import '../../features/tasks/data/models/mission_log.dart';
 import '../domain/zeni_enums.dart';
@@ -854,6 +855,63 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     await _save(current.copyWith(appSettings: _normalizeAppSettings(settings)));
   }
 
+  Future<HistoricalRestoreResult> applyHistoricalRestoreIfSafe(
+    HistoricalRestorePayload payload,
+  ) async {
+    final current = _requireState();
+    if (!_canApplyHistoricalRestoreToState(current)) {
+      return const HistoricalRestoreResult.failure(
+        status: HistoricalRestoreResultStatus.applyBlocked,
+        message:
+            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, o histórico não será restaurado automaticamente.',
+      );
+    }
+
+    final currentChildIds = current.children.map((child) => child.id).toSet();
+    final currentMissionIds = current.missions.map((mission) => mission.id).toSet();
+    final currentRewardIds = current.rewards.map((reward) => reward.id).toSet();
+
+    final hasUnknownChild = payload.rebuiltChildren.any(
+      (child) => !currentChildIds.contains(child.id),
+    );
+    final hasUnknownMission = payload.missionLogs.any(
+      (log) => !currentMissionIds.contains(log.missionId),
+    );
+    final hasUnknownReward = payload.rewardRequests.any(
+      (request) => !currentRewardIds.contains(request.rewardId),
+    );
+    final restoredMissionLogIds = payload.missionLogs.map((log) => log.id).toSet();
+    final restoredRewardRequestIds = payload.rewardRequests
+        .map((request) => request.id)
+        .toSet();
+    final hasBrokenLedgerLinks = payload.starLedgerEntries.any(
+      (entry) =>
+          !currentChildIds.contains(entry.childId) ||
+          (entry.relatedMissionLogId != null &&
+              !restoredMissionLogIds.contains(entry.relatedMissionLogId)) ||
+          (entry.relatedRewardRequestId != null &&
+              !restoredRewardRequestIds.contains(entry.relatedRewardRequestId)),
+    );
+    if (hasUnknownChild ||
+        hasUnknownMission ||
+        hasUnknownReward ||
+        hasBrokenLedgerLinks) {
+      return const HistoricalRestoreResult.failure(
+        status: HistoricalRestoreResultStatus.applyBlocked,
+        message: 'Não foi possível restaurar o histórico agora.',
+      );
+    }
+
+    final updated = current.copyWith(
+      children: payload.rebuiltChildren,
+      missionLogs: payload.missionLogs,
+      rewardRequests: payload.rewardRequests,
+      starLedgerEntries: payload.starLedgerEntries,
+    );
+    await _save(updated);
+    return HistoricalRestoreResult.success(payload: payload);
+  }
+
   ZeniAppState _requireState() {
     final current = state.asData?.value;
     if (current == null) {
@@ -900,6 +958,13 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       for (final log in logs)
         if (log.id == updatedLog.id) updatedLog else log,
     ];
+  }
+
+  bool _canApplyHistoricalRestoreToState(ZeniAppState state) {
+    return state.missionLogs.isEmpty &&
+        state.rewardRequests.isEmpty &&
+        state.starLedgerEntries.isEmpty &&
+        state.children.every((child) => child.starBalance == 0);
   }
 
   Future<void> _save(ZeniAppState newState) async {

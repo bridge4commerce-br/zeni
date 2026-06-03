@@ -15,6 +15,7 @@ import '../../../auth/data/repositories/zeni_account_repository.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../settings/data/models/app_settings.dart';
 import '../../../sync/data/models/cloud_consistency_diagnostic.dart';
+import '../../../sync/data/models/historical_restore_result.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
 
 class ParentSettingsTab extends StatelessWidget {
@@ -57,10 +58,13 @@ class ParentSettingsTab extends StatelessWidget {
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
+    required this.showHistoricalRestoreAction,
+    required this.canRunHistoricalRestore,
     required this.onOpenAccount,
     required this.onSignOut,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
+    required this.onHistoricalRestore,
   });
 
   final AppSettings appSettings;
@@ -100,6 +104,8 @@ class ParentSettingsTab extends StatelessWidget {
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
+  final bool showHistoricalRestoreAction;
+  final bool canRunHistoricalRestore;
   final VoidCallback onOpenAccount;
   final VoidCallback onSignOut;
   final Future<ZeniUpdateRemoteFamilyResult> Function({
@@ -108,6 +114,7 @@ class ParentSettingsTab extends StatelessWidget {
   })
   onUpdateRemoteFamilyName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -163,10 +170,13 @@ class ParentSettingsTab extends StatelessWidget {
             lastStarLedgerSyncAt: lastStarLedgerSyncAt,
             lastFullSyncAt: lastFullSyncAt,
             isSupabaseConfigured: isSupabaseConfigured,
+            showHistoricalRestoreAction: showHistoricalRestoreAction,
+            canRunHistoricalRestore: canRunHistoricalRestore,
             onOpenAccount: onOpenAccount,
             onSignOut: onSignOut,
             onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
             onSyncCloudData: onSyncCloudData,
+            onHistoricalRestore: onHistoricalRestore,
           ),
           const SizedBox(height: ZeniSpacing.lg),
           ZeniOptionRow(
@@ -229,10 +239,13 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
+    required this.showHistoricalRestoreAction,
+    required this.canRunHistoricalRestore,
     required this.onOpenAccount,
     required this.onSignOut,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
+    required this.onHistoricalRestore,
   });
 
   final AppSettings appSettings;
@@ -272,6 +285,8 @@ class _ParentSettingsGroup extends StatelessWidget {
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
+  final bool showHistoricalRestoreAction;
+  final bool canRunHistoricalRestore;
   final VoidCallback onOpenAccount;
   final VoidCallback onSignOut;
   final Future<ZeniUpdateRemoteFamilyResult> Function({
@@ -280,6 +295,7 @@ class _ParentSettingsGroup extends StatelessWidget {
   })
   onUpdateRemoteFamilyName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -435,6 +451,9 @@ class _ParentSettingsGroup extends StatelessWidget {
                   lastStarLedgerSyncAt: lastStarLedgerSyncAt,
                   onSyncCloudData: onSyncCloudData,
                   lastFullSyncAt: lastFullSyncAt,
+                  showHistoricalRestoreAction: showHistoricalRestoreAction,
+                  canRunHistoricalRestore: canRunHistoricalRestore,
+                  onHistoricalRestore: onHistoricalRestore,
                 ),
               ],
               const SizedBox(height: ZeniSpacing.sm),
@@ -532,6 +551,9 @@ class _CloudSyncSection extends StatefulWidget {
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
     required this.onSyncCloudData,
+    required this.showHistoricalRestoreAction,
+    required this.canRunHistoricalRestore,
+    required this.onHistoricalRestore,
   });
 
   final int localChildrenCount;
@@ -558,6 +580,9 @@ class _CloudSyncSection extends StatefulWidget {
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final bool showHistoricalRestoreAction;
+  final bool canRunHistoricalRestore;
+  final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
   State<_CloudSyncSection> createState() => _CloudSyncSectionState();
@@ -565,7 +590,9 @@ class _CloudSyncSection extends StatefulWidget {
 
 class _CloudSyncSectionState extends State<_CloudSyncSection> {
   bool _isSyncing = false;
+  bool _isRestoring = false;
   String? _errorText;
+  String? _restoreMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -750,6 +777,48 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
           ),
         ],
+        if (widget.showHistoricalRestoreAction) ...[
+          const SizedBox(height: ZeniSpacing.md),
+          ZeniOptionRow(
+            title: 'Restaurar histórico e saldo',
+            subtitle:
+                'Traz conclusões, pedidos e eventos de estrelas da nuvem. A sequência não será restaurada nesta etapa.',
+            leading: const Icon(
+              Icons.history_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            trailing: Text(
+              _isRestoring ? 'Restaurando...' : 'Restaurar',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
+            ),
+            enabled: widget.canRunHistoricalRestore && !_isRestoring,
+            onTap: widget.canRunHistoricalRestore && !_isRestoring
+                ? _restoreHistory
+                : null,
+          ),
+          const SizedBox(height: ZeniSpacing.xs),
+          Text(
+            widget.canRunHistoricalRestore
+                ? 'Disponível apenas em aparelho recém-restaurado, sem atividade local posterior.'
+                : 'Disponível quando este aparelho ainda não possui histórico local nem saldo reconstruído.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+          ),
+          if (_restoreMessage != null) ...[
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              _restoreMessage!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: _restoreMessage!.startsWith('Histórico restaurado')
+                    ? ZeniColors.primaryDark
+                    : Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }
@@ -810,6 +879,21 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
     setState(() {
       _isSyncing = false;
       _errorText = result.isSuccess ? null : result.message;
+    });
+  }
+
+  Future<void> _restoreHistory() async {
+    setState(() {
+      _isRestoring = true;
+      _restoreMessage = null;
+    });
+
+    final result = await widget.onHistoricalRestore();
+    if (!mounted) return;
+
+    setState(() {
+      _isRestoring = false;
+      _restoreMessage = result.message;
     });
   }
 }
