@@ -837,7 +837,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             ref.watch(historicalRestoreActionStateProvider).asData?.value ??
             const HistoricalRestoreActionState(
               isVisible: false,
+              showAction: false,
               isEnabled: false,
+              message: null,
             );
 
         final pages = [
@@ -949,9 +951,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             lastStarLedgerSyncAt: appData.appSettings.lastStarLedgerSyncAt,
             lastFullSyncAt: appData.appSettings.lastFullSyncAt,
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+            showHistoricalRestoreStatus: historicalRestoreActionState.isVisible,
             showHistoricalRestoreAction:
-                historicalRestoreActionState.isVisible,
+                historicalRestoreActionState.showAction,
             canRunHistoricalRestore: historicalRestoreActionState.isEnabled,
+            historicalRestoreMessage: historicalRestoreActionState.message,
             onOpenAccount: _openAccountSheet,
             onSignOut: _signOutAccount,
             onUpdateRemoteFamilyName: ({required familyId, required name}) {

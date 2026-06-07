@@ -24,14 +24,17 @@ import 'package:zeni/features/family/data/repositories/remote_children_repositor
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
 import 'package:zeni/features/rewards/data/models/reward.dart';
+import 'package:zeni/features/rewards/data/models/reward_request.dart';
 import 'package:zeni/features/rewards/data/repositories/remote_rewards_repository.dart';
 import 'package:zeni/features/rewards/presentation/providers/remote_rewards_providers.dart';
 import 'package:zeni/features/rewards/presentation/widgets/reward_compact_child_card.dart';
 import 'package:zeni/features/settings/data/models/app_settings.dart';
+import 'package:zeni/features/balance/data/models/star_ledger_entry.dart';
 import 'package:zeni/features/sync/data/models/cloud_consistency_diagnostic.dart';
 import 'package:zeni/features/sync/data/models/historical_restore_result.dart';
 import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
+import 'package:zeni/features/tasks/data/models/mission_log.dart';
 import 'package:zeni/features/tasks/data/repositories/remote_missions_repository.dart';
 import 'package:zeni/features/tasks/presentation/providers/remote_missions_providers.dart';
 import 'package:zeni/features/tasks/presentation/widgets/task_compact_child_card.dart';
@@ -96,6 +99,11 @@ void main() {
     CloudConsistencyDiagnostic? cloudConsistencyDiagnostic,
     String? cloudConsistencyErrorText,
     Future<ZeniCloudSyncResult> Function()? onSyncCloudData,
+    bool showHistoricalRestoreStatus = false,
+    bool showHistoricalRestoreAction = false,
+    bool canRunHistoricalRestore = false,
+    String? historicalRestoreMessage,
+    Future<HistoricalRestoreResult> Function()? onHistoricalRestore,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -137,8 +145,10 @@ void main() {
           lastStarLedgerSyncAt: appSettings.lastStarLedgerSyncAt,
           lastFullSyncAt: appSettings.lastFullSyncAt,
           isSupabaseConfigured: isSupabaseConfigured,
-          showHistoricalRestoreAction: false,
-          canRunHistoricalRestore: false,
+          showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+          showHistoricalRestoreAction: showHistoricalRestoreAction,
+          canRunHistoricalRestore: canRunHistoricalRestore,
+          historicalRestoreMessage: historicalRestoreMessage,
           onOpenAccount: () {},
           onSignOut: () {},
           onUpdateRemoteFamilyName:
@@ -148,7 +158,9 @@ void main() {
           onSyncCloudData:
               onSyncCloudData ??
               () async => const ZeniCloudSyncResult.failure('indisponível'),
-          onHistoricalRestore: () async =>
+          onHistoricalRestore:
+              onHistoricalRestore ??
+              () async =>
               const HistoricalRestoreResult.failure(
                 status: HistoricalRestoreResultStatus.applyBlocked,
                 message: 'indisponível',
@@ -1797,6 +1809,159 @@ void main() {
     },
   );
 
+  testWidgets('historical restore action appears only when it makes sense', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        showHistoricalRestoreStatus: true,
+        showHistoricalRestoreAction: true,
+        canRunHistoricalRestore: true,
+        historicalRestoreMessage:
+            'Histórico e saldo ainda não foram restaurados neste aparelho.',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
+    expect(
+      find.text(
+        'Histórico e saldo ainda não foram restaurados neste aparelho.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('historical restore action stays blocked when local activity exists', (
+    tester,
+  ) async {
+    var restoreCalls = 0;
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        showHistoricalRestoreStatus: true,
+        showHistoricalRestoreAction: true,
+        canRunHistoricalRestore: false,
+        historicalRestoreMessage:
+            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+        onHistoricalRestore: () async {
+          restoreCalls += 1;
+          return const HistoricalRestoreResult.failure(
+            status: HistoricalRestoreResultStatus.applyBlocked,
+            message: 'indisponível',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
+    expect(
+      find.text(
+        'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Restaurar histórico e saldo'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restaurar histórico e saldo'));
+    await tester.pumpAndSettle();
+
+    expect(restoreCalls, 0);
+  });
+
+  testWidgets('historical restore absence message appears when cloud has no history', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        showHistoricalRestoreStatus: true,
+        showHistoricalRestoreAction: false,
+        historicalRestoreMessage:
+            'Nenhum histórico foi encontrado na nuvem para restaurar.',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Restaurar histórico e saldo'), findsNothing);
+    expect(
+      find.text('Nenhum histórico foi encontrado na nuvem para restaurar.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('historical restore success shows inline feedback', (tester) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        showHistoricalRestoreStatus: true,
+        showHistoricalRestoreAction: true,
+        canRunHistoricalRestore: true,
+        historicalRestoreMessage:
+            'Histórico e saldo ainda não foram restaurados neste aparelho.',
+        onHistoricalRestore: () async => HistoricalRestoreResult.success(
+          payload: HistoricalRestorePayload(
+            missionLogs: const <MissionLog>[],
+            rewardRequests: const <RewardRequest>[],
+            starLedgerEntries: const <StarLedgerEntry>[],
+            rebuiltChildren: const <ChildProfile>[],
+            restoredAt: DateTime(2026, 6, 7, 10),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.text('Restaurar histórico e saldo'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restaurar histórico e saldo'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Histórico restaurado neste aparelho. O saldo foi reconstruído com segurança a partir dos eventos da nuvem.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('editing remote family name calls callback and updates UI', (
     tester,
   ) async {
@@ -1851,8 +2016,10 @@ void main() {
                 lastStarLedgerSyncAt: null,
                 lastFullSyncAt: null,
                 isSupabaseConfigured: true,
+                showHistoricalRestoreStatus: false,
                 showHistoricalRestoreAction: false,
                 canRunHistoricalRestore: false,
+                historicalRestoreMessage: null,
                 onOpenAccount: () {},
                 onSignOut: () {},
                 onUpdateRemoteFamilyName:

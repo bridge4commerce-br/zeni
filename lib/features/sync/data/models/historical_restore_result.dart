@@ -46,7 +46,7 @@ class HistoricalRestoreResult {
   }) : this(
          status: HistoricalRestoreResultStatus.success,
          message:
-             'Histórico restaurado neste aparelho. O saldo foi reconstruído a partir dos eventos da nuvem.',
+             'Histórico restaurado neste aparelho. O saldo foi reconstruído com segurança a partir dos eventos da nuvem.',
          payload: payload,
          restoredMissionLogsCount: payload.missionLogs.length,
          restoredRewardRequestsCount: payload.rewardRequests.length,
@@ -71,9 +71,13 @@ class HistoricalRestoreResult {
 class HistoricalRestoreActionState {
   const HistoricalRestoreActionState({
     required this.isVisible,
+    required this.showAction,
     required this.isEnabled,
+    required this.message,
   });
 
   final bool isVisible;
+  final bool showAction;
   final bool isEnabled;
+  final String? message;
 }

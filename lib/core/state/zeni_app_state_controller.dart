@@ -863,7 +863,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       return const HistoricalRestoreResult.failure(
         status: HistoricalRestoreResultStatus.applyBlocked,
         message:
-            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, o histórico não será restaurado automaticamente.',
+            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
       );
     }
 

@@ -34,14 +34,54 @@ final historicalRestoreActionStateProvider =
       final hasZeroBalances = appState.children.every(
         (child) => child.starBalance == 0,
       );
-      final isVisible = authState.isAuthenticated &&
-          remoteFamily != null &&
-          hasCatalogs &&
-          hasEmptyHistory;
+      final isVisible =
+          authState.isAuthenticated && remoteFamily != null && hasCatalogs;
+      if (!isVisible) {
+        return const HistoricalRestoreActionState(
+          isVisible: false,
+          showAction: false,
+          isEnabled: false,
+          message: null,
+        );
+      }
 
-      return HistoricalRestoreActionState(
-        isVisible: isVisible,
-        isEnabled: isVisible && hasZeroBalances,
+      final remoteMissionLogs = await ref.watch(remoteMissionLogsProvider.future);
+      final remoteRewardRequests = await ref.watch(
+        remoteRewardRequestsProvider.future,
+      );
+      final remoteStarLedgerEntries = await ref.watch(
+        remoteStarLedgerProvider.future,
+      );
+      final hasRemoteHistory =
+          (remoteMissionLogs?.isNotEmpty ?? false) ||
+          (remoteRewardRequests?.isNotEmpty ?? false) ||
+          (remoteStarLedgerEntries?.isNotEmpty ?? false);
+      final hasLocalActivity = !hasEmptyHistory || !hasZeroBalances;
+
+      if (hasLocalActivity) {
+        return const HistoricalRestoreActionState(
+          isVisible: true,
+          showAction: true,
+          isEnabled: false,
+          message:
+              'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+        );
+      }
+
+      if (!hasRemoteHistory) {
+        return const HistoricalRestoreActionState(
+          isVisible: true,
+          showAction: false,
+          isEnabled: false,
+          message: 'Nenhum histórico foi encontrado na nuvem para restaurar.',
+        );
+      }
+
+      return const HistoricalRestoreActionState(
+        isVisible: true,
+        showAction: true,
+        isEnabled: true,
+        message: 'Histórico e saldo ainda não foram restaurados neste aparelho.',
       );
     });
 
@@ -84,7 +124,7 @@ class HistoricalRestoreController {
       return const HistoricalRestoreResult.failure(
         status: HistoricalRestoreResultStatus.localActivityPresent,
         message:
-            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, o histórico não será restaurado automaticamente.',
+            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
       );
     }
 
