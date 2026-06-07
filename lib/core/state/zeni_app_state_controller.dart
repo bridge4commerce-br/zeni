@@ -855,6 +855,13 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     await _save(current.copyWith(appSettings: _normalizeAppSettings(settings)));
   }
 
+  Future<void> clearLocalDeviceData() async {
+    final initialState = _normalizeLoadedState(ZeniAppState.initial());
+    await _clearPersistedLocalState();
+    state = AsyncData(initialState);
+    await _persist(initialState);
+  }
+
   Future<HistoricalRestoreResult> applyHistoricalRestoreIfSafe(
     HistoricalRestorePayload payload,
   ) async {
@@ -974,6 +981,17 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
 
   Future<void> _persist(ZeniAppState appState) async {
     await _preferences.setString(_storageKey, jsonEncode(appState.toJson()));
+  }
+
+  Future<void> _clearPersistedLocalState() async {
+    await _preferences.remove(_storageKey);
+    await _preferences.remove(_legacyThemeModeKey);
+    await _preferences.remove(_legacyDyslexiaFontKey);
+    await _preferences.remove(_legacyTextScaleKey);
+    await _preferences.remove(_legacyVibrationKey);
+    await _preferences.remove(_legacyNotificationsKey);
+    await _preferences.remove(_legacyTtsKey);
+    await _preferences.remove(_legacyReadAloudByChildProfileKey);
   }
 
   ChildProfile _buildChildProfile({

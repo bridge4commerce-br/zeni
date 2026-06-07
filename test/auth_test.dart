@@ -112,6 +112,62 @@ void main() {
     expect(result.isSuccess, isTrue);
   });
 
+  test('clearing local device data works without Supabase or login', () async {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(ZeniAppState.seeded().toJson()),
+    });
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container.read(zeniAppStateControllerProvider.future);
+
+    await container
+        .read(zeniAppStateControllerProvider.notifier)
+        .clearLocalDeviceData();
+
+    final resetState = await container.read(zeniAppStateControllerProvider.future);
+
+    expect(resetState.children, isEmpty);
+    expect(resetState.missions, isEmpty);
+    expect(resetState.rewards, isEmpty);
+    expect(resetState.missionLogs, isEmpty);
+    expect(resetState.rewardRequests, isEmpty);
+    expect(resetState.starLedgerEntries, isEmpty);
+    expect(resetState.appSettings.hasCompletedOnboarding, isFalse);
+  });
+
+  test('clearing local device data does not call sign out or depend on auth', () async {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(ZeniAppState.seeded().toJson()),
+    });
+
+    final repository = _TestAuthRepository();
+    final container = ProviderContainer(
+      overrides: [authRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(() async {
+      await repository.dispose();
+      container.dispose();
+    });
+
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    await container.read(zeniAppStateControllerProvider.future);
+    expect(container.read(authStateProvider).isAuthenticated, isTrue);
+
+    await container
+        .read(zeniAppStateControllerProvider.notifier)
+        .clearLocalDeviceData();
+
+    expect(repository.signOutCalls, 0);
+    expect(container.read(authStateProvider).isAuthenticated, isTrue);
+  });
+
   test('auth state provider reacts to sign in and sign out', () async {
     final repository = _TestAuthRepository();
     final container = ProviderContainer(
@@ -4093,6 +4149,7 @@ class _TestAuthRepository implements ZeniAuthRepository {
   final StreamController<ZeniAuthUser?> _controller =
       StreamController<ZeniAuthUser?>.broadcast();
   ZeniAuthUser? _currentUser;
+  int signOutCalls = 0;
 
   @override
   bool get isGoogleSignInAvailable => true;
@@ -4121,6 +4178,7 @@ class _TestAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signOut() async {
+    signOutCalls += 1;
     _currentUser = null;
     _controller.add(null);
     return const ZeniAuthOperationResult.success();

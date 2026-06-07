@@ -104,6 +104,7 @@ void main() {
     bool canRunHistoricalRestore = false,
     String? historicalRestoreMessage,
     Future<HistoricalRestoreResult> Function()? onHistoricalRestore,
+    Future<void> Function()? onClearLocalDeviceData,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -151,6 +152,8 @@ void main() {
           historicalRestoreMessage: historicalRestoreMessage,
           onOpenAccount: () {},
           onSignOut: () {},
+          onClearLocalDeviceData:
+              onClearLocalDeviceData ?? () async {},
           onUpdateRemoteFamilyName:
               onUpdateRemoteFamilyName ??
               ({required familyId, required name}) async =>
@@ -2022,6 +2025,7 @@ void main() {
                 historicalRestoreMessage: null,
                 onOpenAccount: () {},
                 onSignOut: () {},
+                onClearLocalDeviceData: () async {},
                 onUpdateRemoteFamilyName:
                     ({required familyId, required name}) async {
                       setState(() {
@@ -3010,6 +3014,104 @@ void main() {
       isNotEmpty,
     );
   });
+
+  testWidgets('account and data section separates local and cloud actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+      ),
+    );
+
+    expect(find.text('Conta e dados'), findsOneWidget);
+    expect(find.text('Neste aparelho'), findsOneWidget);
+    expect(find.text('Na nuvem'), findsOneWidget);
+    expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
+    expect(find.text('Excluir conta e dados da nuvem'), findsOneWidget);
+    expect(find.text('Em breve'), findsOneWidget);
+    expect(
+      find.text(
+        'Excluir conta e dados da nuvem será feito em uma etapa segura separada. Enquanto isso, entre em contato com o suporte.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'clearing local device data resets app state without signing out',
+    (tester) async {
+      seedMockAppState();
+      final fakeAuthRepository = _FakeZeniAuthRepository(
+        initialUser: const ZeniAuthUser(
+          id: 'user-1',
+          email: 'responsavel@zeni.app',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [authRepositoryProvider.overrideWithValue(fakeAuthRepository)],
+      );
+      addTearDown(() async {
+        await fakeAuthRepository.dispose();
+        container.dispose();
+      });
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
+
+      await openParentSettings(tester);
+      await tester.scrollUntilVisible(
+        find.text('Apagar dados deste aparelho'),
+        300,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apagar dados deste aparelho'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Digite APAGAR para confirmar.'), findsOneWidget);
+
+      final clearButton = find.widgetWithText(
+        ElevatedButton,
+        'Apagar dados deste aparelho',
+      );
+      expect(tester.widget<ElevatedButton>(clearButton).onPressed, isNull);
+
+      await tester.enterText(
+        find.byKey(const Key('clear-local-data-confirm-input')),
+        'APAGAR',
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<ElevatedButton>(clearButton).onPressed, isNotNull);
+
+      await tester.tap(clearButton);
+      await tester.pumpAndSettle();
+
+      expect(fakeAuthRepository.signOutCalls, 0);
+      expect(container.read(authStateProvider).isAuthenticated, isTrue);
+
+      final resetState = await container.read(zeniAppStateControllerProvider.future);
+      expect(resetState.children, isEmpty);
+      expect(resetState.missions, isEmpty);
+      expect(resetState.rewards, isEmpty);
+      expect(resetState.missionLogs, isEmpty);
+      expect(resetState.rewardRequests, isEmpty);
+      expect(resetState.starLedgerEntries, isEmpty);
+      expect(resetState.appSettings.hasCompletedOnboarding, isFalse);
+      expect(resetState.appSettings.hasParentPin, isFalse);
+      expect(resetState.appSettings.parentBiometricsEnabled, isFalse);
+      expect(find.text('Bem-vindo ao Zeni'), findsOneWidget);
+    },
+  );
 
   testWidgets('apple button appears when Apple sign in is available', (
     tester,

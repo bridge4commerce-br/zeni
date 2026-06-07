@@ -12,10 +12,14 @@ import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_fab.dart';
 import '../../../../core/widgets/base/zeni_icon_action_button.dart';
+import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
+import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
+import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
+import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../auth/local/parent_biometric_auth.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -779,6 +783,32 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     );
   }
 
+  Future<void> _confirmAndClearLocalDeviceData() async {
+    final didClear = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: _ClearLocalDeviceDataSheet(
+            onConfirm: () async {
+              await ref
+                  .read(zeniAppStateControllerProvider.notifier)
+                  .clearLocalDeviceData();
+            },
+          ),
+        );
+      },
+    );
+
+    if (!mounted || didClear != true) return;
+    context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(zeniAppStateControllerProvider);
@@ -958,6 +988,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             historicalRestoreMessage: historicalRestoreActionState.message,
             onOpenAccount: _openAccountSheet,
             onSignOut: _signOutAccount,
+            onClearLocalDeviceData: _confirmAndClearLocalDeviceData,
             onUpdateRemoteFamilyName: ({required familyId, required name}) {
               return ref
                   .read(zeniAccountControllerProvider)
@@ -1154,6 +1185,119 @@ class _ParentDashboardPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ClearLocalDeviceDataSheet extends StatefulWidget {
+  const _ClearLocalDeviceDataSheet({required this.onConfirm});
+
+  final Future<void> Function() onConfirm;
+
+  @override
+  State<_ClearLocalDeviceDataSheet> createState() =>
+      _ClearLocalDeviceDataSheetState();
+}
+
+class _ClearLocalDeviceDataSheetState extends State<_ClearLocalDeviceDataSheet> {
+  final TextEditingController _confirmController = TextEditingController();
+  bool _isClearing = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isConfirmationValid = _confirmController.text.trim() == 'APAGAR';
+
+    return ZeniModalSheetContainer(
+      title: 'Apagar dados deste aparelho',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Apagar dados deste aparelho remove crianças, missões, mimos, histórico e saldo salvos localmente. Os dados da nuvem não serão apagados.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+          Text(
+            'Digite APAGAR para confirmar. Esta ação reinicia o app neste aparelho.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniTextInput(
+            key: const Key('clear-local-data-confirm-input'),
+            controller: _confirmController,
+            label: 'Confirmação',
+            hint: 'Digite APAGAR',
+            textCapitalization: TextCapitalization.characters,
+            onChanged: (_) {
+              if (_errorText != null) {
+                setState(() {
+                  _errorText = null;
+                });
+              } else {
+                setState(() {});
+              }
+            },
+          ),
+          if (_errorText != null) ...[
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              _errorText!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniSecondaryButton(
+            label: 'Cancelar',
+            onPressed: _isClearing ? null : () => Navigator.of(context).pop(false),
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniPrimaryButton(
+            label: _isClearing ? 'Apagando...' : 'Apagar dados deste aparelho',
+            onPressed: (_isClearing || !isConfirmationValid) ? null : _confirm,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirm() async {
+    if (_confirmController.text.trim() != 'APAGAR') {
+      setState(() {
+        _errorText = 'Digite APAGAR para confirmar.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isClearing = true;
+      _errorText = null;
+    });
+
+    try {
+      await widget.onConfirm();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isClearing = false;
+        _errorText =
+            'Não foi possível apagar os dados deste aparelho agora. Tente novamente.';
+      });
+    }
   }
 }
 
