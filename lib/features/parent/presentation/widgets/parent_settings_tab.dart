@@ -64,6 +64,7 @@ class ParentSettingsTab extends StatelessWidget {
     required this.historicalRestoreMessage,
     required this.onOpenAccount,
     required this.onSignOut,
+    required this.onManageAccountAndData,
     required this.onClearLocalDeviceData,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
@@ -113,6 +114,7 @@ class ParentSettingsTab extends StatelessWidget {
   final String? historicalRestoreMessage;
   final VoidCallback onOpenAccount;
   final VoidCallback onSignOut;
+  final VoidCallback onManageAccountAndData;
   final Future<void> Function() onClearLocalDeviceData;
   final Future<ZeniUpdateRemoteFamilyResult> Function({
     required String familyId,
@@ -182,6 +184,7 @@ class ParentSettingsTab extends StatelessWidget {
             historicalRestoreMessage: historicalRestoreMessage,
             onOpenAccount: onOpenAccount,
             onSignOut: onSignOut,
+            onManageAccountAndData: onManageAccountAndData,
             onClearLocalDeviceData: onClearLocalDeviceData,
             onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
             onSyncCloudData: onSyncCloudData,
@@ -254,6 +257,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.historicalRestoreMessage,
     required this.onOpenAccount,
     required this.onSignOut,
+    required this.onManageAccountAndData,
     required this.onClearLocalDeviceData,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
@@ -303,6 +307,7 @@ class _ParentSettingsGroup extends StatelessWidget {
   final String? historicalRestoreMessage;
   final VoidCallback onOpenAccount;
   final VoidCallback onSignOut;
+  final VoidCallback onManageAccountAndData;
   final Future<void> Function() onClearLocalDeviceData;
   final Future<ZeniUpdateRemoteFamilyResult> Function({
     required String familyId,
@@ -399,15 +404,6 @@ class _ParentSettingsGroup extends StatelessWidget {
             const SizedBox(height: ZeniSpacing.sm),
             Text('Conta e dados', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: ZeniSpacing.md),
-            Text(
-              'Separe o que acontece neste aparelho do que fica salvo na nuvem.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            Text('Conta', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: ZeniSpacing.sm),
             if (!authState.isAuthenticated) ...[
               ZeniOptionRow(
                 title: 'Criar conta para sincronizar',
@@ -430,12 +426,6 @@ class _ParentSettingsGroup extends StatelessWidget {
                   color: ZeniColors.primaryDark,
                 ),
               ),
-              const SizedBox(height: ZeniSpacing.md),
-              Text(
-                'Sincronização na nuvem',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
               if (remoteFamilySummary != null) ...[
                 const SizedBox(height: ZeniSpacing.sm),
                 ZeniOptionRow(
@@ -500,46 +490,15 @@ class _ParentSettingsGroup extends StatelessWidget {
                 onTap: onSignOut,
               ),
             ],
-            const SizedBox(height: ZeniSpacing.md),
-            Text(
-              'Neste aparelho',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
             const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
-              title: 'Apagar dados deste aparelho',
-              subtitle:
-                  'Apagar dados deste aparelho remove crianças, missões, mimos, histórico e saldo salvos localmente. Os dados da nuvem não serão apagados.',
-              leading: Icon(
-                Icons.delete_forever_rounded,
-                color: Theme.of(context).colorScheme.error,
+              title: 'Gerenciar dados e conta',
+              subtitle: 'Ações avançadas sobre dados locais e conta.',
+              leading: const Icon(
+                Icons.manage_accounts_rounded,
+                color: ZeniColors.primaryDark,
               ),
-              trailing: Text(
-                'Apagar',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              onTap: onClearLocalDeviceData,
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            Text('Na nuvem', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Excluir conta e dados da nuvem',
-              subtitle:
-                  'Excluir conta e dados da nuvem será feito em uma etapa segura separada. Enquanto isso, entre em contato com o suporte.',
-              leading: Icon(
-                Icons.cloud_off_rounded,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              trailing: Text(
-                'Em breve',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: ZeniColors.mutedText),
-              ),
-              enabled: false,
+              onTap: onManageAccountAndData,
             ),
             const SizedBox(height: ZeniSpacing.sm),
             Text('Segurança', style: Theme.of(context).textTheme.titleLarge),

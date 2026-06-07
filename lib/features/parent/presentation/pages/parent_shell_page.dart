@@ -17,6 +17,7 @@ import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
+import '../../../../core/widgets/inputs/zeni_option_row.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
@@ -809,6 +810,23 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     context.go('/');
   }
 
+  Future<void> _openManageAccountAndDataSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _ManageAccountAndDataSheet(
+          onClearLocalDeviceData: () async {
+            Navigator.of(sheetContext).pop();
+            await _confirmAndClearLocalDeviceData();
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(zeniAppStateControllerProvider);
@@ -988,6 +1006,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             historicalRestoreMessage: historicalRestoreActionState.message,
             onOpenAccount: _openAccountSheet,
             onSignOut: _signOutAccount,
+            onManageAccountAndData: _openManageAccountAndDataSheet,
             onClearLocalDeviceData: _confirmAndClearLocalDeviceData,
             onUpdateRemoteFamilyName: ({required familyId, required name}) {
               return ref
@@ -1298,6 +1317,65 @@ class _ClearLocalDeviceDataSheetState extends State<_ClearLocalDeviceDataSheet> 
             'Não foi possível apagar os dados deste aparelho agora. Tente novamente.';
       });
     }
+  }
+}
+
+class _ManageAccountAndDataSheet extends StatelessWidget {
+  const _ManageAccountAndDataSheet({required this.onClearLocalDeviceData});
+
+  final Future<void> Function() onClearLocalDeviceData;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: 'Gerenciar dados e conta',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ações avançadas sobre dados locais e conta.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniOptionRow(
+            title: 'Apagar dados deste aparelho',
+            subtitle:
+                'Apaga crianças, missões, mimos, histórico e saldo salvos localmente. Os dados da nuvem não serão apagados.',
+            leading: Icon(
+              Icons.delete_forever_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            trailing: Text(
+              'Apagar',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            onTap: onClearLocalDeviceData,
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Excluir conta e dados da nuvem',
+            subtitle:
+                'Excluir conta e dados da nuvem será feito em uma etapa segura separada. Enquanto isso, entre em contato com o suporte.',
+            leading: Icon(
+              Icons.cloud_off_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            trailing: Text(
+              'Em breve',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: ZeniColors.mutedText),
+            ),
+            enabled: false,
+          ),
+        ],
+      ),
+    );
   }
 }
 

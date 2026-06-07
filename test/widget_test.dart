@@ -104,6 +104,7 @@ void main() {
     bool canRunHistoricalRestore = false,
     String? historicalRestoreMessage,
     Future<HistoricalRestoreResult> Function()? onHistoricalRestore,
+    VoidCallback? onManageAccountAndData,
     Future<void> Function()? onClearLocalDeviceData,
   }) {
     return MaterialApp(
@@ -152,6 +153,7 @@ void main() {
           historicalRestoreMessage: historicalRestoreMessage,
           onOpenAccount: () {},
           onSignOut: () {},
+          onManageAccountAndData: onManageAccountAndData ?? () {},
           onClearLocalDeviceData:
               onClearLocalDeviceData ?? () async {},
           onUpdateRemoteFamilyName:
@@ -2025,6 +2027,7 @@ void main() {
                 historicalRestoreMessage: null,
                 onOpenAccount: () {},
                 onSignOut: () {},
+                onManageAccountAndData: () {},
                 onClearLocalDeviceData: () async {},
                 onUpdateRemoteFamilyName:
                     ({required familyId, required name}) async {
@@ -3015,9 +3018,12 @@ void main() {
     );
   });
 
-  testWidgets('account and data section separates local and cloud actions', (
+  testWidgets(
+    'account and data section keeps destructive options behind advanced entry',
+    (
     tester,
   ) async {
+    var advancedOpened = false;
     await tester.pumpWidget(
       buildStaticSettingsHarness(
         authState: const ZeniAuthState.authenticated(
@@ -3028,25 +3034,67 @@ void main() {
           familyName: 'Minha família',
           role: 'owner',
         ),
+        onManageAccountAndData: () {
+          advancedOpened = true;
+        },
       ),
     );
 
     expect(find.text('Conta e dados'), findsOneWidget);
-    expect(find.text('Neste aparelho'), findsOneWidget);
-    expect(find.text('Na nuvem'), findsOneWidget);
+    expect(find.text('Neste aparelho'), findsNothing);
+    expect(find.text('Na nuvem'), findsNothing);
+    expect(find.text('Apagar dados deste aparelho'), findsNothing);
+    expect(find.text('Excluir conta e dados da nuvem'), findsNothing);
+    expect(find.text('Gerenciar dados e conta'), findsOneWidget);
+    expect(find.text('Sair da conta'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pump();
+
+    expect(advancedOpened, isTrue);
+  });
+
+  testWidgets('advanced account management shows destructive options', (
+    tester,
+  ) async {
+    seedMockAppState();
+    final fakeAuthRepository = _FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [authRepositoryProvider.overrideWithValue(fakeAuthRepository)],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(
+      find.text('Gerenciar dados e conta'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
     expect(find.text('Excluir conta e dados da nuvem'), findsOneWidget);
     expect(find.text('Em breve'), findsOneWidget);
-    expect(
-      find.text(
-        'Excluir conta e dados da nuvem será feito em uma etapa segura separada. Enquanto isso, entre em contato com o suporte.',
-      ),
-      findsOneWidget,
-    );
   });
 
   testWidgets(
-    'clearing local device data resets app state without signing out',
+    'clearing local device data remains available through advanced entry',
     (tester) async {
       seedMockAppState();
       final fakeAuthRepository = _FakeZeniAuthRepository(
@@ -3070,10 +3118,13 @@ void main() {
 
       await openParentSettings(tester);
       await tester.scrollUntilVisible(
-        find.text('Apagar dados deste aparelho'),
+        find.text('Gerenciar dados e conta'),
         300,
       );
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Gerenciar dados e conta'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Apagar dados deste aparelho'));
       await tester.pumpAndSettle();
 
