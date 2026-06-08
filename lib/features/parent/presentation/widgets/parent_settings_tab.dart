@@ -501,6 +501,71 @@ class _ParentSettingsGroup extends StatelessWidget {
               onTap: onManageAccountAndData,
             ),
             const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Legal e suporte',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: ZeniSpacing.md),
+            ZeniOptionRow(
+              title: 'Política de Privacidade',
+              subtitle: 'Como o app salva e pode sincronizar dados da família.',
+              leading: const Icon(
+                Icons.privacy_tip_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Política de Privacidade',
+                message:
+                    'O Zeni salva dados da família para organizar crianças, missões, mimos, pedidos e histórico de estrelas. O app pode funcionar apenas neste aparelho. Quando você entra com uma conta, parte desses dados pode ser sincronizada na nuvem para permitir restauração e continuidade em outro aparelho. Você pode apagar dados locais deste aparelho e também solicitar a exclusão da conta e dos dados da nuvem.',
+              ),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
+              title: 'Termos de Uso',
+              subtitle: 'Resumo das responsabilidades e do uso adequado do app.',
+              leading: const Icon(
+                Icons.description_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Termos de Uso',
+                message:
+                    'O Zeni é uma ferramenta de organização familiar. O responsável é quem cria e gerencia crianças, missões, mimos e aprovações. O app não substitui acompanhamento parental, financeiro, educacional ou profissional. Ao usar recursos de conta e nuvem, você concorda em manter suas credenciais seguras e usar o app de forma adequada à sua família.',
+              ),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
+              title: 'Suporte',
+              subtitle: 'Ajuda com conta, sincronização, restauração e privacidade.',
+              leading: const Icon(
+                Icons.support_agent_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Suporte',
+                message:
+                    'Para ajuda com conta, sincronização, restauração, exclusão de conta ou dúvidas sobre privacidade, entre em contato com o suporte.\n\nE-mail: suporte@luminadigital.app',
+              ),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
+              title: 'Dados locais e nuvem',
+              subtitle: 'Entenda o que fica neste aparelho e o que pode ir para a nuvem.',
+              leading: const Icon(
+                Icons.cloud_queue_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Dados locais e nuvem',
+                message:
+                    'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. Excluir conta e dados da nuvem não apaga automaticamente os dados locais.',
+              ),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
             Text('Segurança', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: ZeniSpacing.md),
             ZeniOptionRow(
@@ -535,6 +600,20 @@ class _ParentSettingsGroup extends StatelessWidget {
     );
   }
 
+  Future<void> _openInfoSheet(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SettingsInfoSheet(title: title, message: message),
+    );
+  }
+
   Future<void> _openRemoteFamilyNameSheet(
     BuildContext context,
     RemoteFamilySummary summary,
@@ -551,6 +630,39 @@ class _ParentSettingsGroup extends StatelessWidget {
           initialName: summary.familyName,
           onSubmit: (name) =>
               onUpdateRemoteFamilyName(familyId: summary.familyId, name: name),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsInfoSheet extends StatelessWidget {
+  const _SettingsInfoSheet({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: title,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.lg),
+            ZeniPrimaryButton(
+              label: 'Fechar',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );

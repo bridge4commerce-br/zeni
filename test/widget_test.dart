@@ -3056,6 +3056,75 @@ void main() {
     expect(advancedOpened, isTrue);
   });
 
+  testWidgets('legal and support section appears in settings', (tester) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.unauthenticated(),
+      ),
+    );
+
+    expect(find.text('Legal e suporte'), findsOneWidget);
+    expect(find.text('Política de Privacidade'), findsOneWidget);
+    expect(find.text('Termos de Uso'), findsOneWidget);
+    expect(find.text('Suporte'), findsOneWidget);
+    expect(find.text('Dados locais e nuvem'), findsOneWidget);
+  });
+
+  testWidgets('legal and support items open internal content sheets', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.unauthenticated(),
+      ),
+    );
+
+    await tester.scrollUntilVisible(find.text('Política de Privacidade'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Política de Privacidade'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'O Zeni salva dados da família para organizar crianças, missões, mimos, pedidos e histórico de estrelas. O app pode funcionar apenas neste aparelho. Quando você entra com uma conta, parte desses dados pode ser sincronizada na nuvem para permitir restauração e continuidade em outro aparelho. Você pode apagar dados locais deste aparelho e também solicitar a exclusão da conta e dos dados da nuvem.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Termos de Uso'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'O Zeni é uma ferramenta de organização familiar. O responsável é quem cria e gerencia crianças, missões, mimos e aprovações. O app não substitui acompanhamento parental, financeiro, educacional ou profissional. Ao usar recursos de conta e nuvem, você concorda em manter suas credenciais seguras e usar o app de forma adequada à sua família.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Suporte'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Para ajuda com conta, sincronização, restauração, exclusão de conta ou dúvidas sobre privacidade',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('suporte@luminadigital.app'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Dados locais e nuvem'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. Excluir conta e dados da nuvem não apaga automaticamente os dados locais.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('advanced account management shows destructive options', (
     tester,
   ) async {
