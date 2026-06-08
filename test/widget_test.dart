@@ -31,6 +31,7 @@ import 'package:zeni/features/rewards/presentation/widgets/reward_compact_child_
 import 'package:zeni/features/settings/data/models/app_settings.dart';
 import 'package:zeni/features/balance/data/models/star_ledger_entry.dart';
 import 'package:zeni/features/sync/data/models/cloud_consistency_diagnostic.dart';
+import 'package:zeni/features/sync/data/models/device_bootstrap_result.dart';
 import 'package:zeni/features/sync/data/models/historical_restore_result.dart';
 import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
@@ -99,6 +100,11 @@ void main() {
     CloudConsistencyDiagnostic? cloudConsistencyDiagnostic,
     String? cloudConsistencyErrorText,
     Future<ZeniCloudSyncResult> Function()? onSyncCloudData,
+    bool showDeviceBootstrapStatus = false,
+    bool showDeviceBootstrapAction = false,
+    bool canRunDeviceBootstrap = false,
+    String? deviceBootstrapMessage,
+    Future<DeviceBootstrapResult> Function()? onDeviceBootstrap,
     bool showHistoricalRestoreStatus = false,
     bool showHistoricalRestoreAction = false,
     bool canRunHistoricalRestore = false,
@@ -148,6 +154,10 @@ void main() {
           lastFullSyncAt: appSettings.lastFullSyncAt,
           isSupabaseConfigured: isSupabaseConfigured,
           showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+          showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+          showDeviceBootstrapAction: showDeviceBootstrapAction,
+          canRunDeviceBootstrap: canRunDeviceBootstrap,
+          deviceBootstrapMessage: deviceBootstrapMessage,
           showHistoricalRestoreAction: showHistoricalRestoreAction,
           canRunHistoricalRestore: canRunHistoricalRestore,
           historicalRestoreMessage: historicalRestoreMessage,
@@ -163,6 +173,9 @@ void main() {
           onSyncCloudData:
               onSyncCloudData ??
               () async => const ZeniCloudSyncResult.failure('indisponível'),
+          onDeviceBootstrap:
+              onDeviceBootstrap ??
+              () async => const DeviceBootstrapResult.failure('indisponível'),
           onHistoricalRestore:
               onHistoricalRestore ??
               () async =>
@@ -1967,6 +1980,98 @@ void main() {
     );
   });
 
+  testWidgets('device bootstrap action stays blocked when local data exists', (
+    tester,
+  ) async {
+    var bootstrapCalls = 0;
+
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        showDeviceBootstrapStatus: true,
+        showDeviceBootstrapAction: true,
+        canRunDeviceBootstrap: false,
+        deviceBootstrapMessage: 'Este aparelho já possui dados locais.',
+        onDeviceBootstrap: () async {
+          bootstrapCalls += 1;
+          return const DeviceBootstrapResult.failure('não deveria rodar');
+        },
+      ),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Restaurar dados da nuvem neste aparelho'),
+      300,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Restaurar dados da nuvem neste aparelho'), findsOneWidget);
+    expect(find.text('Este aparelho já possui dados locais.'), findsOneWidget);
+
+    await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+    await tester.pumpAndSettle();
+
+    expect(bootstrapCalls, 0);
+  });
+
+  testWidgets('device bootstrap action can run when applicable', (tester) async {
+    var bootstrapCalls = 0;
+
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        localChildrenCount: 0,
+        localMissionsCount: 0,
+        localRewardsCount: 0,
+        showDeviceBootstrapStatus: true,
+        showDeviceBootstrapAction: true,
+        canRunDeviceBootstrap: true,
+        deviceBootstrapMessage:
+            'Restaure família, crianças, missões e mimos da nuvem neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+        onDeviceBootstrap: () async {
+          bootstrapCalls += 1;
+          return const DeviceBootstrapResult.success(
+            restoredChildrenCount: 1,
+            restoredMissionsCount: 1,
+            restoredRewardsCount: 1,
+            message:
+                'Família, crianças, missões e mimos foram restaurados. Saldo, histórico e sequência não foram trazidos nesta etapa.',
+          );
+        },
+      ),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Restaurar dados da nuvem neste aparelho'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+    await tester.pumpAndSettle();
+
+    expect(bootstrapCalls, 1);
+    expect(
+      find.text(
+        'Família, crianças, missões e mimos foram restaurados. Saldo, histórico e sequência não foram trazidos nesta etapa.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('editing remote family name calls callback and updates UI', (
     tester,
   ) async {
@@ -2022,6 +2127,10 @@ void main() {
                 lastFullSyncAt: null,
                 isSupabaseConfigured: true,
                 showHistoricalRestoreStatus: false,
+                showDeviceBootstrapStatus: false,
+                showDeviceBootstrapAction: false,
+                canRunDeviceBootstrap: false,
+                deviceBootstrapMessage: null,
                 showHistoricalRestoreAction: false,
                 canRunHistoricalRestore: false,
                 historicalRestoreMessage: null,
@@ -2042,6 +2151,8 @@ void main() {
                     },
                 onSyncCloudData: () async =>
                     const ZeniCloudSyncResult.success(),
+                onDeviceBootstrap: () async =>
+                    const DeviceBootstrapResult.failure('indisponível'),
                 onHistoricalRestore: () async =>
                     const HistoricalRestoreResult.failure(
                       status: HistoricalRestoreResultStatus.applyBlocked,

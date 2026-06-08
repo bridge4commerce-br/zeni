@@ -23,6 +23,84 @@ final deviceBootstrapControllerProvider = Provider<DeviceBootstrapController>((
   return DeviceBootstrapController(ref);
 });
 
+final deviceBootstrapActionStateProvider =
+    FutureProvider<DeviceBootstrapActionState>((ref) async {
+      final authState = ref.watch(authStateProvider);
+      if (!ZeniSupabaseBootstrap.state.isAvailable || !authState.isAuthenticated) {
+        return const DeviceBootstrapActionState(
+          isVisible: false,
+          showAction: false,
+          isEnabled: false,
+          message: null,
+        );
+      }
+
+      final localState = await ref.watch(zeniAppStateControllerProvider.future);
+      final remoteFamily = await ref.watch(remoteFamilySummaryProvider.future);
+      if (remoteFamily == null) {
+        return const DeviceBootstrapActionState(
+          isVisible: false,
+          showAction: false,
+          isEnabled: false,
+          message: null,
+        );
+      }
+
+      if (localState.hasUserContent) {
+        return const DeviceBootstrapActionState(
+          isVisible: true,
+          showAction: true,
+          isEnabled: false,
+          message: 'Este aparelho já possui dados locais.',
+        );
+      }
+
+      final remoteChildren =
+          await ref.watch(remoteChildrenProvider.future) ??
+          const [];
+      final remoteMissions =
+          await ref.watch(remoteMissionsProvider.future) ??
+          const <RemoteMissionSummary>[];
+      final remoteRewards =
+          await ref.watch(remoteRewardsProvider.future) ??
+          const [];
+      final hasRemoteCatalogData =
+          remoteChildren.isNotEmpty ||
+          remoteMissions.isNotEmpty ||
+          remoteRewards.isNotEmpty;
+
+      if (!hasRemoteCatalogData) {
+        return const DeviceBootstrapActionState(
+          isVisible: false,
+          showAction: false,
+          isEnabled: false,
+          message: null,
+        );
+      }
+
+      return const DeviceBootstrapActionState(
+        isVisible: true,
+        showAction: true,
+        isEnabled: true,
+        message:
+            'Restaure família, crianças, missões e mimos da nuvem neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+      );
+    });
+
+class DeviceBootstrapActionState {
+  const DeviceBootstrapActionState({
+    required this.isVisible,
+    required this.showAction,
+    required this.isEnabled,
+    required this.message,
+  });
+
+  final bool isVisible;
+  final bool showAction;
+  final bool isEnabled;
+  final String? message;
+}
+
 class DeviceBootstrapController {
   const DeviceBootstrapController(this._ref);
 

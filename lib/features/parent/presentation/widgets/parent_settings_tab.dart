@@ -14,6 +14,7 @@ import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../auth/data/repositories/zeni_account_repository.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../settings/data/models/app_settings.dart';
+import '../../../sync/data/models/device_bootstrap_result.dart';
 import '../../../sync/data/models/cloud_consistency_diagnostic.dart';
 import '../../../sync/data/models/historical_restore_result.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
@@ -59,6 +60,10 @@ class ParentSettingsTab extends StatelessWidget {
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
     required this.showHistoricalRestoreStatus,
+    required this.showDeviceBootstrapStatus,
+    required this.showDeviceBootstrapAction,
+    required this.canRunDeviceBootstrap,
+    required this.deviceBootstrapMessage,
     required this.showHistoricalRestoreAction,
     required this.canRunHistoricalRestore,
     required this.historicalRestoreMessage,
@@ -68,6 +73,7 @@ class ParentSettingsTab extends StatelessWidget {
     required this.onClearLocalDeviceData,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
+    required this.onDeviceBootstrap,
     required this.onHistoricalRestore,
   });
 
@@ -109,6 +115,10 @@ class ParentSettingsTab extends StatelessWidget {
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
   final bool showHistoricalRestoreStatus;
+  final bool showDeviceBootstrapStatus;
+  final bool showDeviceBootstrapAction;
+  final bool canRunDeviceBootstrap;
+  final String? deviceBootstrapMessage;
   final bool showHistoricalRestoreAction;
   final bool canRunHistoricalRestore;
   final String? historicalRestoreMessage;
@@ -122,6 +132,7 @@ class ParentSettingsTab extends StatelessWidget {
   })
   onUpdateRemoteFamilyName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
   final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
@@ -179,6 +190,10 @@ class ParentSettingsTab extends StatelessWidget {
             lastFullSyncAt: lastFullSyncAt,
             isSupabaseConfigured: isSupabaseConfigured,
             showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+            showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+            showDeviceBootstrapAction: showDeviceBootstrapAction,
+            canRunDeviceBootstrap: canRunDeviceBootstrap,
+            deviceBootstrapMessage: deviceBootstrapMessage,
             showHistoricalRestoreAction: showHistoricalRestoreAction,
             canRunHistoricalRestore: canRunHistoricalRestore,
             historicalRestoreMessage: historicalRestoreMessage,
@@ -188,6 +203,7 @@ class ParentSettingsTab extends StatelessWidget {
             onClearLocalDeviceData: onClearLocalDeviceData,
             onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
             onSyncCloudData: onSyncCloudData,
+            onDeviceBootstrap: onDeviceBootstrap,
             onHistoricalRestore: onHistoricalRestore,
           ),
           const SizedBox(height: ZeniSpacing.lg),
@@ -252,6 +268,10 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
     required this.showHistoricalRestoreStatus,
+    required this.showDeviceBootstrapStatus,
+    required this.showDeviceBootstrapAction,
+    required this.canRunDeviceBootstrap,
+    required this.deviceBootstrapMessage,
     required this.showHistoricalRestoreAction,
     required this.canRunHistoricalRestore,
     required this.historicalRestoreMessage,
@@ -261,6 +281,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.onClearLocalDeviceData,
     required this.onUpdateRemoteFamilyName,
     required this.onSyncCloudData,
+    required this.onDeviceBootstrap,
     required this.onHistoricalRestore,
   });
 
@@ -302,6 +323,10 @@ class _ParentSettingsGroup extends StatelessWidget {
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
   final bool showHistoricalRestoreStatus;
+  final bool showDeviceBootstrapStatus;
+  final bool showDeviceBootstrapAction;
+  final bool canRunDeviceBootstrap;
+  final String? deviceBootstrapMessage;
   final bool showHistoricalRestoreAction;
   final bool canRunHistoricalRestore;
   final String? historicalRestoreMessage;
@@ -315,6 +340,7 @@ class _ParentSettingsGroup extends StatelessWidget {
   })
   onUpdateRemoteFamilyName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
   final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
@@ -472,9 +498,14 @@ class _ParentSettingsGroup extends StatelessWidget {
                   onSyncCloudData: onSyncCloudData,
                   lastFullSyncAt: lastFullSyncAt,
                   showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+                  showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+                  showDeviceBootstrapAction: showDeviceBootstrapAction,
+                  canRunDeviceBootstrap: canRunDeviceBootstrap,
+                  deviceBootstrapMessage: deviceBootstrapMessage,
                   showHistoricalRestoreAction: showHistoricalRestoreAction,
                   canRunHistoricalRestore: canRunHistoricalRestore,
                   historicalRestoreMessage: historicalRestoreMessage,
+                  onDeviceBootstrap: onDeviceBootstrap,
                   onHistoricalRestore: onHistoricalRestore,
                 ),
               ],
@@ -696,9 +727,14 @@ class _CloudSyncSection extends StatefulWidget {
     required this.lastFullSyncAt,
     required this.onSyncCloudData,
     required this.showHistoricalRestoreStatus,
+    required this.showDeviceBootstrapStatus,
+    required this.showDeviceBootstrapAction,
+    required this.canRunDeviceBootstrap,
+    required this.deviceBootstrapMessage,
     required this.showHistoricalRestoreAction,
     required this.canRunHistoricalRestore,
     required this.historicalRestoreMessage,
+    required this.onDeviceBootstrap,
     required this.onHistoricalRestore,
   });
 
@@ -727,9 +763,14 @@ class _CloudSyncSection extends StatefulWidget {
   final DateTime? lastFullSyncAt;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
   final bool showHistoricalRestoreStatus;
+  final bool showDeviceBootstrapStatus;
+  final bool showDeviceBootstrapAction;
+  final bool canRunDeviceBootstrap;
+  final String? deviceBootstrapMessage;
   final bool showHistoricalRestoreAction;
   final bool canRunHistoricalRestore;
   final String? historicalRestoreMessage;
+  final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
   final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
 
   @override
@@ -738,8 +779,10 @@ class _CloudSyncSection extends StatefulWidget {
 
 class _CloudSyncSectionState extends State<_CloudSyncSection> {
   bool _isSyncing = false;
+  bool _isBootstrapping = false;
   bool _isRestoring = false;
   String? _errorText;
+  String? _bootstrapMessage;
   String? _restoreMessage;
 
   @override
@@ -925,6 +968,52 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
           ),
         ],
+        if (widget.showDeviceBootstrapStatus || _bootstrapMessage != null) ...[
+          const SizedBox(height: ZeniSpacing.md),
+          if (widget.showDeviceBootstrapAction) ...[
+            ZeniOptionRow(
+              title: 'Restaurar dados da nuvem neste aparelho',
+              subtitle:
+                  'Traz família, crianças, missões e mimos. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+              leading: const Icon(
+                Icons.cloud_download_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              trailing: Text(
+                _isBootstrapping ? 'Restaurando...' : 'Restaurar',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
+              ),
+              enabled: widget.canRunDeviceBootstrap && !_isBootstrapping,
+              onTap: widget.canRunDeviceBootstrap && !_isBootstrapping
+                  ? _restoreDeviceBootstrap
+                  : null,
+            ),
+            const SizedBox(height: ZeniSpacing.xs),
+          ],
+          if (_bootstrapMessage == null && widget.deviceBootstrapMessage != null)
+            Text(
+              widget.deviceBootstrapMessage!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+            ),
+          if (_bootstrapMessage != null) ...[
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              _bootstrapMessage!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color:
+                    _bootstrapMessage!.startsWith(
+                      'Família, crianças, missões e mimos foram restaurados.',
+                    )
+                    ? ZeniColors.primaryDark
+                    : Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+        ],
         if (widget.showHistoricalRestoreStatus || _restoreMessage != null) ...[
           const SizedBox(height: ZeniSpacing.md),
           if (widget.showHistoricalRestoreAction) ...[
@@ -1043,6 +1132,21 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
     setState(() {
       _isRestoring = false;
       _restoreMessage = result.message;
+    });
+  }
+
+  Future<void> _restoreDeviceBootstrap() async {
+    setState(() {
+      _isBootstrapping = true;
+      _bootstrapMessage = null;
+    });
+
+    final result = await widget.onDeviceBootstrap();
+    if (!mounted) return;
+
+    setState(() {
+      _isBootstrapping = false;
+      _bootstrapMessage = result.message;
     });
   }
 }

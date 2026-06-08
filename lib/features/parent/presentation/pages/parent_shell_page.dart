@@ -45,6 +45,7 @@ import '../../../settings/data/models/app_settings.dart';
 import '../../../sync/data/models/historical_restore_result.dart';
 import '../../../sync/presentation/providers/cloud_consistency_providers.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
+import '../../../sync/presentation/providers/device_bootstrap_providers.dart';
 import '../../../sync/presentation/providers/historical_restore_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
@@ -895,6 +896,14 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               isEnabled: false,
               message: null,
             );
+        final deviceBootstrapActionState =
+            ref.watch(deviceBootstrapActionStateProvider).asData?.value ??
+            const DeviceBootstrapActionState(
+              isVisible: false,
+              showAction: false,
+              isEnabled: false,
+              message: null,
+            );
 
         final pages = [
           _ParentDashboardPage(
@@ -1006,6 +1015,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             lastFullSyncAt: appData.appSettings.lastFullSyncAt,
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
             showHistoricalRestoreStatus: historicalRestoreActionState.isVisible,
+            showDeviceBootstrapStatus: deviceBootstrapActionState.isVisible,
+            showDeviceBootstrapAction: deviceBootstrapActionState.showAction,
+            canRunDeviceBootstrap: deviceBootstrapActionState.isEnabled,
+            deviceBootstrapMessage: deviceBootstrapActionState.message,
             showHistoricalRestoreAction:
                 historicalRestoreActionState.showAction,
             canRunHistoricalRestore: historicalRestoreActionState.isEnabled,
@@ -1023,6 +1036,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               return ref
                   .read(zeniCloudSyncControllerProvider)
                   .syncCloudDataNow();
+            },
+            onDeviceBootstrap: () {
+              return ref
+                  .read(deviceBootstrapControllerProvider)
+                  .bootstrapFromRemoteFamily();
             },
             onHistoricalRestore: () {
               return ref
