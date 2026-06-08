@@ -3060,6 +3060,13 @@ void main() {
     tester,
   ) async {
     seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
     final fakeAuthRepository = _FakeZeniAuthRepository(
       initialUser: const ZeniAuthUser(
         id: 'user-1',
@@ -3090,7 +3097,288 @@ void main() {
 
     expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
     expect(find.text('Excluir conta e dados da nuvem'), findsOneWidget);
-    expect(find.text('Em breve'), findsOneWidget);
+    expect(
+      find.text('Remove a conta e os dados da família salvos na nuvem. Os dados deste aparelho não serão apagados automaticamente.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('remote account deletion requires typing EXCLUIR before calling the function', (
+    tester,
+  ) async {
+    seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final fakeAuthRepository = _FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final fakeAccountRepository = _FakeZeniAccountRepository(
+      summary: const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAccountRepository.deleteCalls, 0);
+    final deleteButton = find.widgetWithText(
+      ElevatedButton,
+      'Excluir conta e dados da nuvem',
+    );
+    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const Key('delete-account-confirm-input')),
+      'EXCL',
+    );
+    await tester.pumpAndSettle();
+    expect(fakeAccountRepository.deleteCalls, 0);
+    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const Key('delete-account-confirm-input')),
+      'EXCLUIR',
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNotNull);
+    expect(fakeAccountRepository.deleteCalls, 0);
+  });
+
+  testWidgets('remote account deletion success signs out and preserves local data', (
+    tester,
+  ) async {
+    seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final fakeAuthRepository = _FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final fakeAccountRepository = _FakeZeniAccountRepository(
+      summary: const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+      deleteResult: const ZeniDeleteAccountResult.success(
+        familyId: 'family-1',
+        message: 'Sua conta e os dados da família foram removidos da nuvem.',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+    final before = await container.read(zeniAppStateControllerProvider.future);
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('delete-account-confirm-input')),
+      'EXCLUIR',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
+    );
+    await tester.pumpAndSettle();
+
+    final after = await container.read(zeniAppStateControllerProvider.future);
+    expect(fakeAccountRepository.deleteCalls, 1);
+    expect(fakeAuthRepository.signOutCalls, 1);
+    expect(container.read(authStateProvider).isAuthenticated, isFalse);
+    expect(
+      find.text('Sua conta e os dados da família foram removidos da nuvem.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Os dados deste aparelho continuam salvos localmente.'),
+      findsOneWidget,
+    );
+    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
+
+  testWidgets('remote account deletion failure shows inline error and does not sign out', (
+    tester,
+  ) async {
+    seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final fakeAuthRepository = _FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final fakeAccountRepository = _FakeZeniAccountRepository(
+      summary: const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+      deleteResult: const ZeniDeleteAccountResult.failure(
+        message:
+            'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
+        errorCode: 'auth_delete_failed',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('delete-account-confirm-input')),
+      'EXCLUIR',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(fakeAccountRepository.deleteCalls, 1);
+    expect(fakeAuthRepository.signOutCalls, 0);
+    expect(container.read(authStateProvider).isAuthenticated, isTrue);
+    expect(
+      find.text(
+        'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unauthenticated user sees controlled remote deletion block without calling the function', (
+    tester,
+  ) async {
+    seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final fakeAuthRepository = _FakeZeniAuthRepository();
+    final fakeAccountRepository = _FakeZeniAccountRepository(
+      summary: null,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerenciar dados e conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('delete-account-confirm-input')),
+      'EXCLUIR',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(fakeAccountRepository.deleteCalls, 0);
+    expect(fakeAuthRepository.signOutCalls, 0);
+    expect(
+      find.text('Faça login para excluir conta e dados da nuvem.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -3409,9 +3697,17 @@ class _FakeZeniAuthRepository implements ZeniAuthRepository {
 }
 
 class _FakeZeniAccountRepository implements ZeniAccountRepository {
-  _FakeZeniAccountRepository({required this.summary});
+  _FakeZeniAccountRepository({
+    required this.summary,
+    this.deleteResult = const ZeniDeleteAccountResult.success(
+      familyId: 'family-1',
+      message: 'Sua conta e os dados da família foram removidos da nuvem.',
+    ),
+  });
 
   final RemoteFamilySummary? summary;
+  final ZeniDeleteAccountResult deleteResult;
+  int deleteCalls = 0;
 
   @override
   bool get isConfigured => true;
@@ -3452,6 +3748,12 @@ class _FakeZeniAccountRepository implements ZeniAccountRepository {
         email: summary!.email,
       ),
     );
+  }
+
+  @override
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
+    deleteCalls += 1;
+    return deleteResult;
   }
 }
 

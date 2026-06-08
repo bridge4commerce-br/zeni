@@ -23,6 +23,7 @@ import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../auth/local/parent_biometric_auth.dart';
+import '../../../auth/data/repositories/zeni_account_repository.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
@@ -822,6 +823,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             Navigator.of(sheetContext).pop();
             await _confirmAndClearLocalDeviceData();
           },
+          onDeleteAccountAndRemoteFamily: () async {
+            return ref
+                .read(zeniAccountControllerProvider)
+                .deleteAccountAndRemoteFamily();
+          },
         );
       },
     );
@@ -1321,9 +1327,14 @@ class _ClearLocalDeviceDataSheetState extends State<_ClearLocalDeviceDataSheet> 
 }
 
 class _ManageAccountAndDataSheet extends StatelessWidget {
-  const _ManageAccountAndDataSheet({required this.onClearLocalDeviceData});
+  const _ManageAccountAndDataSheet({
+    required this.onClearLocalDeviceData,
+    required this.onDeleteAccountAndRemoteFamily,
+  });
 
   final Future<void> Function() onClearLocalDeviceData;
+  final Future<ZeniDeleteAccountResult> Function()
+  onDeleteAccountAndRemoteFamily;
 
   @override
   Widget build(BuildContext context) {
@@ -1360,22 +1371,197 @@ class _ManageAccountAndDataSheet extends StatelessWidget {
           ZeniOptionRow(
             title: 'Excluir conta e dados da nuvem',
             subtitle:
-                'Excluir conta e dados da nuvem será feito em uma etapa segura separada. Enquanto isso, entre em contato com o suporte.',
+                'Remove a conta e os dados da família salvos na nuvem. Os dados deste aparelho não serão apagados automaticamente.',
             leading: Icon(
               Icons.cloud_off_rounded,
               color: Theme.of(context).colorScheme.error,
             ),
             trailing: Text(
-              'Em breve',
+              'Excluir',
               style: Theme.of(
                 context,
-              ).textTheme.labelLarge?.copyWith(color: ZeniColors.mutedText),
+              ).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
-            enabled: false,
+            onTap: () => _openDeleteAccountSheet(context),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _openDeleteAccountSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: _DeleteAccountAndRemoteFamilySheet(
+            onConfirm: onDeleteAccountAndRemoteFamily,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DeleteAccountAndRemoteFamilySheet extends StatefulWidget {
+  const _DeleteAccountAndRemoteFamilySheet({required this.onConfirm});
+
+  final Future<ZeniDeleteAccountResult> Function() onConfirm;
+
+  @override
+  State<_DeleteAccountAndRemoteFamilySheet> createState() =>
+      _DeleteAccountAndRemoteFamilySheetState();
+}
+
+class _DeleteAccountAndRemoteFamilySheetState
+    extends State<_DeleteAccountAndRemoteFamilySheet> {
+  final TextEditingController _confirmController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorText;
+  String? _successText;
+
+  @override
+  void dispose() {
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isConfirmationValid = _confirmController.text.trim() == 'EXCLUIR';
+
+    return ZeniModalSheetContainer(
+      title: 'Excluir conta e dados da nuvem',
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Excluir conta e dados da nuvem remove sua conta e os dados da família salvos na nuvem.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Esta ação não pode ser desfeita.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Os dados salvos neste aparelho não serão apagados automaticamente.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.xs),
+            Text(
+              'Você poderá apagar os dados locais separadamente depois.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.lg),
+            ZeniTextInput(
+              key: const Key('delete-account-confirm-input'),
+              controller: _confirmController,
+              label: 'Confirmação',
+              hint: 'Digite EXCLUIR',
+              textCapitalization: TextCapitalization.characters,
+              enabled: !_isSubmitting && _successText == null,
+              onChanged: (_) {
+                setState(() {
+                  _errorText = null;
+                });
+              },
+            ),
+            if (_errorText != null) ...[
+              const SizedBox(height: ZeniSpacing.sm),
+              Text(
+                _errorText!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+            if (_successText != null) ...[
+              const SizedBox(height: ZeniSpacing.sm),
+              Text(
+                _successText!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: ZeniColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: ZeniSpacing.xs),
+              Text(
+                'Os dados deste aparelho continuam salvos localmente.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+              ),
+            ],
+            const SizedBox(height: ZeniSpacing.lg),
+            ZeniSecondaryButton(
+              label: _successText == null ? 'Cancelar' : 'Fechar',
+              onPressed:
+                  _isSubmitting ? null : () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniPrimaryButton(
+              label: _isSubmitting
+                  ? 'Excluindo...'
+                  : 'Excluir conta e dados da nuvem',
+              onPressed: (_isSubmitting ||
+                      !isConfirmationValid ||
+                      _successText != null)
+                  ? null
+                  : _confirm,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirm() async {
+    if (_confirmController.text.trim() != 'EXCLUIR') {
+      setState(() {
+        _errorText = 'Digite EXCLUIR para confirmar.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+      _successText = null;
+    });
+
+    final result = await widget.onConfirm();
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+      if (result.isSuccess) {
+        _successText =
+            result.message ?? 'Sua conta e os dados da família foram removidos da nuvem.';
+      } else {
+        _errorText =
+            result.message ??
+            'Não foi possível excluir conta e dados da nuvem agora.';
+      }
+    });
   }
 }
 

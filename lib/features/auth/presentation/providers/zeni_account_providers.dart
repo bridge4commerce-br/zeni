@@ -1,6 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/supabase/zeni_supabase.dart';
+import '../../../family/presentation/providers/remote_children_providers.dart';
+import '../../../rewards/presentation/providers/remote_reward_requests_providers.dart';
+import '../../../rewards/presentation/providers/remote_rewards_providers.dart';
+import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
+import '../../../tasks/presentation/providers/remote_missions_providers.dart';
 import '../../data/repositories/supabase_account_repository.dart';
 import '../../data/repositories/zeni_account_repository.dart';
 import 'zeni_auth_providers.dart';
@@ -78,5 +83,45 @@ class ZeniAccountController {
         .updateRemoteFamilyName(familyId: familyId, name: name);
     _ref.invalidate(remoteFamilySummaryProvider);
     return result;
+  }
+
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
+    if (!ZeniSupabaseBootstrap.state.isAvailable) {
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Conta remota indisponível neste build.',
+        errorCode: 'not_available',
+      );
+    }
+
+    final authState = _ref.read(authStateProvider);
+    if (!authState.isAuthenticated) {
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Faça login para excluir conta e dados da nuvem.',
+        errorCode: 'not_authenticated',
+      );
+    }
+
+    final result = await _ref
+        .read(accountRepositoryProvider)
+        .deleteAccountAndRemoteFamily();
+    if (!result.isSuccess) {
+      return result;
+    }
+
+    final signOutResult = await _ref.read(zeniAuthControllerProvider).signOut();
+    if (!signOutResult.isSuccess) {
+      _ref.read(authStateProvider.notifier).setSignedOut();
+      _ref.invalidate(remoteFamilySummaryProvider);
+      _ref.invalidate(remoteChildrenProvider);
+      _ref.invalidate(remoteMissionsProvider);
+      _ref.invalidate(remoteRewardsProvider);
+      _ref.invalidate(remoteMissionLogsProvider);
+      _ref.invalidate(remoteRewardRequestsProvider);
+    }
+
+    return ZeniDeleteAccountResult.success(
+      familyId: result.familyId,
+      message: result.message,
+    );
   }
 }

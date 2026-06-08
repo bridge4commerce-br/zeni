@@ -54,6 +54,40 @@ class ZeniUpdateRemoteFamilyResult {
   final String? message;
 }
 
+class ZeniDeleteAccountResult {
+  const ZeniDeleteAccountResult({
+    required this.isSuccess,
+    this.familyId,
+    this.message,
+    this.errorCode,
+  });
+
+  const ZeniDeleteAccountResult.success({
+    String? familyId,
+    String? message,
+  }) : this(
+         isSuccess: true,
+         familyId: familyId,
+         message: message,
+       );
+
+  const ZeniDeleteAccountResult.failure({
+    String? familyId,
+    String? message,
+    String? errorCode,
+  }) : this(
+         isSuccess: false,
+         familyId: familyId,
+         message: message,
+         errorCode: errorCode,
+       );
+
+  final bool isSuccess;
+  final String? familyId;
+  final String? message;
+  final String? errorCode;
+}
+
 abstract class ZeniAccountRepository {
   bool get isConfigured;
 
@@ -65,4 +99,6 @@ abstract class ZeniAccountRepository {
     required String familyId,
     required String name,
   });
+
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily();
 }

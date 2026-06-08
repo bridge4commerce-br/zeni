@@ -879,6 +879,100 @@ void main() {
     },
   );
 
+  test('remote account deletion succeeds, signs out, and preserves local data', () async {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(ZeniAppState.seeded().toJson()),
+    });
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final authRepository = _TestAuthRepository();
+    final accountRepository = _FakeAccountRepository(
+      deleteResult: const ZeniDeleteAccountResult.success(
+        familyId: 'family-1',
+        message: 'Sua conta e os dados da família foram removidos da nuvem.',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        accountRepositoryProvider.overrideWithValue(accountRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    final before = await container.read(zeniAppStateControllerProvider.future);
+
+    final result = await container
+        .read(zeniAccountControllerProvider)
+        .deleteAccountAndRemoteFamily();
+
+    final after = await container.read(zeniAppStateControllerProvider.future);
+    expect(result.isSuccess, isTrue);
+    expect(accountRepository.deleteCalls, 1);
+    expect(authRepository.signOutCalls, 1);
+    expect(container.read(authStateProvider).isAuthenticated, isFalse);
+    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
+
+  test('remote account deletion failure does not sign out or clear local data', () async {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(ZeniAppState.seeded().toJson()),
+    });
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final authRepository = _TestAuthRepository();
+    final accountRepository = _FakeAccountRepository(
+      deleteResult: const ZeniDeleteAccountResult.failure(
+        message:
+            'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
+        errorCode: 'auth_delete_failed',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        accountRepositoryProvider.overrideWithValue(accountRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    final before = await container.read(zeniAppStateControllerProvider.future);
+
+    final result = await container
+        .read(zeniAccountControllerProvider)
+        .deleteAccountAndRemoteFamily();
+
+    final after = await container.read(zeniAppStateControllerProvider.future);
+    expect(result.isSuccess, isFalse);
+    expect(result.errorCode, 'auth_delete_failed');
+    expect(accountRepository.deleteCalls, 1);
+    expect(authRepository.signOutCalls, 0);
+    expect(container.read(authStateProvider).isAuthenticated, isTrue);
+    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
+
   test(
     'local child generates remote payload with family_id and local_id',
     () async {
@@ -4233,12 +4327,18 @@ class _FakeAccountRepository implements ZeniAccountRepository {
         role: 'owner',
       ),
     ),
+    this.deleteResult = const ZeniDeleteAccountResult.success(
+      familyId: 'family-1',
+      message: 'Sua conta e os dados da família foram removidos da nuvem.',
+    ),
   });
 
   final ZeniEnsureRemoteFamilyResult ensureResult;
   final ZeniUpdateRemoteFamilyResult updateResult;
+  final ZeniDeleteAccountResult deleteResult;
   int ensureCalls = 0;
   int updateCalls = 0;
+  int deleteCalls = 0;
 
   @override
   bool get isConfigured => true;
@@ -4262,6 +4362,12 @@ class _FakeAccountRepository implements ZeniAccountRepository {
   }) async {
     updateCalls += 1;
     return updateResult;
+  }
+
+  @override
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
+    deleteCalls += 1;
+    return deleteResult;
   }
 }
 

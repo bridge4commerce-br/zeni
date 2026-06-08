@@ -121,6 +121,50 @@ class SupabaseAccountRepository implements ZeniAccountRepository {
     }
   }
 
+  @override
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
+    final client = _client;
+    if (client == null) {
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Conta remota indisponível neste build.',
+        errorCode: 'not_available',
+      );
+    }
+
+    if (client.auth.currentUser == null) {
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Faça login para excluir conta e dados da nuvem.',
+        errorCode: 'not_authenticated',
+      );
+    }
+
+    try {
+      final response = await client.functions.invoke(
+        'delete-account',
+        body: const <String, dynamic>{},
+      );
+      final data = response.data as Map<String, dynamic>? ?? const {};
+      return _parseDeleteAccountResult(data);
+    } on FunctionException catch (error) {
+      _debugLog('deleteAccountAndRemoteFamily error: ${error.details}');
+      final details = error.details;
+      if (details is Map<String, dynamic>) {
+        return _parseDeleteAccountResult(details);
+      }
+
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Não foi possível excluir conta e dados da nuvem agora.',
+        errorCode: 'unexpected_error',
+      );
+    } catch (error) {
+      _debugLog('deleteAccountAndRemoteFamily unexpected error: $error');
+      return const ZeniDeleteAccountResult.failure(
+        message: 'Não foi possível excluir conta e dados da nuvem agora.',
+        errorCode: 'unexpected_error',
+      );
+    }
+  }
+
   RemoteFamilySummary _parseSummary(Map<String, dynamic> data) {
     final family = data['family'] as Map<String, dynamic>? ?? const {};
     return RemoteFamilySummary(
@@ -137,6 +181,39 @@ class SupabaseAccountRepository implements ZeniAccountRepository {
       role: data['role'] as String? ?? 'owner',
       email: data['email'] as String?,
     );
+  }
+
+  ZeniDeleteAccountResult _parseDeleteAccountResult(Map<String, dynamic> data) {
+    final isSuccess = data['success'] == true;
+    final familyId = data['family_id'] as String?;
+    final message = data['message'] as String?;
+    final errorCode = data['error_code'] as String?;
+    if (isSuccess) {
+      return ZeniDeleteAccountResult.success(
+        familyId: familyId,
+        message: message ?? 'Sua conta e os dados da família foram removidos da nuvem.',
+      );
+    }
+
+    return ZeniDeleteAccountResult.failure(
+      familyId: familyId,
+      message: message ?? _messageForDeleteErrorCode(errorCode),
+      errorCode: errorCode ?? 'unexpected_error',
+    );
+  }
+
+  String _messageForDeleteErrorCode(String? errorCode) {
+    return switch (errorCode) {
+      'not_authenticated' => 'Faça login para excluir conta e dados da nuvem.',
+      'not_owner' =>
+        'Apenas o responsável principal pode excluir a família da nuvem.',
+      'family_has_multiple_members' =>
+        'Esta família possui mais de um responsável. A exclusão completa ainda não está disponível neste caso.',
+      'no_family' => 'Nenhuma família remota foi encontrada para esta conta.',
+      'auth_delete_failed' =>
+        'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
+      _ => 'Não foi possível excluir conta e dados da nuvem agora.',
+    };
   }
 
   void _debugLog(String message) {

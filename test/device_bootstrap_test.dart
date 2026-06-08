@@ -427,6 +427,14 @@ class _TestBootstrapAccountRepository implements ZeniAccountRepository {
       ),
     );
   }
+
+  @override
+  Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
+    return const ZeniDeleteAccountResult.failure(
+      message: 'indisponível neste teste',
+      errorCode: 'not_supported_in_test',
+    );
+  }
 }
 
 class _TestBootstrapChildrenRepository implements RemoteChildrenRepository {
