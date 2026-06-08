@@ -147,6 +147,16 @@ class DeviceBootstrapController {
           .read(remoteRewardsRepositoryProvider)
           .getRemoteRewards(familyId: remoteFamily.familyId);
 
+      final hasRemoteCatalogData =
+          remoteChildren.isNotEmpty ||
+          remoteMissions.isNotEmpty ||
+          remoteRewards.isNotEmpty;
+      if (!hasRemoteCatalogData) {
+        return const DeviceBootstrapResult.failure(
+          'Nenhum dado remoto foi encontrado para restaurar.',
+        );
+      }
+
       final payload = _ref
           .read(remoteDeviceBootstrapMapperProvider)
           .map(

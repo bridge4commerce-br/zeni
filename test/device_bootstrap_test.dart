@@ -299,6 +299,15 @@ void main() {
         familyName: 'Família Remota',
         role: 'owner',
       ),
+      remoteChildren: const [
+        RemoteChildSummary(
+          id: 'remote-child-1',
+          familyId: 'remote-family',
+          localId: 'local-child-1',
+          name: 'Luna',
+          avatarKey: '🦊',
+        ),
+      ],
     );
 
     final result = await container

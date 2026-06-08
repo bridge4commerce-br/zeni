@@ -730,7 +730,7 @@ void main() {
 
       expect(
         find.text(
-          'Vamos restaurar a estrutura da sua família. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+          'Faça login para continuar. Depois disso, você poderá restaurar família, crianças, missões e mimos salvos na nuvem.',
         ),
         findsOneWidget,
       );
@@ -841,6 +841,25 @@ void main() {
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
 
+      expect(
+        find.text(
+          'Conta conectada. Agora você pode restaurar família, crianças, missões e mimos neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Restaurar dados da nuvem neste aparelho'),
+        findsOneWidget,
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Restaurar dados da nuvem neste aparelho'),
+        300,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
       expect(find.text('Luna'), findsOneWidget);
       expect(find.text('Entrar como responsável'), findsOneWidget);
@@ -852,7 +871,85 @@ void main() {
       expect(state.children, hasLength(1));
       expect(state.missions, hasLength(1));
       expect(state.rewards, hasLength(1));
+      expect(state.children.single.starBalance, 0);
+      expect(state.children.single.streakCount, 0);
+      expect(state.missionLogs, isEmpty);
+      expect(state.rewardRequests, isEmpty);
+      expect(state.starLedgerEntries, isEmpty);
       expect(state.appSettings.hasCompletedOnboarding, isTrue);
+    },
+  );
+
+  testWidgets(
+    'already have account shows controlled message when no remote data exists',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await enableSupabaseForTests();
+      addTearDown(ZeniSupabaseBootstrap.resetForTests);
+
+      final fakeAuthRepository = _FakeZeniAuthRepository();
+      final fakeAccountRepository = _FakeZeniAccountRepository(
+        summary: const RemoteFamilySummary(
+          familyId: 'remote-family',
+          familyName: 'Família Remota',
+          role: 'owner',
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+          accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(children: const []),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(missions: const []),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(rewards: const []),
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await fakeAuthRepository.dispose();
+        container.dispose();
+      });
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
+
+      await completeInstitutionalOnboarding(tester);
+      await tester.tap(find.text('Já tenho conta'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('auth-email-input')),
+        'responsavel@zeni.app',
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth-password-input')),
+        '123456',
+      );
+      await tester.ensureVisible(find.text('Entrar').last);
+      await tester.tap(find.text('Entrar').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Restaurar dados da nuvem neste aparelho'),
+        300,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nenhum dado remoto foi encontrado para restaurar.'),
+        findsOneWidget,
+      );
+      expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
     },
   );
 

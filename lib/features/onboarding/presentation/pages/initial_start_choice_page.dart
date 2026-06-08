@@ -22,6 +22,7 @@ class InitialStartChoicePage extends ConsumerStatefulWidget {
 
 class _InitialStartChoicePageState
     extends ConsumerState<InitialStartChoicePage> {
+  bool _isReadyToRestore = false;
   bool _isRestoring = false;
   bool _restorationFailed = false;
   String? _restoreMessage;
@@ -60,7 +61,7 @@ class _InitialStartChoicePageState
             _ChoiceCard(
               title: 'Já tenho conta',
               subtitle:
-                  'Entre com sua conta para restaurar família, crianças, missões e mimos salvos na nuvem.',
+                  'Use sua conta para recuperar uma família já sincronizada neste aparelho.',
               icon: Icons.cloud_sync_rounded,
               onTap: _startRemoteRestore,
             ),
@@ -96,6 +97,16 @@ class _InitialStartChoicePageState
                 ),
               ),
             ],
+            if (_isReadyToRestore) ...[
+              const SizedBox(height: ZeniSpacing.lg),
+              ZeniPrimaryButton(
+                label: _isRestoring
+                    ? 'Restaurando dados da nuvem...'
+                    : 'Restaurar dados da nuvem neste aparelho',
+                icon: Icons.cloud_download_rounded,
+                onPressed: _isRestoring ? null : _runRemoteRestore,
+              ),
+            ],
             const SizedBox(height: ZeniSpacing.xl),
             ZeniPrimaryButton(
               label: 'Começar nova família',
@@ -112,10 +123,11 @@ class _InitialStartChoicePageState
 
   Future<void> _startRemoteRestore() async {
     setState(() {
+      _isReadyToRestore = false;
       _isRestoring = false;
       _restorationFailed = false;
       _restoreMessage =
-          'Vamos restaurar a estrutura da sua família. Saldo, histórico e sequência não serão trazidos nesta etapa.';
+          'Faça login para continuar. Depois disso, você poderá restaurar família, crianças, missões e mimos salvos na nuvem.';
     });
 
     final didAuthenticate = await showModalBottomSheet<bool>(
@@ -137,6 +149,16 @@ class _InitialStartChoicePageState
     if (!mounted || didAuthenticate != true) return;
 
     setState(() {
+      _isReadyToRestore = true;
+      _isRestoring = false;
+      _restorationFailed = false;
+      _restoreMessage =
+          'Conta conectada. Agora você pode restaurar família, crianças, missões e mimos neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.';
+    });
+  }
+
+  Future<void> _runRemoteRestore() async {
+    setState(() {
       _isRestoring = true;
       _restorationFailed = false;
       _restoreMessage =
@@ -152,6 +174,9 @@ class _InitialStartChoicePageState
       _isRestoring = false;
       _restorationFailed = !result.isSuccess;
       _restoreMessage = result.message;
+      if (result.isSuccess) {
+        _isReadyToRestore = false;
+      }
     });
   }
 }
