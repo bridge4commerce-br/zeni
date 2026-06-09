@@ -428,8 +428,13 @@ class _ParentSettingsGroup extends StatelessWidget {
               onChanged: onReadAloudByChildProfileChanged,
             ),
             const SizedBox(height: ZeniSpacing.sm),
-            Text('Conta e dados', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Conta e dados',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: ZeniSpacing.md),
+            Text('Conta', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: ZeniSpacing.sm),
             if (!authState.isAuthenticated) ...[
               ZeniOptionRow(
                 title: 'Criar conta para sincronizar',
@@ -452,63 +457,6 @@ class _ParentSettingsGroup extends StatelessWidget {
                   color: ZeniColors.primaryDark,
                 ),
               ),
-              if (remoteFamilySummary != null) ...[
-                const SizedBox(height: ZeniSpacing.sm),
-                ZeniOptionRow(
-                  title: 'Família remota preparada',
-                  subtitle:
-                      '${remoteFamilySummary!.familyName} · ${remoteFamilySummary!.roleLabel}',
-                  leading: const Icon(
-                    Icons.cloud_done_rounded,
-                    color: ZeniColors.primaryDark,
-                  ),
-                  trailing: Text(
-                    'Editar',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: ZeniColors.primaryDark,
-                    ),
-                  ),
-                  onTap: () =>
-                      _openRemoteFamilyNameSheet(context, remoteFamilySummary!),
-                ),
-                const SizedBox(height: ZeniSpacing.sm),
-                _CloudSyncSection(
-                  localChildrenCount: localChildrenCount,
-                  remoteChildrenCount: remoteChildrenCount,
-                  localMissionsCount: localMissionsCount,
-                  remoteMissionsCount: remoteMissionsCount,
-                  localRewardsCount: localRewardsCount,
-                  remoteRewardsCount: remoteRewardsCount,
-                  localMissionLogsCount: localMissionLogsCount,
-                  remoteMissionLogsCount: remoteMissionLogsCount,
-                  localRewardRequestsCount: localRewardRequestsCount,
-                  remoteRewardRequestsCount: remoteRewardRequestsCount,
-                  localStarLedgerCount: localStarLedgerCount,
-                  remoteStarLedgerCount: remoteStarLedgerCount,
-                  childBalanceDiagnostics: childBalanceDiagnostics,
-                  hasRemoteChildBalanceData: hasRemoteChildBalanceData,
-                  cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
-                  cloudConsistencyErrorText: cloudConsistencyErrorText,
-                  lastChildrenSyncAt: lastChildrenSyncAt,
-                  lastMissionsSyncAt: lastMissionsSyncAt,
-                  lastRewardsSyncAt: lastRewardsSyncAt,
-                  lastMissionLogsSyncAt: lastMissionLogsSyncAt,
-                  lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
-                  lastStarLedgerSyncAt: lastStarLedgerSyncAt,
-                  onSyncCloudData: onSyncCloudData,
-                  lastFullSyncAt: lastFullSyncAt,
-                  showHistoricalRestoreStatus: showHistoricalRestoreStatus,
-                  showDeviceBootstrapStatus: showDeviceBootstrapStatus,
-                  showDeviceBootstrapAction: showDeviceBootstrapAction,
-                  canRunDeviceBootstrap: canRunDeviceBootstrap,
-                  deviceBootstrapMessage: deviceBootstrapMessage,
-                  showHistoricalRestoreAction: showHistoricalRestoreAction,
-                  canRunHistoricalRestore: canRunHistoricalRestore,
-                  historicalRestoreMessage: historicalRestoreMessage,
-                  onDeviceBootstrap: onDeviceBootstrap,
-                  onHistoricalRestore: onHistoricalRestore,
-                ),
-              ],
               const SizedBox(height: ZeniSpacing.sm),
               ZeniOptionRow(
                 title: 'Sair da conta',
@@ -522,14 +470,123 @@ class _ParentSettingsGroup extends StatelessWidget {
               ),
             ],
             const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Neste aparelho',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Os dados locais ficam salvos neste aparelho para o Zeni funcionar mesmo offline.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
-              title: 'Gerenciar dados e conta',
-              subtitle: 'Ações avançadas sobre dados locais e conta.',
-              leading: const Icon(
-                Icons.manage_accounts_rounded,
-                color: ZeniColors.primaryDark,
+              title: 'Apagar dados deste aparelho',
+              subtitle:
+                  'Remove crianças, missões, mimos, histórico, saldo e configurações locais sensíveis deste aparelho.',
+              leading: Icon(
+                Icons.delete_forever_rounded,
+                color: Theme.of(context).colorScheme.error,
               ),
-              onTap: onManageAccountAndData,
+              trailing: Text(
+                'Apagar',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              onTap: () async {
+                await onClearLocalDeviceData();
+              },
+            ),
+            const SizedBox(height: ZeniSpacing.md),
+            Text('Na nuvem', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Quando você sincroniza, uma cópia segura dos dados principais fica vinculada à sua conta.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            if (authState.isAuthenticated && remoteFamilySummary != null) ...[
+              ZeniOptionRow(
+                title: 'Família remota preparada',
+                subtitle:
+                    '${remoteFamilySummary!.familyName} · ${remoteFamilySummary!.roleLabel}',
+                leading: const Icon(
+                  Icons.cloud_done_rounded,
+                  color: ZeniColors.primaryDark,
+                ),
+                trailing: Text(
+                  'Editar',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: ZeniColors.primaryDark,
+                  ),
+                ),
+                onTap: () =>
+                    _openRemoteFamilyNameSheet(context, remoteFamilySummary!),
+              ),
+              const SizedBox(height: ZeniSpacing.sm),
+              _CloudSyncSection(
+                localChildrenCount: localChildrenCount,
+                remoteChildrenCount: remoteChildrenCount,
+                localMissionsCount: localMissionsCount,
+                remoteMissionsCount: remoteMissionsCount,
+                localRewardsCount: localRewardsCount,
+                remoteRewardsCount: remoteRewardsCount,
+                localMissionLogsCount: localMissionLogsCount,
+                remoteMissionLogsCount: remoteMissionLogsCount,
+                localRewardRequestsCount: localRewardRequestsCount,
+                remoteRewardRequestsCount: remoteRewardRequestsCount,
+                localStarLedgerCount: localStarLedgerCount,
+                remoteStarLedgerCount: remoteStarLedgerCount,
+                childBalanceDiagnostics: childBalanceDiagnostics,
+                hasRemoteChildBalanceData: hasRemoteChildBalanceData,
+                cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
+                cloudConsistencyErrorText: cloudConsistencyErrorText,
+                lastChildrenSyncAt: lastChildrenSyncAt,
+                lastMissionsSyncAt: lastMissionsSyncAt,
+                lastRewardsSyncAt: lastRewardsSyncAt,
+                lastMissionLogsSyncAt: lastMissionLogsSyncAt,
+                lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
+                lastStarLedgerSyncAt: lastStarLedgerSyncAt,
+                onSyncCloudData: onSyncCloudData,
+                lastFullSyncAt: lastFullSyncAt,
+                showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+                showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+                showDeviceBootstrapAction: showDeviceBootstrapAction,
+                canRunDeviceBootstrap: canRunDeviceBootstrap,
+                deviceBootstrapMessage: deviceBootstrapMessage,
+                showHistoricalRestoreAction: showHistoricalRestoreAction,
+                canRunHistoricalRestore: canRunHistoricalRestore,
+                historicalRestoreMessage: historicalRestoreMessage,
+                onDeviceBootstrap: onDeviceBootstrap,
+                onHistoricalRestore: onHistoricalRestore,
+              ),
+            ],
+            if (authState.isAuthenticated && remoteFamilySummary == null)
+              Text(
+                'Entre com uma conta preparada para ver o status da família na nuvem.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+              ),
+            const SizedBox(height: ZeniSpacing.md),
+            Text(
+              'Excluir conta e dados da nuvem',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
+              title: 'Excluir conta e dados da nuvem',
+              subtitle:
+                  'Exclusão da conta e dados da nuvem ainda não está disponível nesta versão.',
+              leading: Icon(
+                Icons.cloud_off_rounded,
+                color: Theme.of(context).disabledColor,
+              ),
             ),
             const SizedBox(height: ZeniSpacing.sm),
             Text(
@@ -554,7 +611,8 @@ class _ParentSettingsGroup extends StatelessWidget {
             const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
               title: 'Termos de Uso',
-              subtitle: 'Resumo das responsabilidades e do uso adequado do app.',
+              subtitle:
+                  'Resumo das responsabilidades e do uso adequado do app.',
               leading: const Icon(
                 Icons.description_rounded,
                 color: ZeniColors.primaryDark,
@@ -569,7 +627,8 @@ class _ParentSettingsGroup extends StatelessWidget {
             const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
               title: 'Suporte',
-              subtitle: 'Ajuda com conta, sincronização, restauração e privacidade.',
+              subtitle:
+                  'Ajuda com conta, sincronização, restauração e privacidade.',
               leading: const Icon(
                 Icons.support_agent_rounded,
                 color: ZeniColors.primaryDark,
@@ -584,7 +643,8 @@ class _ParentSettingsGroup extends StatelessWidget {
             const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
               title: 'Dados locais e nuvem',
-              subtitle: 'Entenda o que fica neste aparelho e o que pode ir para a nuvem.',
+              subtitle:
+                  'Entenda o que fica neste aparelho e o que pode ir para a nuvem.',
               leading: const Icon(
                 Icons.cloud_queue_rounded,
                 color: ZeniColors.primaryDark,
@@ -992,7 +1052,8 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ),
             const SizedBox(height: ZeniSpacing.xs),
           ],
-          if (_bootstrapMessage == null && widget.deviceBootstrapMessage != null)
+          if (_bootstrapMessage == null &&
+              widget.deviceBootstrapMessage != null)
             Text(
               widget.deviceBootstrapMessage!,
               style: Theme.of(
@@ -1045,7 +1106,8 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ),
             const SizedBox(height: ZeniSpacing.xs),
           ],
-          if (_restoreMessage == null && widget.historicalRestoreMessage != null)
+          if (_restoreMessage == null &&
+              widget.historicalRestoreMessage != null)
             Text(
               widget.historicalRestoreMessage!,
               style: Theme.of(
@@ -1057,7 +1119,8 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             Text(
               _restoreMessage!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _restoreMessage!.startsWith(
+                color:
+                    _restoreMessage!.startsWith(
                       'Histórico e saldo restaurados com segurança',
                     )
                     ? ZeniColors.primaryDark

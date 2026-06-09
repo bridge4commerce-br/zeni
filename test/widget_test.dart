@@ -164,8 +164,7 @@ void main() {
           onOpenAccount: () {},
           onSignOut: () {},
           onManageAccountAndData: onManageAccountAndData ?? () {},
-          onClearLocalDeviceData:
-              onClearLocalDeviceData ?? () async {},
+          onClearLocalDeviceData: onClearLocalDeviceData ?? () async {},
           onUpdateRemoteFamilyName:
               onUpdateRemoteFamilyName ??
               ({required familyId, required name}) async =>
@@ -178,8 +177,7 @@ void main() {
               () async => const DeviceBootstrapResult.failure('indisponível'),
           onHistoricalRestore:
               onHistoricalRestore ??
-              () async =>
-              const HistoricalRestoreResult.failure(
+              () async => const HistoricalRestoreResult.failure(
                 status: HistoricalRestoreResultStatus.applyBlocked,
                 message: 'indisponível',
               ),
@@ -1980,84 +1978,88 @@ void main() {
     );
   });
 
-  testWidgets('historical restore action stays blocked when local activity exists', (
+  testWidgets(
+    'historical restore action stays blocked when local activity exists',
+    (tester) async {
+      var restoreCalls = 0;
+      await tester.pumpWidget(
+        buildStaticSettingsHarness(
+          authState: const ZeniAuthState.authenticated(
+            ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+          ),
+          remoteFamilySummary: const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Minha família',
+            role: 'owner',
+          ),
+          showHistoricalRestoreStatus: true,
+          showHistoricalRestoreAction: true,
+          canRunHistoricalRestore: false,
+          historicalRestoreMessage:
+              'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
+          onHistoricalRestore: () async {
+            restoreCalls += 1;
+            return const HistoricalRestoreResult.failure(
+              status: HistoricalRestoreResultStatus.applyBlocked,
+              message: 'indisponível',
+            );
+          },
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
+      expect(
+        find.text(
+          'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Restaurar histórico e saldo'),
+        300,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Restaurar histórico e saldo'));
+      await tester.pumpAndSettle();
+
+      expect(restoreCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'historical restore absence message appears when cloud has no history',
+    (tester) async {
+      await tester.pumpWidget(
+        buildStaticSettingsHarness(
+          authState: const ZeniAuthState.authenticated(
+            ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+          ),
+          remoteFamilySummary: const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Minha família',
+            role: 'owner',
+          ),
+          showHistoricalRestoreStatus: true,
+          showHistoricalRestoreAction: false,
+          historicalRestoreMessage:
+              'Nenhum histórico remoto foi encontrado para restaurar.',
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Restaurar histórico e saldo'), findsNothing);
+      expect(
+        find.text('Nenhum histórico remoto foi encontrado para restaurar.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('historical restore success shows inline feedback', (
     tester,
   ) async {
-    var restoreCalls = 0;
-    await tester.pumpWidget(
-      buildStaticSettingsHarness(
-        authState: const ZeniAuthState.authenticated(
-          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
-        ),
-        remoteFamilySummary: const RemoteFamilySummary(
-          familyId: 'family-1',
-          familyName: 'Minha família',
-          role: 'owner',
-        ),
-        showHistoricalRestoreStatus: true,
-        showHistoricalRestoreAction: true,
-        canRunHistoricalRestore: false,
-        historicalRestoreMessage:
-            'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
-        onHistoricalRestore: () async {
-          restoreCalls += 1;
-          return const HistoricalRestoreResult.failure(
-            status: HistoricalRestoreResultStatus.applyBlocked,
-            message: 'indisponível',
-          );
-        },
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
-    expect(
-      find.text(
-        'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
-      ),
-      findsOneWidget,
-    );
-
-    await tester.scrollUntilVisible(
-      find.text('Restaurar histórico e saldo'),
-      300,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Restaurar histórico e saldo'));
-    await tester.pumpAndSettle();
-
-    expect(restoreCalls, 0);
-  });
-
-  testWidgets('historical restore absence message appears when cloud has no history', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      buildStaticSettingsHarness(
-        authState: const ZeniAuthState.authenticated(
-          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
-        ),
-        remoteFamilySummary: const RemoteFamilySummary(
-          familyId: 'family-1',
-          familyName: 'Minha família',
-          role: 'owner',
-        ),
-        showHistoricalRestoreStatus: true,
-        showHistoricalRestoreAction: false,
-        historicalRestoreMessage:
-            'Nenhum histórico remoto foi encontrado para restaurar.',
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('Restaurar histórico e saldo'), findsNothing);
-    expect(
-      find.text('Nenhum histórico remoto foi encontrado para restaurar.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('historical restore success shows inline feedback', (tester) async {
     await tester.pumpWidget(
       buildStaticSettingsHarness(
         authState: const ZeniAuthState.authenticated(
@@ -2095,9 +2097,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text(
-        'Histórico e saldo restaurados com segurança neste aparelho.',
-      ),
+      find.text('Histórico e saldo restaurados com segurança neste aparelho.'),
       findsOneWidget,
     );
   });
@@ -2134,7 +2134,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Restaurar dados da nuvem neste aparelho'), findsOneWidget);
+    expect(
+      find.text('Restaurar dados da nuvem neste aparelho'),
+      findsOneWidget,
+    );
     expect(find.text('Este aparelho já possui dados locais.'), findsOneWidget);
 
     await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
@@ -2143,7 +2146,9 @@ void main() {
     expect(bootstrapCalls, 0);
   });
 
-  testWidgets('device bootstrap action can run when applicable', (tester) async {
+  testWidgets('device bootstrap action can run when applicable', (
+    tester,
+  ) async {
     var bootstrapCalls = 0;
 
     await tester.pumpWidget(
@@ -3251,12 +3256,9 @@ void main() {
     );
   });
 
-  testWidgets(
-    'account and data section keeps destructive options behind advanced entry',
-    (
+  testWidgets('account and data section separates account local and cloud areas', (
     tester,
   ) async {
-    var advancedOpened = false;
     await tester.pumpWidget(
       buildStaticSettingsHarness(
         authState: const ZeniAuthState.authenticated(
@@ -3267,26 +3269,30 @@ void main() {
           familyName: 'Minha família',
           role: 'owner',
         ),
-        onManageAccountAndData: () {
-          advancedOpened = true;
-        },
       ),
     );
 
     expect(find.text('Conta e dados'), findsOneWidget);
-    expect(find.text('Neste aparelho'), findsNothing);
-    expect(find.text('Na nuvem'), findsNothing);
-    expect(find.text('Apagar dados deste aparelho'), findsNothing);
-    expect(find.text('Excluir conta e dados da nuvem'), findsNothing);
-    expect(find.text('Gerenciar dados e conta'), findsOneWidget);
+    expect(find.text('Conta'), findsOneWidget);
+    expect(find.text('Neste aparelho'), findsOneWidget);
+    expect(find.text('Na nuvem'), findsOneWidget);
+    expect(find.text('Conta conectada'), findsOneWidget);
     expect(find.text('Sair da conta'), findsOneWidget);
-
-    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
-    await tester.pump();
-
-    expect(advancedOpened, isTrue);
+    expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
+    expect(find.text('Excluir conta e dados da nuvem'), findsWidgets);
+    expect(find.text('Gerenciar dados e conta'), findsNothing);
+    expect(
+      find.text(
+        'Os dados locais ficam salvos neste aparelho para o Zeni funcionar mesmo offline.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Quando você sincroniza, uma cópia segura dos dados principais fica vinculada à sua conta.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('legal and support section appears in settings', (tester) async {
@@ -3358,7 +3364,7 @@ void main() {
     );
   });
 
-  testWidgets('advanced account management shows destructive options', (
+  testWidgets('remote deletion item appears as unavailable and informative', (
     tester,
   ) async {
     seedMockAppState();
@@ -3389,302 +3395,19 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Gerenciar dados e conta'),
-      300,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
-    expect(find.text('Excluir conta e dados da nuvem'), findsOneWidget);
-    expect(
-      find.text('Remove a conta e os dados da família salvos na nuvem. Os dados deste aparelho não serão apagados automaticamente.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('remote account deletion requires typing EXCLUIR before calling the function', (
-    tester,
-  ) async {
-    seedMockAppState();
-    await ZeniSupabaseBootstrap.initialize(
-      config: const ZeniSupabaseConfig(
-        url: 'https://example.supabase.co',
-        anonKey: 'anon',
-      ),
-      initializeOverride: ({required url, required anonKey}) async {},
-    );
-    final fakeAuthRepository = _FakeZeniAuthRepository(
-      initialUser: const ZeniAuthUser(
-        id: 'user-1',
-        email: 'responsavel@zeni.app',
-      ),
-    );
-    final fakeAccountRepository = _FakeZeniAccountRepository(
-      summary: const RemoteFamilySummary(
-        familyId: 'family-1',
-        familyName: 'Minha família',
-        role: 'owner',
-      ),
-    );
-    final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
-        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
-      ],
-    );
-    addTearDown(() async {
-      await fakeAuthRepository.dispose();
-      container.dispose();
-    });
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const ZeniApp()),
-    );
-    await tester.pumpAndSettle();
-
-    await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
-    await tester.pumpAndSettle();
-
-    expect(fakeAccountRepository.deleteCalls, 0);
-    final deleteButton = find.widgetWithText(
-      ElevatedButton,
-      'Excluir conta e dados da nuvem',
-    );
-    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNull);
-
-    await tester.enterText(
-      find.byKey(const Key('delete-account-confirm-input')),
-      'EXCL',
-    );
-    await tester.pumpAndSettle();
-    expect(fakeAccountRepository.deleteCalls, 0);
-    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNull);
-
-    await tester.enterText(
-      find.byKey(const Key('delete-account-confirm-input')),
-      'EXCLUIR',
-    );
-    await tester.pumpAndSettle();
-    expect(tester.widget<ElevatedButton>(deleteButton).onPressed, isNotNull);
-    expect(fakeAccountRepository.deleteCalls, 0);
-  });
-
-  testWidgets('remote account deletion success signs out and preserves local data', (
-    tester,
-  ) async {
-    seedMockAppState();
-    await ZeniSupabaseBootstrap.initialize(
-      config: const ZeniSupabaseConfig(
-        url: 'https://example.supabase.co',
-        anonKey: 'anon',
-      ),
-      initializeOverride: ({required url, required anonKey}) async {},
-    );
-    final fakeAuthRepository = _FakeZeniAuthRepository(
-      initialUser: const ZeniAuthUser(
-        id: 'user-1',
-        email: 'responsavel@zeni.app',
-      ),
-    );
-    final fakeAccountRepository = _FakeZeniAccountRepository(
-      summary: const RemoteFamilySummary(
-        familyId: 'family-1',
-        familyName: 'Minha família',
-        role: 'owner',
-      ),
-      deleteResult: const ZeniDeleteAccountResult.success(
-        familyId: 'family-1',
-        message: 'Sua conta e os dados da família foram removidos da nuvem.',
-      ),
-    );
-    final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
-        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
-      ],
-    );
-    addTearDown(() async {
-      await fakeAuthRepository.dispose();
-      container.dispose();
-    });
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const ZeniApp()),
-    );
-    await tester.pumpAndSettle();
-    final before = await container.read(zeniAppStateControllerProvider.future);
-
-    await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('delete-account-confirm-input')),
-      'EXCLUIR',
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
-    );
-    await tester.pumpAndSettle();
-
-    final after = await container.read(zeniAppStateControllerProvider.future);
-    expect(fakeAccountRepository.deleteCalls, 1);
-    expect(fakeAuthRepository.signOutCalls, 1);
-    expect(container.read(authStateProvider).isAuthenticated, isFalse);
-    expect(
-      find.text('Sua conta e os dados da família foram removidos da nuvem.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Os dados deste aparelho continuam salvos localmente.'),
-      findsOneWidget,
-    );
-    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
-  });
-
-  testWidgets('remote account deletion failure shows inline error and does not sign out', (
-    tester,
-  ) async {
-    seedMockAppState();
-    await ZeniSupabaseBootstrap.initialize(
-      config: const ZeniSupabaseConfig(
-        url: 'https://example.supabase.co',
-        anonKey: 'anon',
-      ),
-      initializeOverride: ({required url, required anonKey}) async {},
-    );
-    final fakeAuthRepository = _FakeZeniAuthRepository(
-      initialUser: const ZeniAuthUser(
-        id: 'user-1',
-        email: 'responsavel@zeni.app',
-      ),
-    );
-    final fakeAccountRepository = _FakeZeniAccountRepository(
-      summary: const RemoteFamilySummary(
-        familyId: 'family-1',
-        familyName: 'Minha família',
-        role: 'owner',
-      ),
-      deleteResult: const ZeniDeleteAccountResult.failure(
-        message:
-            'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
-        errorCode: 'auth_delete_failed',
-      ),
-    );
-    final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
-        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
-      ],
-    );
-    addTearDown(() async {
-      await fakeAuthRepository.dispose();
-      container.dispose();
-    });
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const ZeniApp()),
-    );
-    await tester.pumpAndSettle();
-
-    await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('delete-account-confirm-input')),
-      'EXCLUIR',
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(fakeAccountRepository.deleteCalls, 1);
-    expect(fakeAuthRepository.signOutCalls, 0);
-    expect(container.read(authStateProvider).isAuthenticated, isTrue);
+    expect(find.text('Excluir conta e dados da nuvem'), findsWidgets);
     expect(
       find.text(
-        'Os dados da família foram removidos, mas não foi possível finalizar a exclusão da conta. Entre em contato com o suporte.',
+        'Exclusão da conta e dados da nuvem ainda não está disponível nesta versão.',
       ),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('unauthenticated user sees controlled remote deletion block without calling the function', (
-    tester,
-  ) async {
-    seedMockAppState();
-    await ZeniSupabaseBootstrap.initialize(
-      config: const ZeniSupabaseConfig(
-        url: 'https://example.supabase.co',
-        anonKey: 'anon',
-      ),
-      initializeOverride: ({required url, required anonKey}) async {},
-    );
-    final fakeAuthRepository = _FakeZeniAuthRepository();
-    final fakeAccountRepository = _FakeZeniAccountRepository(
-      summary: null,
-    );
-    final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
-        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
-      ],
-    );
-    addTearDown(() async {
-      await fakeAuthRepository.dispose();
-      container.dispose();
-    });
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const ZeniApp()),
-    );
-    await tester.pumpAndSettle();
-
-    await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Gerenciar dados e conta'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gerenciar dados e conta'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('delete-account-confirm-input')),
-      'EXCLUIR',
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(ElevatedButton, 'Excluir conta e dados da nuvem'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(fakeAccountRepository.deleteCalls, 0);
-    expect(fakeAuthRepository.signOutCalls, 0);
-    expect(
-      find.text('Faça login para excluir conta e dados da nuvem.'),
       findsOneWidget,
     );
   });
 
   testWidgets(
-    'clearing local device data remains available through advanced entry',
+    'clearing local device data remains available from the account and data section',
     (tester) async {
       seedMockAppState();
       final fakeAuthRepository = _FakeZeniAuthRepository(
@@ -3694,7 +3417,9 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [authRepositoryProvider.overrideWithValue(fakeAuthRepository)],
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        ],
       );
       addTearDown(() async {
         await fakeAuthRepository.dispose();
@@ -3708,17 +3433,17 @@ void main() {
 
       await openParentSettings(tester);
       await tester.scrollUntilVisible(
-        find.text('Gerenciar dados e conta'),
+        find.text('Apagar dados deste aparelho'),
         300,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Gerenciar dados e conta'));
-      await tester.pumpAndSettle();
-
       await tester.tap(find.text('Apagar dados deste aparelho'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Digite APAGAR para confirmar.'), findsOneWidget);
+      expect(
+        find.textContaining('Digite APAGAR para confirmar.'),
+        findsOneWidget,
+      );
 
       final clearButton = find.widgetWithText(
         ElevatedButton,
@@ -3740,7 +3465,9 @@ void main() {
       expect(fakeAuthRepository.signOutCalls, 0);
       expect(container.read(authStateProvider).isAuthenticated, isTrue);
 
-      final resetState = await container.read(zeniAppStateControllerProvider.future);
+      final resetState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
       expect(resetState.children, isEmpty);
       expect(resetState.missions, isEmpty);
       expect(resetState.rewards, isEmpty);
@@ -3753,6 +3480,68 @@ void main() {
       expect(find.text('Bem-vindo ao Zeni'), findsOneWidget);
     },
   );
+
+  testWidgets('wrong clear local confirmation does not erase device data', (
+    tester,
+  ) async {
+    seedMockAppState();
+    final fakeAuthRepository = _FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final fakeAccountRepository = _FakeZeniAccountRepository(
+      summary: const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    final before = await container.read(zeniAppStateControllerProvider.future);
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(
+      find.text('Apagar dados deste aparelho'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apagar dados deste aparelho'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('clear-local-data-confirm-input')),
+      'APAG',
+    );
+    await tester.pumpAndSettle();
+
+    final clearButton = find.widgetWithText(
+      ElevatedButton,
+      'Apagar dados deste aparelho',
+    );
+    expect(tester.widget<ElevatedButton>(clearButton).onPressed, isNull);
+    expect(fakeAuthRepository.signOutCalls, 0);
+    expect(fakeAccountRepository.deleteCalls, 0);
+
+    final after = await container.read(zeniAppStateControllerProvider.future);
+    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
 
   testWidgets('apple button appears when Apple sign in is available', (
     tester,
@@ -3999,16 +3788,9 @@ class _FakeZeniAuthRepository implements ZeniAuthRepository {
 }
 
 class _FakeZeniAccountRepository implements ZeniAccountRepository {
-  _FakeZeniAccountRepository({
-    required this.summary,
-    this.deleteResult = const ZeniDeleteAccountResult.success(
-      familyId: 'family-1',
-      message: 'Sua conta e os dados da família foram removidos da nuvem.',
-    ),
-  });
+  _FakeZeniAccountRepository({required this.summary});
 
   final RemoteFamilySummary? summary;
-  final ZeniDeleteAccountResult deleteResult;
   int deleteCalls = 0;
 
   @override
@@ -4055,7 +3837,10 @@ class _FakeZeniAccountRepository implements ZeniAccountRepository {
   @override
   Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() async {
     deleteCalls += 1;
-    return deleteResult;
+    return const ZeniDeleteAccountResult.success(
+      familyId: 'family-1',
+      message: 'Sua conta e os dados da família foram removidos da nuvem.',
+    );
   }
 }
 
