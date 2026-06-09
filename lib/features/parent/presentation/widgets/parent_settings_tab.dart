@@ -1006,7 +1006,7 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:
                     _bootstrapMessage!.startsWith(
-                      'Família, crianças, missões e mimos foram restaurados.',
+                      'Dados principais restaurados neste aparelho.',
                     )
                     ? ZeniColors.primaryDark
                     : Theme.of(context).colorScheme.error,

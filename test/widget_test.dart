@@ -730,7 +730,7 @@ void main() {
 
       expect(
         find.text(
-          'Faça login para continuar. Depois disso, você poderá restaurar família, crianças, missões e mimos salvos na nuvem.',
+          'Faça login para continuar. A restauração só acontece quando você tocar no botão.',
         ),
         findsOneWidget,
       );
@@ -843,14 +843,28 @@ void main() {
 
       expect(
         find.text(
-          'Conta conectada. Agora você pode restaurar família, crianças, missões e mimos neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.',
+          'Vamos restaurar os dados principais desta família neste aparelho.',
         ),
-        findsOneWidget,
+        findsWidgets,
       );
       expect(
         find.text('Restaurar dados da nuvem neste aparelho'),
         findsOneWidget,
       );
+      expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
+      expect(find.text('O que será restaurado'), findsOneWidget);
+      expect(find.text('Família'), findsOneWidget);
+      expect(find.text('Crianças'), findsOneWidget);
+      expect(find.text('Missões'), findsOneWidget);
+      expect(find.text('Mimos'), findsOneWidget);
+      expect(
+        find.text('O que ainda não será restaurado nesta fase'),
+        findsOneWidget,
+      );
+      expect(find.text('Saldo'), findsOneWidget);
+      expect(find.text('Histórico'), findsOneWidget);
+      expect(find.text('Sequência'), findsOneWidget);
+      expect(find.text('Pedidos e conclusões anteriores'), findsOneWidget);
 
       await tester.scrollUntilVisible(
         find.text('Restaurar dados da nuvem neste aparelho'),
@@ -876,6 +890,7 @@ void main() {
       expect(state.missionLogs, isEmpty);
       expect(state.rewardRequests, isEmpty);
       expect(state.starLedgerEntries, isEmpty);
+      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
       expect(state.appSettings.hasCompletedOnboarding, isTrue);
     },
   );
@@ -2146,7 +2161,7 @@ void main() {
             restoredMissionsCount: 1,
             restoredRewardsCount: 1,
             message:
-                'Família, crianças, missões e mimos foram restaurados. Saldo, histórico e sequência não foram trazidos nesta etapa.',
+                'Dados principais restaurados neste aparelho. Você já pode escolher um perfil para continuar.',
           );
         },
       ),
@@ -2163,7 +2178,7 @@ void main() {
     expect(bootstrapCalls, 1);
     expect(
       find.text(
-        'Família, crianças, missões e mimos foram restaurados. Saldo, histórico e sequência não foram trazidos nesta etapa.',
+        'Dados principais restaurados neste aparelho. Você já pode escolher um perfil para continuar.',
       ),
       findsOneWidget,
     );

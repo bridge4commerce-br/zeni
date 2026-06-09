@@ -186,7 +186,7 @@ class DeviceBootstrapController {
         restoredMissionsCount: payload.missions.length,
         restoredRewardsCount: payload.rewards.length,
         message:
-            'Família, crianças, missões e mimos foram restaurados. Saldo, histórico e sequência não foram trazidos nesta etapa.',
+            'Dados principais restaurados neste aparelho. Você já pode escolher um perfil para continuar.',
       );
     } catch (error) {
       _debugLog('bootstrapFromRemoteFamily unexpected error: $error');

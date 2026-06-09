@@ -65,6 +65,10 @@ class _InitialStartChoicePageState
               icon: Icons.cloud_sync_rounded,
               onTap: _startRemoteRestore,
             ),
+            if (_isReadyToRestore) ...[
+              const SizedBox(height: ZeniSpacing.lg),
+              const _RestoreScopeCard(),
+            ],
             if (_restoreMessage != null) ...[
               const SizedBox(height: ZeniSpacing.lg),
               ZeniCard(
@@ -127,7 +131,7 @@ class _InitialStartChoicePageState
       _isRestoring = false;
       _restorationFailed = false;
       _restoreMessage =
-          'Faça login para continuar. Depois disso, você poderá restaurar família, crianças, missões e mimos salvos na nuvem.';
+          'Faça login para continuar. A restauração só acontece quando você tocar no botão.';
     });
 
     final didAuthenticate = await showModalBottomSheet<bool>(
@@ -153,7 +157,7 @@ class _InitialStartChoicePageState
       _isRestoring = false;
       _restorationFailed = false;
       _restoreMessage =
-          'Conta conectada. Agora você pode restaurar família, crianças, missões e mimos neste aparelho. Saldo, histórico e sequência não serão trazidos nesta etapa.';
+          'Vamos restaurar os dados principais desta família neste aparelho.';
     });
   }
 
@@ -178,6 +182,86 @@ class _InitialStartChoicePageState
         _isReadyToRestore = false;
       }
     });
+  }
+}
+
+class _RestoreScopeCard extends StatelessWidget {
+  const _RestoreScopeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return ZeniCard(
+      padding: const EdgeInsets.all(ZeniSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Vamos restaurar os dados principais desta família neste aparelho.',
+            style: textTheme.bodyLarge,
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+          Text(
+            'O que será restaurado',
+            style: textTheme.titleMedium,
+          ),
+          const SizedBox(height: ZeniSpacing.xs),
+          const _RestoreBullet('Família'),
+          const _RestoreBullet('Crianças'),
+          const _RestoreBullet('Missões'),
+          const _RestoreBullet('Mimos'),
+          const SizedBox(height: ZeniSpacing.md),
+          Text(
+            'O que ainda não será restaurado nesta fase',
+            style: textTheme.titleMedium?.copyWith(color: ZeniColors.mutedText),
+          ),
+          const SizedBox(height: ZeniSpacing.xs),
+          const _RestoreBullet('Saldo', muted: true),
+          const _RestoreBullet('Histórico', muted: true),
+          const _RestoreBullet('Sequência', muted: true),
+          const _RestoreBullet('Pedidos e conclusões anteriores', muted: true),
+          const SizedBox(height: ZeniSpacing.md),
+          Text(
+            'A restauração é segura e não apaga os dados deste aparelho.',
+            style: textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RestoreBullet extends StatelessWidget {
+  const _RestoreBullet(this.label, {this.muted = false});
+
+  final String label;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ZeniSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: muted ? ZeniColors.mutedText : null,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: muted ? ZeniColors.mutedText : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
