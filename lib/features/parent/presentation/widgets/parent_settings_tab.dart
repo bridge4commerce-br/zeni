@@ -1020,7 +1020,7 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ZeniOptionRow(
               title: 'Restaurar histórico e saldo',
               subtitle:
-                  'Traz conclusões, pedidos e eventos de estrelas da nuvem. A sequência não será restaurada nesta etapa.',
+                  'Vamos reconstruir o histórico e o saldo a partir dos eventos salvos na nuvem.',
               leading: const Icon(
                 Icons.history_rounded,
                 color: ZeniColors.primaryDark,
@@ -1037,6 +1037,13 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
                   : null,
             ),
             const SizedBox(height: ZeniSpacing.xs),
+            Text(
+              'A sequência não será restaurada nesta fase.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.xs),
           ],
           if (_restoreMessage == null && widget.historicalRestoreMessage != null)
             Text(
@@ -1050,7 +1057,9 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             Text(
               _restoreMessage!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _restoreMessage!.startsWith('Histórico restaurado')
+                color: _restoreMessage!.startsWith(
+                      'Histórico e saldo restaurados com segurança',
+                    )
                     ? ZeniColors.primaryDark
                     : Theme.of(context).colorScheme.error,
               ),

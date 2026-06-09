@@ -64,7 +64,7 @@ final historicalRestoreActionStateProvider =
           showAction: true,
           isEnabled: false,
           message:
-              'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+              'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
         );
       }
 
@@ -73,7 +73,7 @@ final historicalRestoreActionStateProvider =
           isVisible: true,
           showAction: false,
           isEnabled: false,
-          message: 'Nenhum histórico foi encontrado na nuvem para restaurar.',
+          message: 'Nenhum histórico remoto foi encontrado para restaurar.',
         );
       }
 
@@ -81,7 +81,8 @@ final historicalRestoreActionStateProvider =
         isVisible: true,
         showAction: true,
         isEnabled: true,
-        message: 'Histórico e saldo ainda não foram restaurados neste aparelho.',
+        message:
+            'Disponível apenas quando este aparelho ainda não tem atividade local.',
       );
     });
 
@@ -124,7 +125,7 @@ class HistoricalRestoreController {
       return const HistoricalRestoreResult.failure(
         status: HistoricalRestoreResultStatus.localActivityPresent,
         message:
-            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+            'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
       );
     }
 

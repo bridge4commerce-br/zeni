@@ -45,8 +45,7 @@ class HistoricalRestoreResult {
     required HistoricalRestorePayload payload,
   }) : this(
          status: HistoricalRestoreResultStatus.success,
-         message:
-             'Histórico restaurado neste aparelho. O saldo foi reconstruído com segurança a partir dos eventos da nuvem.',
+         message: 'Histórico e saldo restaurados com segurança neste aparelho.',
          payload: payload,
          restoredMissionLogsCount: payload.missionLogs.length,
          restoredRewardRequestsCount: payload.rewardRequests.length,

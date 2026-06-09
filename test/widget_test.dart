@@ -1956,7 +1956,7 @@ void main() {
         showHistoricalRestoreAction: true,
         canRunHistoricalRestore: true,
         historicalRestoreMessage:
-            'Histórico e saldo ainda não foram restaurados neste aparelho.',
+            'Disponível apenas quando este aparelho ainda não tem atividade local.',
       ),
     );
     await tester.pump();
@@ -1964,8 +1964,18 @@ void main() {
     expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
     expect(
       find.text(
-        'Histórico e saldo ainda não foram restaurados neste aparelho.',
+        'Disponível apenas quando este aparelho ainda não tem atividade local.',
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Vamos reconstruir o histórico e o saldo a partir dos eventos salvos na nuvem.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('A sequência não será restaurada nesta fase.'),
       findsOneWidget,
     );
   });
@@ -1988,7 +1998,7 @@ void main() {
         showHistoricalRestoreAction: true,
         canRunHistoricalRestore: false,
         historicalRestoreMessage:
-            'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+            'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
         onHistoricalRestore: () async {
           restoreCalls += 1;
           return const HistoricalRestoreResult.failure(
@@ -2003,7 +2013,7 @@ void main() {
     expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
     expect(
       find.text(
-        'Este aparelho já possui atividade local. Para evitar duplicidade de estrelas, a restauração automática do histórico não será feita.',
+        'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
       ),
       findsOneWidget,
     );
@@ -2035,14 +2045,14 @@ void main() {
         showHistoricalRestoreStatus: true,
         showHistoricalRestoreAction: false,
         historicalRestoreMessage:
-            'Nenhum histórico foi encontrado na nuvem para restaurar.',
+            'Nenhum histórico remoto foi encontrado para restaurar.',
       ),
     );
     await tester.pump();
 
     expect(find.text('Restaurar histórico e saldo'), findsNothing);
     expect(
-      find.text('Nenhum histórico foi encontrado na nuvem para restaurar.'),
+      find.text('Nenhum histórico remoto foi encontrado para restaurar.'),
       findsOneWidget,
     );
   });
@@ -2062,7 +2072,7 @@ void main() {
         showHistoricalRestoreAction: true,
         canRunHistoricalRestore: true,
         historicalRestoreMessage:
-            'Histórico e saldo ainda não foram restaurados neste aparelho.',
+            'Disponível apenas quando este aparelho ainda não tem atividade local.',
         onHistoricalRestore: () async => HistoricalRestoreResult.success(
           payload: HistoricalRestorePayload(
             missionLogs: const <MissionLog>[],
@@ -2086,7 +2096,7 @@ void main() {
 
     expect(
       find.text(
-        'Histórico restaurado neste aparelho. O saldo foi reconstruído com segurança a partir dos eventos da nuvem.',
+        'Histórico e saldo restaurados com segurança neste aparelho.',
       ),
       findsOneWidget,
     );
