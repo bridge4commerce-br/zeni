@@ -16,12 +16,22 @@ class ZeniSecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final labelText = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+    );
     final child = icon == null
-        ? Text(label)
+        ? labelText
         : Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [Icon(icon), const SizedBox(width: 8), Text(label)],
+            children: [
+              Icon(icon),
+              const SizedBox(width: 8),
+              Flexible(child: labelText),
+            ],
           );
 
     final button = OutlinedButton(onPressed: onPressed, child: child);

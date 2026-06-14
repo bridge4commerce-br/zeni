@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/accessibility/zeni_accessibility_settings.dart';
+import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
-import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/inputs/counter_stepper.dart';
 import '../../../../core/widgets/inputs/zeni_option_row.dart';
 import '../../../../core/widgets/inputs/zeni_switch.dart';
@@ -59,6 +59,9 @@ class ParentSettingsTab extends StatelessWidget {
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
+    required this.supabaseBootstrapState,
+    required this.isGoogleSignInAvailable,
+    required this.isAppleSignInAvailable,
     required this.showHistoricalRestoreStatus,
     required this.showDeviceBootstrapStatus,
     required this.showDeviceBootstrapAction,
@@ -114,6 +117,9 @@ class ParentSettingsTab extends StatelessWidget {
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
+  final ZeniSupabaseBootstrapState supabaseBootstrapState;
+  final bool isGoogleSignInAvailable;
+  final bool isAppleSignInAvailable;
   final bool showHistoricalRestoreStatus;
   final bool showDeviceBootstrapStatus;
   final bool showDeviceBootstrapAction;
@@ -189,6 +195,9 @@ class ParentSettingsTab extends StatelessWidget {
             lastStarLedgerSyncAt: lastStarLedgerSyncAt,
             lastFullSyncAt: lastFullSyncAt,
             isSupabaseConfigured: isSupabaseConfigured,
+            supabaseBootstrapState: supabaseBootstrapState,
+            isGoogleSignInAvailable: isGoogleSignInAvailable,
+            isAppleSignInAvailable: isAppleSignInAvailable,
             showHistoricalRestoreStatus: showHistoricalRestoreStatus,
             showDeviceBootstrapStatus: showDeviceBootstrapStatus,
             showDeviceBootstrapAction: showDeviceBootstrapAction,
@@ -205,22 +214,6 @@ class ParentSettingsTab extends StatelessWidget {
             onSyncCloudData: onSyncCloudData,
             onDeviceBootstrap: onDeviceBootstrap,
             onHistoricalRestore: onHistoricalRestore,
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
-          ZeniOptionRow(
-            title: 'Plano Premium',
-            subtitle: 'Badge e recursos pagos serão definidos depois',
-            leading: const Icon(
-              Icons.workspace_premium_rounded,
-              color: ZeniColors.warning,
-            ),
-            onTap: () {
-              ZeniInfoPopup.show(
-                context,
-                title: 'Premium',
-                message: 'Esse módulo será refinado na etapa de produto.',
-              );
-            },
           ),
         ],
       ),
@@ -267,6 +260,9 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
     required this.isSupabaseConfigured,
+    required this.supabaseBootstrapState,
+    required this.isGoogleSignInAvailable,
+    required this.isAppleSignInAvailable,
     required this.showHistoricalRestoreStatus,
     required this.showDeviceBootstrapStatus,
     required this.showDeviceBootstrapAction,
@@ -322,6 +318,9 @@ class _ParentSettingsGroup extends StatelessWidget {
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
   final bool isSupabaseConfigured;
+  final ZeniSupabaseBootstrapState supabaseBootstrapState;
+  final bool isGoogleSignInAvailable;
+  final bool isAppleSignInAvailable;
   final bool showHistoricalRestoreStatus;
   final bool showDeviceBootstrapStatus;
   final bool showDeviceBootstrapAction;
@@ -438,9 +437,11 @@ class _ParentSettingsGroup extends StatelessWidget {
             if (!authState.isAuthenticated) ...[
               ZeniOptionRow(
                 title: 'Criar conta para sincronizar',
-                subtitle: isSupabaseConfigured
+                subtitle: !supabaseBootstrapState.isConfigured
+                    ? 'A nuvem não foi incluída neste build'
+                    : supabaseBootstrapState.isInitialized
                     ? 'Conecte seu e-mail para proteger a família e preparar a sincronização futura'
-                    : 'Disponível quando este build estiver configurado com Supabase Auth',
+                    : 'A nuvem falhou ao iniciar neste aparelho',
                 leading: const Icon(
                   Icons.cloud_sync_rounded,
                   color: ZeniColors.primaryDark,
@@ -642,6 +643,17 @@ class _ParentSettingsGroup extends StatelessWidget {
             ),
             const SizedBox(height: ZeniSpacing.sm),
             ZeniOptionRow(
+              title: 'Diagnóstico técnico',
+              subtitle:
+                  'Verificar bootstrap da nuvem e disponibilidade de login sem expor segredos.',
+              leading: const Icon(
+                Icons.health_and_safety_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              onTap: () => _openTechnicalDiagnosticsSheet(context),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
               title: 'Dados locais e nuvem',
               subtitle:
                   'Entenda o que fica neste aparelho e o que pode ir para a nuvem.',
@@ -705,6 +717,20 @@ class _ParentSettingsGroup extends StatelessWidget {
     );
   }
 
+  Future<void> _openTechnicalDiagnosticsSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TechnicalDiagnosticsSheet(
+        bootstrapState: supabaseBootstrapState,
+        isGoogleSignInAvailable: isGoogleSignInAvailable,
+        isAppleSignInAvailable: isAppleSignInAvailable,
+      ),
+    );
+  }
+
   Future<void> _openRemoteFamilyNameSheet(
     BuildContext context,
     RemoteFamilySummary summary,
@@ -755,6 +781,91 @@ class _SettingsInfoSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TechnicalDiagnosticsSheet extends StatelessWidget {
+  const _TechnicalDiagnosticsSheet({
+    required this.bootstrapState,
+    required this.isGoogleSignInAvailable,
+    required this.isAppleSignInAvailable,
+  });
+
+  final ZeniSupabaseBootstrapState bootstrapState;
+  final bool isGoogleSignInAvailable;
+  final bool isAppleSignInAvailable;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: 'Diagnóstico técnico',
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Resumo seguro para suporte interno. Este painel não mostra URL completa, anon key nem client IDs.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+            ),
+            const SizedBox(height: ZeniSpacing.lg),
+            _DiagnosticRow(
+              label: 'Supabase configurado',
+              value: bootstrapState.isConfigured ? 'Sim' : 'Não',
+            ),
+            _DiagnosticRow(
+              label: 'Supabase inicializado',
+              value: bootstrapState.isInitialized ? 'Sim' : 'Não',
+            ),
+            _DiagnosticRow(
+              label: 'Mensagem do bootstrap',
+              value: zeniRedactTechnicalMessage(bootstrapState.message),
+            ),
+            _DiagnosticRow(
+              label: 'Google disponível',
+              value: isGoogleSignInAvailable ? 'Sim' : 'Não',
+            ),
+            _DiagnosticRow(
+              label: 'Apple disponível',
+              value: isAppleSignInAvailable ? 'Sim' : 'Não',
+            ),
+            const SizedBox(height: ZeniSpacing.lg),
+            ZeniPrimaryButton(
+              label: 'Fechar',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiagnosticRow extends StatelessWidget {
+  const _DiagnosticRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ZeniSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: ZeniSpacing.xs),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+          ),
+        ],
       ),
     );
   }

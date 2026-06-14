@@ -123,6 +123,58 @@ void main() {
     expect(find.text('Termos de Uso'), findsOneWidget);
     expect(find.text('Suporte'), findsOneWidget);
     expect(find.text('Dados locais e nuvem'), findsOneWidget);
+    expect(find.text('Diagnóstico técnico'), findsOneWidget);
+  });
+
+  testWidgets('technical diagnostics show safe bootstrap and auth availability', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.unauthenticated(),
+        isSupabaseConfigured: true,
+        supabaseBootstrapState: const ZeniSupabaseBootstrapState.failed(
+          'Failed to connect to https://project.supabase.co with token abcdefghijklmnopqrstuv and GOOGLE_CLIENT_ID ios-123456.apps.googleusercontent.com',
+        ),
+        isGoogleSignInAvailable: false,
+        isAppleSignInAvailable: true,
+      ),
+    );
+
+    await tester.scrollUntilVisible(find.text('Diagnóstico técnico'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Diagnóstico técnico'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Supabase configurado'), findsOneWidget);
+    expect(find.text('Sim'), findsWidgets);
+    expect(find.text('Supabase inicializado'), findsOneWidget);
+    expect(find.text('Não'), findsWidgets);
+    expect(find.text('Google disponível'), findsOneWidget);
+    expect(find.text('Apple disponível'), findsOneWidget);
+    expect(find.textContaining('[url oculta]'), findsOneWidget);
+    expect(find.textContaining('abcdefghijklmnopqrstuv'), findsNothing);
+    expect(find.textContaining('project.supabase.co'), findsNothing);
+    expect(
+      find.textContaining('ios-123456.apps.googleusercontent.com'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('account CTA reflects bootstrap failure safely', (tester) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.unauthenticated(),
+        isSupabaseConfigured: true,
+        supabaseBootstrapState: const ZeniSupabaseBootstrapState.failed('boom'),
+      ),
+    );
+
+    expect(find.text('Criar conta para sincronizar'), findsOneWidget);
+    expect(
+      find.text('A nuvem falhou ao iniciar neste aparelho'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('legal and support items open internal content sheets', (

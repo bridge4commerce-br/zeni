@@ -3991,6 +3991,7 @@ class _FakeFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) async {
     throw UnimplementedError();
   }
@@ -4030,6 +4031,7 @@ class _FakeFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) async {
     throw UnimplementedError();
   }

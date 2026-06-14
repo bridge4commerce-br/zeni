@@ -16,6 +16,7 @@ abstract class FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   });
 
   Future<ChildProfile?> updateChild({
@@ -23,6 +24,7 @@ abstract class FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   });
 
   Future<void> archiveChild(String childId);

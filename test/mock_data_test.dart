@@ -97,6 +97,7 @@ void main() {
         familyId: 'local-family',
         name: 'Luna',
         emoji: '🦊',
+        ttsEnabled: true,
       );
 
       final mission = await missionRepository.createMission(
@@ -585,40 +586,45 @@ void main() {
     expect(earnedEntries.length, 1);
   });
 
-  test('auto-approved mission does not credit twice on repeated submit', () async {
-    seedMockAppState();
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+  test(
+    'auto-approved mission does not credit twice on repeated submit',
+    () async {
+      seedMockAppState();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-    final missionRepository = container.read(missionRepositoryProvider);
-    await container.read(zeniAppStateControllerProvider.future);
+      final missionRepository = container.read(missionRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
 
-    final initialState = container
-        .read(zeniAppStateControllerProvider)
-        .asData!
-        .value;
-    final mission = initialState.missionById('mission-2')!;
-    final childBefore = initialState.childById('child-1')!;
-    final currentLog = initialState.missionLogs
-        .where((log) => log.missionId == mission.id && log.childId == 'child-1')
-        .first;
-    final ledgerCountBefore = initialState.starLedgerEntries.length;
+      final initialState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final mission = initialState.missionById('mission-2')!;
+      final childBefore = initialState.childById('child-1')!;
+      final currentLog = initialState.missionLogs
+          .where(
+            (log) => log.missionId == mission.id && log.childId == 'child-1',
+          )
+          .first;
+      final ledgerCountBefore = initialState.starLedgerEntries.length;
 
-    await missionRepository.submitMission(
-      childId: 'child-1',
-      mission: mission,
-      currentLog: currentLog,
-    );
+      await missionRepository.submitMission(
+        childId: 'child-1',
+        mission: mission,
+        currentLog: currentLog,
+      );
 
-    final updatedState = container
-        .read(zeniAppStateControllerProvider)
-        .asData!
-        .value;
-    final childAfter = updatedState.childById('child-1')!;
+      final updatedState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final childAfter = updatedState.childById('child-1')!;
 
-    expect(childAfter.starBalance, childBefore.starBalance);
-    expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
-  });
+      expect(childAfter.starBalance, childBefore.starBalance);
+      expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
+    },
+  );
 
   test(
     'rejecting manual mission does not change streak, balance or ledger',
@@ -662,8 +668,8 @@ void main() {
       expect(rejectedLog.status, MissionLogStatus.rejected);
       expect(childAfter.streakCount, childBefore.streakCount);
       expect(childAfter.starBalance, childBefore.starBalance);
-    expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
-  },
+      expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
+    },
   );
 
   test('approving reward request does not debit stars again', () async {
@@ -698,38 +704,41 @@ void main() {
     expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
   });
 
-  test('rejecting the same reward request twice does not refund twice', () async {
-    seedMockAppState();
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+  test(
+    'rejecting the same reward request twice does not refund twice',
+    () async {
+      seedMockAppState();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-    final rewardRepository = container.read(rewardRepositoryProvider);
-    await container.read(zeniAppStateControllerProvider.future);
+      final rewardRepository = container.read(rewardRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
 
-    final initialState = container
-        .read(zeniAppStateControllerProvider)
-        .asData!
-        .value;
-    final request = initialState.rewardRequests.first;
-    final reward = initialState.rewardById(request.rewardId)!;
-    final childBefore = initialState.childById(request.childId)!;
+      final initialState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final request = initialState.rewardRequests.first;
+      final reward = initialState.rewardById(request.rewardId)!;
+      final childBefore = initialState.childById(request.childId)!;
 
-    await rewardRepository.rejectRewardRequest(request.id);
-    await rewardRepository.rejectRewardRequest(request.id);
+      await rewardRepository.rejectRewardRequest(request.id);
+      await rewardRepository.rejectRewardRequest(request.id);
 
-    final updatedState = container
-        .read(zeniAppStateControllerProvider)
-        .asData!
-        .value;
-    final childAfter = updatedState.childById(request.childId)!;
-    final refundedEntries = updatedState.starLedgerEntries
-        .where((entry) => entry.relatedRewardRequestId == request.id)
-        .where((entry) => entry.type == StarLedgerEntryType.refunded)
-        .toList();
+      final updatedState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final childAfter = updatedState.childById(request.childId)!;
+      final refundedEntries = updatedState.starLedgerEntries
+          .where((entry) => entry.relatedRewardRequestId == request.id)
+          .where((entry) => entry.type == StarLedgerEntryType.refunded)
+          .toList();
 
-    expect(childAfter.starBalance, childBefore.starBalance + reward.cost);
-    expect(refundedEntries, hasLength(1));
-  });
+      expect(childAfter.starBalance, childBefore.starBalance + reward.cost);
+      expect(refundedEntries, hasLength(1));
+    },
+  );
 
   test(
     'canceling manual mission submission restores pending without side effects',

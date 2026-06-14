@@ -8,6 +8,7 @@ enum HistoricalRestoreResultStatus {
   supabaseUnavailable,
   unauthenticated,
   remoteFamilyMissing,
+  remoteHistoryMissing,
   catalogsNotAligned,
   localActivityPresent,
   unsafeBalanceMismatch,
@@ -41,16 +42,15 @@ class HistoricalRestoreResult {
     this.restoredStarLedgerEntriesCount = 0,
   });
 
-  HistoricalRestoreResult.success({
-    required HistoricalRestorePayload payload,
-  }) : this(
-         status: HistoricalRestoreResultStatus.success,
-         message: 'Histórico e saldo restaurados com segurança neste aparelho.',
-         payload: payload,
-         restoredMissionLogsCount: payload.missionLogs.length,
-         restoredRewardRequestsCount: payload.rewardRequests.length,
-         restoredStarLedgerEntriesCount: payload.starLedgerEntries.length,
-       );
+  HistoricalRestoreResult.success({required HistoricalRestorePayload payload})
+    : this(
+        status: HistoricalRestoreResultStatus.success,
+        message: 'Histórico e saldo restaurados com segurança neste aparelho.',
+        payload: payload,
+        restoredMissionLogsCount: payload.missionLogs.length,
+        restoredRewardRequestsCount: payload.rewardRequests.length,
+        restoredStarLedgerEntriesCount: payload.starLedgerEntries.length,
+      );
 
   const HistoricalRestoreResult.failure({
     required HistoricalRestoreResultStatus status,

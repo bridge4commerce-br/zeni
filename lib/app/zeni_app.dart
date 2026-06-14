@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/accessibility/zeni_accessibility_controller.dart';
 import '../core/accessibility/zeni_accessibility_settings.dart';
 import '../core/theme/zeni_theme.dart';
+import '../features/sync/presentation/providers/opportunistic_sync_providers.dart';
 import 'app_router.dart';
 
 class ZeniApp extends ConsumerStatefulWidget {
@@ -14,8 +15,28 @@ class ZeniApp extends ConsumerStatefulWidget {
   ConsumerState<ZeniApp> createState() => _ZeniAppState();
 }
 
-class _ZeniAppState extends ConsumerState<ZeniApp> {
+class _ZeniAppState extends ConsumerState<ZeniApp> with WidgetsBindingObserver {
   late final GoRouter _router = createZeniRouter();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'app_resumed');
+  }
 
   @override
   Widget build(BuildContext context) {

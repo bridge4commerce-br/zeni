@@ -8,6 +8,14 @@ import '../theme/zeni_colors.dart';
 @visibleForTesting
 void Function(Offset from, Offset to)? debugOnFlyingStarShown;
 
+void notifyDebugFlyingStarShown(Offset from, Offset to) {
+  try {
+    debugOnFlyingStarShown?.call(from, to);
+  } catch (_) {
+    // Ignore testing hook failures so the visual effect never interrupts UX.
+  }
+}
+
 class ZeniFlyingStarOverlay {
   const ZeniFlyingStarOverlay._();
 
@@ -20,20 +28,11 @@ class ZeniFlyingStarOverlay {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
 
-    final controller = AnimationController(
-      vsync: overlay,
-      duration: duration,
-    );
+    final controller = AnimationController(vsync: overlay, duration: duration);
     final curved = CurvedAnimation(
       parent: controller,
       curve: Curves.easeInOutCubicEmphasized,
     );
-
-    try {
-      debugOnFlyingStarShown?.call(from, to);
-    } catch (_) {
-      // Ignore testing hook failures so the visual effect never interrupts UX.
-    }
 
     late final OverlayEntry entry;
     entry = OverlayEntry(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/feedback/zeni_haptics.dart';
 import '../../../../core/providers/zeni_repository_providers.dart';
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
@@ -21,8 +22,10 @@ import '../../../balance/presentation/widgets/history_entry_card.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
+import '../../../sync/presentation/providers/opportunistic_sync_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
+import '../../../tts/presentation/providers/zeni_tts_service.dart';
 import '../../../tasks/presentation/widgets/task_completion_sheet.dart';
 import '../widgets/child_home_tab.dart';
 import '../widgets/child_missions_tab.dart';
@@ -49,6 +52,52 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     return value.year == other.year &&
         value.month == other.month &&
         value.day == other.day;
+  }
+
+  Future<void> _listenToMission(Mission mission) async {
+    final appState = _currentAppState;
+    if (appState == null) return;
+    final data = _buildChildModeData(appState);
+    if (data == null) return;
+
+    ref.read(zeniHapticsProvider).selection();
+    final result = await ref
+        .read(zeniTtsServiceProvider)
+        .speakForChild(
+          child: data.child,
+          title: mission.title,
+          description: mission.description,
+        );
+    if (!mounted || result.didSpeak) return;
+
+    ZeniInfoPopup.show(
+      context,
+      title: 'Leitura em voz alta',
+      message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
+    );
+  }
+
+  Future<void> _listenToReward(Reward reward) async {
+    final appState = _currentAppState;
+    if (appState == null) return;
+    final data = _buildChildModeData(appState);
+    if (data == null) return;
+
+    ref.read(zeniHapticsProvider).selection();
+    final result = await ref
+        .read(zeniTtsServiceProvider)
+        .speakForChild(
+          child: data.child,
+          title: reward.title,
+          description: reward.description,
+        );
+    if (!mounted || result.didSpeak) return;
+
+    ZeniInfoPopup.show(
+      context,
+      title: 'Leitura em voz alta',
+      message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
+    );
   }
 
   GlobalKey _missionAnchorKeyFor(String missionId) {
@@ -142,10 +191,15 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         );
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'child_submit_mission');
+
     final shouldAwardNow =
         mission.approvalMode == MissionApprovalMode.automatic;
 
     if (shouldAwardNow) {
+      ref.read(zeniHapticsProvider).celebrate();
       _animateEarnedStar(sourceKey);
       ZeniSuccessPopup.show(
         context,
@@ -153,6 +207,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         message: 'Você ganhou ${mission.stars} estrelas.',
       );
     } else {
+      ref.read(zeniHapticsProvider).confirm();
       ZeniInfoPopup.show(
         context,
         title: 'Missão enviada!',
@@ -173,14 +228,12 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         _centerFor(_balancePillKey) ??
         Offset(screenSize.width - 56, mediaQuery?.padding.top ?? 44);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      try {
-        ZeniFlyingStarOverlay.show(context: context, from: from, to: to);
-      } catch (_) {
-        // Ignore visual animation failures so mission completion keeps working.
-      }
-    });
+    notifyDebugFlyingStarShown(from, to);
+    try {
+      ZeniFlyingStarOverlay.show(context: context, from: from, to: to);
+    } catch (_) {
+      // Ignore visual animation failures so mission completion keeps working.
+    }
   }
 
   Offset? _centerFor(GlobalKey? key) {
@@ -204,6 +257,10 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     ref
         .read(missionRepositoryProvider)
         .cancelMissionSubmission(missionId: mission.id, childId: data.child.id);
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'child_cancel_mission_submission');
+    ref.read(zeniHapticsProvider).cancel();
 
     ZeniSuccessPopup.show(
       context,
@@ -219,6 +276,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     if (data == null) return;
 
     if (data.child.starBalance < reward.cost) {
+      ref.read(zeniHapticsProvider).warn();
       ZeniInfoPopup.show(
         context,
         title: 'Continue conquistando!',
@@ -232,10 +290,30 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         .requestReward(childId: data.child.id, reward: reward);
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'child_request_reward');
+    ref.read(zeniHapticsProvider).confirm();
+
     ZeniSuccessPopup.show(
       context,
       title: 'Mimo solicitado!',
       message: '${reward.cost} estrelas foram reservadas para esse mimo.',
+    );
+  }
+
+  Future<void> _undoMissionCompletion(Mission mission, MissionLog log) async {
+    await ref.read(missionRepositoryProvider).undoMissionCompletion(log.id);
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'child_undo_auto_mission');
+    ref.read(zeniHapticsProvider).cancel();
+    ZeniInfoPopup.show(
+      context,
+      title: 'Conclusão desfeita',
+      message: '${mission.title} voltou para as missões pendentes.',
     );
   }
 
@@ -273,7 +351,10 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             missionAnchorKeyFor: _missionAnchorKeyFor,
             onCompleteMission: _completeMission,
             onCancelMissionSubmission: _cancelMissionSubmission,
+            onUndoMissionCompletion: _undoMissionCompletion,
+            onListenToMission: _listenToMission,
             onOpenRewards: () {
+              ref.read(zeniHapticsProvider).selection();
               setState(() {
                 _currentIndex = 2;
               });
@@ -285,6 +366,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             missionAnchorKeyFor: _missionAnchorKeyFor,
             onCompleteMission: _completeMission,
             onCancelMissionSubmission: _cancelMissionSubmission,
+            onUndoMissionCompletion: _undoMissionCompletion,
+            onListenToMission: _listenToMission,
           ),
           ChildRewardsTab(
             childBalance: data.child.starBalance,
@@ -292,6 +375,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             pendingRewardRequests: data.pendingRewardRequests,
             rewardById: data.rewardById,
             onRedeemReward: _redeemReward,
+            onListenToReward: _listenToReward,
           ),
           _ChildBalancePage(data: data),
         ];
@@ -305,6 +389,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
                 tooltip: 'Trocar perfil',
                 icon: const Icon(Icons.swap_horiz_rounded),
                 onPressed: () {
+                  ref.read(zeniHapticsProvider).selection();
                   context.go('/');
                 },
               ),
@@ -320,6 +405,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
           bottomNavigationBar: ZeniBottomNavBar(
             currentIndex: _currentIndex,
             onTap: (index) {
+              ref.read(zeniHapticsProvider).selection();
               setState(() {
                 _currentIndex = index;
               });

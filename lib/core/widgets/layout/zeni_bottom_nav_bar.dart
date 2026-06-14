@@ -5,11 +5,13 @@ class ZeniBottomNavItem {
     required this.icon,
     required this.selectedIcon,
     required this.label,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+  final int badgeCount;
 }
 
 class ZeniBottomNavBar extends StatelessWidget {
@@ -32,10 +34,53 @@ class ZeniBottomNavBar extends StatelessWidget {
       destinations: [
         for (final item in items)
           NavigationDestination(
-            icon: Icon(item.icon),
-            selectedIcon: Icon(item.selectedIcon),
+            icon: _BadgeIcon(icon: item.icon, badgeCount: item.badgeCount),
+            selectedIcon: _BadgeIcon(
+              icon: item.selectedIcon,
+              badgeCount: item.badgeCount,
+            ),
             label: item.label,
           ),
+      ],
+    );
+  }
+}
+
+class _BadgeIcon extends StatelessWidget {
+  const _BadgeIcon({required this.icon, required this.badgeCount});
+
+  final IconData icon;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    if (badgeCount <= 0) {
+      return Icon(icon);
+    }
+
+    final label = badgeCount > 99 ? '99+' : '$badgeCount';
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        Positioned(
+          top: -6,
+          right: -10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.error,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

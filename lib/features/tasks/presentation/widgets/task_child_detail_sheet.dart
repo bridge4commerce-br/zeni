@@ -11,13 +11,24 @@ import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/mission.dart';
 import '../../data/models/mission_log.dart';
 
-enum TaskChildDetailAction { complete, cancelSubmission }
+enum TaskChildDetailAction {
+  listen,
+  complete,
+  cancelSubmission,
+  undoCompletion,
+}
 
 class TaskChildDetailSheet extends StatelessWidget {
-  const TaskChildDetailSheet({super.key, required this.mission, this.log});
+  const TaskChildDetailSheet({
+    super.key,
+    required this.mission,
+    this.log,
+    this.canUndoCompletion = false,
+  });
 
   final Mission mission;
   final MissionLog? log;
+  final bool canUndoCompletion;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +117,14 @@ class TaskChildDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: ZeniSpacing.xl),
+            ZeniSecondaryButton(
+              label: 'Ouvir',
+              icon: Icons.volume_up_rounded,
+              onPressed: () {
+                Navigator.of(context).pop(TaskChildDetailAction.listen);
+              },
+            ),
+            const SizedBox(height: ZeniSpacing.md),
             if (status == MissionLogStatus.pending)
               ZeniPrimaryButton(
                 label: 'Concluir missão',
@@ -125,12 +144,28 @@ class TaskChildDetailSheet extends StatelessWidget {
                 },
               ),
             if (status == MissionLogStatus.approved)
-              ZeniSecondaryButton(
-                label: 'Fechar',
-                icon: Icons.check_circle_rounded,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
+              Column(
+                children: [
+                  if (canUndoCompletion) ...[
+                    ZeniSecondaryButton(
+                      label: 'Desfazer conclusão',
+                      icon: Icons.undo_rounded,
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pop(TaskChildDetailAction.undoCompletion);
+                      },
+                    ),
+                    const SizedBox(height: ZeniSpacing.md),
+                  ],
+                  ZeniSecondaryButton(
+                    label: 'Fechar',
+                    icon: Icons.check_circle_rounded,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
               ),
           ],
         ),

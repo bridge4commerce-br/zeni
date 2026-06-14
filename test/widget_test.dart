@@ -75,6 +75,10 @@ void main() {
     required ZeniAuthState authState,
     AppSettings appSettings = const AppSettings(),
     bool isSupabaseConfigured = true,
+    ZeniSupabaseBootstrapState supabaseBootstrapState =
+        const ZeniSupabaseBootstrapState.initialized(),
+    bool isGoogleSignInAvailable = true,
+    bool isAppleSignInAvailable = false,
     RemoteFamilySummary? remoteFamilySummary,
     Future<ZeniUpdateRemoteFamilyResult> Function({
       required String familyId,
@@ -152,6 +156,9 @@ void main() {
           lastStarLedgerSyncAt: appSettings.lastStarLedgerSyncAt,
           lastFullSyncAt: appSettings.lastFullSyncAt,
           isSupabaseConfigured: isSupabaseConfigured,
+          supabaseBootstrapState: supabaseBootstrapState,
+          isGoogleSignInAvailable: isGoogleSignInAvailable,
+          isAppleSignInAvailable: isAppleSignInAvailable,
           showHistoricalRestoreStatus: showHistoricalRestoreStatus,
           showDeviceBootstrapStatus: showDeviceBootstrapStatus,
           showDeviceBootstrapAction: showDeviceBootstrapAction,
@@ -725,12 +732,6 @@ void main() {
           .asData!
           .value;
 
-      expect(
-        find.text(
-          'Faça login para continuar. A restauração só acontece quando você tocar no botão.',
-        ),
-        findsOneWidget,
-      );
       expect(find.text('Conta da família'), findsOneWidget);
       expect(state.children, isEmpty);
       expect(state.missions, isEmpty);
@@ -739,7 +740,7 @@ void main() {
   );
 
   testWidgets(
-    'already have account opens login flow and restores remote structure',
+    'after login first access shows restore my family and hides already have account',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       await enableSupabaseForTests();
@@ -838,37 +839,23 @@ void main() {
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
 
+      expect(find.text('Conta conectada'), findsOneWidget);
       expect(
         find.text(
-          'Vamos restaurar os dados principais desta família neste aparelho.',
+          'Encontramos dados salvos na nuvem. Vamos trazer sua família para este aparelho.',
         ),
-        findsWidgets,
+        findsOneWidget,
       );
+      expect(find.text('Restaurar minha família'), findsOneWidget);
+      expect(find.text('Começar nova família neste aparelho'), findsOneWidget);
+      expect(find.text('Já tenho conta'), findsNothing);
       expect(
         find.text('Restaurar dados da nuvem neste aparelho'),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
-      expect(find.text('O que será restaurado'), findsOneWidget);
-      expect(find.text('Família'), findsOneWidget);
-      expect(find.text('Crianças'), findsOneWidget);
-      expect(find.text('Missões'), findsOneWidget);
-      expect(find.text('Mimos'), findsOneWidget);
-      expect(
-        find.text('O que ainda não será restaurado nesta fase'),
-        findsOneWidget,
-      );
-      expect(find.text('Saldo'), findsOneWidget);
-      expect(find.text('Histórico'), findsOneWidget);
-      expect(find.text('Sequência'), findsOneWidget);
-      expect(find.text('Pedidos e conclusões anteriores'), findsOneWidget);
 
-      await tester.scrollUntilVisible(
-        find.text('Restaurar dados da nuvem neste aparelho'),
-        300,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+      await tester.tap(find.text('Restaurar minha família'));
       await tester.pumpAndSettle();
 
       expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
@@ -949,17 +936,12 @@ void main() {
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('Restaurar dados da nuvem neste aparelho'),
-        300,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Restaurar dados da nuvem neste aparelho'));
+      await tester.tap(find.text('Restaurar minha família'));
       await tester.pumpAndSettle();
 
       expect(
         find.text('Nenhum dado remoto foi encontrado para restaurar.'),
-        findsOneWidget,
+        findsWidgets,
       );
       expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
     },
@@ -2183,6 +2165,10 @@ void main() {
                 lastStarLedgerSyncAt: null,
                 lastFullSyncAt: null,
                 isSupabaseConfigured: true,
+                supabaseBootstrapState:
+                    const ZeniSupabaseBootstrapState.initialized(),
+                isGoogleSignInAvailable: true,
+                isAppleSignInAvailable: false,
                 showHistoricalRestoreStatus: false,
                 showDeviceBootstrapStatus: false,
                 showDeviceBootstrapAction: false,

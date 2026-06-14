@@ -47,6 +47,51 @@ void main() {
   });
 
   test(
+    'auth repository returns build without cloud message when unconfigured',
+    () async {
+      final repository = SupabaseAuthRepository(client: null);
+
+      final result = await repository.signInWithEmailPassword(
+        email: 'responsavel@zeni.app',
+        password: '123456',
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(
+        result.message,
+        'A conexão com a nuvem não foi incluída neste build.',
+      );
+    },
+  );
+
+  test(
+    'auth repository returns initialization failure message when bootstrap failed',
+    () async {
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://zeni.test.supabase.co',
+          anonKey: 'anon-key',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {
+          throw Exception('boom');
+        },
+      );
+
+      final repository = SupabaseAuthRepository(client: null);
+      final result = await repository.signInWithEmailPassword(
+        email: 'responsavel@zeni.app',
+        password: '123456',
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(
+        result.message,
+        'A conexão com a nuvem falhou ao iniciar. Tente reinstalar ou contate o suporte.',
+      );
+    },
+  );
+
+  test(
     'auth state provider resolves unauthenticated when supabase is absent',
     () async {
       final container = ProviderContainer();

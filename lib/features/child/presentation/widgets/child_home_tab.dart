@@ -29,6 +29,8 @@ class ChildHomeTab extends StatelessWidget {
     required this.missionAnchorKeyFor,
     required this.onCompleteMission,
     required this.onCancelMissionSubmission,
+    required this.onUndoMissionCompletion,
+    required this.onListenToMission,
     required this.onOpenRewards,
   });
 
@@ -43,6 +45,8 @@ class ChildHomeTab extends StatelessWidget {
   onCompleteMission;
   final void Function(Mission mission, MissionLog? log)
   onCancelMissionSubmission;
+  final void Function(Mission mission) onListenToMission;
+  final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
   final VoidCallback onOpenRewards;
 
   @override
@@ -157,7 +161,13 @@ class ChildHomeTab extends StatelessWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: TaskChildDetailSheet(mission: mission, log: log),
+          child: TaskChildDetailSheet(
+            mission: mission,
+            log: log,
+            canUndoCompletion:
+                log?.status == MissionLogStatus.approved &&
+                mission.approvalMode == MissionApprovalMode.automatic,
+          ),
         );
       },
     );
@@ -171,8 +181,15 @@ class ChildHomeTab extends StatelessWidget {
           logForMission(mission.id),
           missionAnchorKeyFor('home:${mission.id}'),
         );
+      case TaskChildDetailAction.listen:
+        onListenToMission(mission);
       case TaskChildDetailAction.cancelSubmission:
         onCancelMissionSubmission(mission, logForMission(mission.id));
+      case TaskChildDetailAction.undoCompletion:
+        final approvedLog = logForMission(mission.id);
+        if (approvedLog != null) {
+          onUndoMissionCompletion(mission, approvedLog);
+        }
       case null:
         break;
     }

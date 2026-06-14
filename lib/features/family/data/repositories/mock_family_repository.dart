@@ -48,6 +48,7 @@ class MockFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) {
     return _ref
         .read(zeniAppStateControllerProvider.notifier)
@@ -56,6 +57,7 @@ class MockFamilyRepository implements FamilyRepository {
           name: name,
           emoji: emoji,
           birthDate: birthDate,
+          ttsEnabled: ttsEnabled,
         );
   }
 
@@ -65,6 +67,7 @@ class MockFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) {
     return _ref
         .read(zeniAppStateControllerProvider.notifier)
@@ -73,6 +76,7 @@ class MockFamilyRepository implements FamilyRepository {
           name: name,
           emoji: emoji,
           birthDate: birthDate,
+          ttsEnabled: ttsEnabled,
         );
   }
 

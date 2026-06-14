@@ -50,6 +50,10 @@ Widget buildStaticSettingsHarness({
   required ZeniAuthState authState,
   AppSettings appSettings = const AppSettings(),
   bool isSupabaseConfigured = true,
+  ZeniSupabaseBootstrapState supabaseBootstrapState =
+      const ZeniSupabaseBootstrapState.initialized(),
+  bool isGoogleSignInAvailable = true,
+  bool isAppleSignInAvailable = false,
   RemoteFamilySummary? remoteFamilySummary,
   Future<ZeniUpdateRemoteFamilyResult> Function({
     required String familyId,
@@ -127,6 +131,9 @@ Widget buildStaticSettingsHarness({
         lastStarLedgerSyncAt: appSettings.lastStarLedgerSyncAt,
         lastFullSyncAt: appSettings.lastFullSyncAt,
         isSupabaseConfigured: isSupabaseConfigured,
+        supabaseBootstrapState: supabaseBootstrapState,
+        isGoogleSignInAvailable: isGoogleSignInAvailable,
+        isAppleSignInAvailable: isAppleSignInAvailable,
         showHistoricalRestoreStatus: showHistoricalRestoreStatus,
         showDeviceBootstrapStatus: showDeviceBootstrapStatus,
         showDeviceBootstrapAction: showDeviceBootstrapAction,

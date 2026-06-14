@@ -17,6 +17,8 @@ class ChildMissionsTab extends StatelessWidget {
     required this.missionAnchorKeyFor,
     required this.onCompleteMission,
     required this.onCancelMissionSubmission,
+    required this.onUndoMissionCompletion,
+    required this.onListenToMission,
   });
 
   final List<Mission> missions;
@@ -26,6 +28,8 @@ class ChildMissionsTab extends StatelessWidget {
   onCompleteMission;
   final void Function(Mission mission, MissionLog? log)
   onCancelMissionSubmission;
+  final void Function(Mission mission) onListenToMission;
+  final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +81,10 @@ class ChildMissionsTab extends StatelessWidget {
                               child: TaskChildDetailSheet(
                                 mission: mission,
                                 log: log,
+                                canUndoCompletion:
+                                    log?.status == MissionLogStatus.approved &&
+                                    mission.approvalMode ==
+                                        MissionApprovalMode.automatic,
                               ),
                             );
                           },
@@ -91,11 +99,18 @@ class ChildMissionsTab extends StatelessWidget {
                           logForMission(mission.id),
                           missionAnchorKeyFor('missions:${mission.id}'),
                         );
+                      case TaskChildDetailAction.listen:
+                        onListenToMission(mission);
                       case TaskChildDetailAction.cancelSubmission:
                         onCancelMissionSubmission(
                           mission,
                           logForMission(mission.id),
                         );
+                      case TaskChildDetailAction.undoCompletion:
+                        final approvedLog = logForMission(mission.id);
+                        if (approvedLog != null) {
+                          onUndoMissionCompletion(mission, approvedLog);
+                        }
                       case null:
                         break;
                     }

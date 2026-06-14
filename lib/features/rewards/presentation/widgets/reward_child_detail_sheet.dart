@@ -10,7 +10,7 @@ import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/reward.dart';
 
-enum RewardChildDetailAction { redeem }
+enum RewardChildDetailAction { listen, redeem }
 
 class RewardChildDetailSheet extends StatelessWidget {
   const RewardChildDetailSheet({
@@ -99,6 +99,14 @@ class RewardChildDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: ZeniSpacing.xl),
+            ZeniSecondaryButton(
+              label: 'Ouvir',
+              icon: Icons.volume_up_rounded,
+              onPressed: () {
+                Navigator.of(context).pop(RewardChildDetailAction.listen);
+              },
+            ),
+            const SizedBox(height: ZeniSpacing.md),
             if (canRedeem)
               ZeniPrimaryButton(
                 label: 'Pedir mimo',

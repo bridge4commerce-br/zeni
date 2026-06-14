@@ -8,9 +8,13 @@ import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
+import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/widgets/feedback/zeni_error_popup.dart';
+import '../../../../core/widgets/feedback/zeni_info_popup.dart';
+import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
-import '../../../sync/presentation/providers/device_bootstrap_providers.dart';
+import '../../../sync/presentation/providers/first_access_restore_providers.dart';
 
 class InitialStartChoicePage extends ConsumerStatefulWidget {
   const InitialStartChoicePage({super.key});
@@ -24,7 +28,6 @@ class _InitialStartChoicePageState
     extends ConsumerState<InitialStartChoicePage> {
   bool _isReadyToRestore = false;
   bool _isRestoring = false;
-  bool _restorationFailed = false;
   String? _restoreMessage;
 
   @override
@@ -44,81 +47,75 @@ class _InitialStartChoicePageState
             Text('Como você quer começar?', style: textTheme.displayLarge),
             const SizedBox(height: ZeniSpacing.sm),
             Text(
-              'Você pode montar uma nova família agora ou aguardar a restauração da nuvem na próxima etapa.',
+              _isReadyToRestore
+                  ? 'Sua conta já foi conectada. Agora vamos preparar este aparelho com segurança.'
+                  : 'Você pode montar uma nova família agora ou entrar na sua conta para restaurar o que já estava salvo.',
               style: textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
             ),
             const SizedBox(height: ZeniSpacing.xl),
-            _ChoiceCard(
-              title: 'Começar nova família',
-              subtitle:
-                  'Cadastre uma criança, crie missões e escolha os primeiros mimos.',
-              icon: Icons.family_restroom_rounded,
-              onTap: () {
-                context.go('/initial-setup');
-              },
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            _ChoiceCard(
-              title: 'Já tenho conta',
-              subtitle:
-                  'Use sua conta para recuperar uma família já sincronizada neste aparelho.',
-              icon: Icons.cloud_sync_rounded,
-              onTap: _startRemoteRestore,
-            ),
-            if (_isReadyToRestore) ...[
-              const SizedBox(height: ZeniSpacing.lg),
-              const _RestoreScopeCard(),
-            ],
-            if (_restoreMessage != null) ...[
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniCard(
-                padding: const EdgeInsets.all(ZeniSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      _restorationFailed
-                          ? Icons.error_outline_rounded
-                          : _isRestoring
-                          ? Icons.sync_rounded
-                          : Icons.info_outline_rounded,
-                      color: _restorationFailed
-                          ? Theme.of(context).colorScheme.error
-                          : ZeniColors.primaryDark,
-                    ),
-                    const SizedBox(width: ZeniSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        _restoreMessage!,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: _restorationFailed
-                              ? Theme.of(context).colorScheme.error
-                              : null,
+            if (!_isReadyToRestore) ...[
+              _ChoiceCard(
+                title: 'Começar nova família',
+                subtitle:
+                    'Cadastre uma criança, crie missões e escolha os primeiros mimos.',
+                icon: Icons.family_restroom_rounded,
+                onTap: () {
+                  context.go('/initial-setup');
+                },
+              ),
+              const SizedBox(height: ZeniSpacing.md),
+              _ChoiceCard(
+                title: 'Já tenho conta',
+                subtitle:
+                    'Use sua conta para recuperar uma família já sincronizada neste aparelho.',
+                icon: Icons.cloud_sync_rounded,
+                onTap: _startRemoteRestore,
+              ),
+            ] else ...[
+              const _ConnectedAccountCard(),
+              if (_restoreMessage != null) ...[
+                const SizedBox(height: ZeniSpacing.lg),
+                ZeniCard(
+                  padding: const EdgeInsets.all(ZeniSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        _isRestoring
+                            ? Icons.sync_rounded
+                            : Icons.info_outline_rounded,
+                        color: ZeniColors.primaryDark,
+                      ),
+                      const SizedBox(width: ZeniSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _restoreMessage!,
+                          style: textTheme.bodyMedium,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            if (_isReadyToRestore) ...[
+              ],
               const SizedBox(height: ZeniSpacing.lg),
               ZeniPrimaryButton(
                 label: _isRestoring
-                    ? 'Restaurando dados da nuvem...'
-                    : 'Restaurar dados da nuvem neste aparelho',
+                    ? 'Restaurando...'
+                    : 'Restaurar minha família',
                 icon: Icons.cloud_download_rounded,
                 onPressed: _isRestoring ? null : _runRemoteRestore,
               ),
+              const SizedBox(height: ZeniSpacing.md),
+              ZeniSecondaryButton(
+                label: 'Começar nova família neste aparelho',
+                icon: Icons.arrow_forward_rounded,
+                onPressed: _isRestoring
+                    ? null
+                    : () {
+                        context.go('/initial-setup');
+                      },
+              ),
             ],
-            const SizedBox(height: ZeniSpacing.xl),
-            ZeniPrimaryButton(
-              label: 'Começar nova família',
-              icon: Icons.arrow_forward_rounded,
-              onPressed: () {
-                context.go('/initial-setup');
-              },
-            ),
           ],
         ),
       ),
@@ -129,9 +126,8 @@ class _InitialStartChoicePageState
     setState(() {
       _isReadyToRestore = false;
       _isRestoring = false;
-      _restorationFailed = false;
       _restoreMessage =
-          'Faça login para continuar. A restauração só acontece quando você tocar no botão.';
+          'Faça login para continuar. A restauração completa só começa quando você tocar em "Restaurar minha família".';
     });
 
     final didAuthenticate = await showModalBottomSheet<bool>(
@@ -145,6 +141,7 @@ class _InitialStartChoicePageState
           ),
           child: AuthAccountSheet(
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+            bootstrapState: ZeniSupabaseBootstrap.state,
           ),
         );
       },
@@ -155,38 +152,54 @@ class _InitialStartChoicePageState
     setState(() {
       _isReadyToRestore = true;
       _isRestoring = false;
-      _restorationFailed = false;
-      _restoreMessage =
-          'Vamos restaurar os dados principais desta família neste aparelho.';
+      _restoreMessage = null;
     });
   }
 
   Future<void> _runRemoteRestore() async {
     setState(() {
       _isRestoring = true;
-      _restorationFailed = false;
-      _restoreMessage =
-          'Restaurando família, crianças, missões e mimos salvos na nuvem...';
+      _restoreMessage = 'Restaurando...';
     });
 
     final result = await ref
-        .read(deviceBootstrapControllerProvider)
-        .bootstrapFromRemoteFamily();
+        .read(firstAccessRestoreControllerProvider)
+        .restoreFamilyOnEmptyDevice();
     if (!mounted) return;
 
     setState(() {
       _isRestoring = false;
-      _restorationFailed = !result.isSuccess;
       _restoreMessage = result.message;
-      if (result.isSuccess) {
-        _isReadyToRestore = false;
-      }
     });
+
+    if (result.status == FirstAccessRestoreResultStatus.success) {
+      await ZeniSuccessPopup.show(
+        context,
+        title: 'Família restaurada',
+        message: result.message,
+      );
+      return;
+    }
+
+    if (result.status == FirstAccessRestoreResultStatus.partialSuccess) {
+      await ZeniInfoPopup.show(
+        context,
+        title: 'Família restaurada',
+        message: result.message,
+      );
+      return;
+    }
+
+    await ZeniErrorPopup.show(
+      context,
+      title: 'Não foi possível restaurar agora',
+      message: result.message,
+    );
   }
 }
 
-class _RestoreScopeCard extends StatelessWidget {
-  const _RestoreScopeCard();
+class _ConnectedAccountCard extends StatelessWidget {
+  const _ConnectedAccountCard();
 
   @override
   Widget build(BuildContext context) {
@@ -194,69 +207,22 @@ class _RestoreScopeCard extends StatelessWidget {
 
     return ZeniCard(
       padding: const EdgeInsets.all(ZeniSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Vamos restaurar os dados principais desta família neste aparelho.',
-            style: textTheme.bodyLarge,
-          ),
-          const SizedBox(height: ZeniSpacing.md),
-          Text(
-            'O que será restaurado',
-            style: textTheme.titleMedium,
-          ),
-          const SizedBox(height: ZeniSpacing.xs),
-          const _RestoreBullet('Família'),
-          const _RestoreBullet('Crianças'),
-          const _RestoreBullet('Missões'),
-          const _RestoreBullet('Mimos'),
-          const SizedBox(height: ZeniSpacing.md),
-          Text(
-            'O que ainda não será restaurado nesta fase',
-            style: textTheme.titleMedium?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.xs),
-          const _RestoreBullet('Saldo', muted: true),
-          const _RestoreBullet('Histórico', muted: true),
-          const _RestoreBullet('Sequência', muted: true),
-          const _RestoreBullet('Pedidos e conclusões anteriores', muted: true),
-          const SizedBox(height: ZeniSpacing.md),
-          Text(
-            'A restauração é segura e não apaga os dados deste aparelho.',
-            style: textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RestoreBullet extends StatelessWidget {
-  const _RestoreBullet(this.label, {this.muted = false});
-
-  final String label;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: ZeniSpacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '• ',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: muted ? ZeniColors.mutedText : null,
-            ),
-          ),
+          const Icon(Icons.cloud_done_rounded, color: ZeniColors.primaryDark),
+          const SizedBox(width: ZeniSpacing.sm),
           Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: muted ? ZeniColors.mutedText : null,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Conta conectada', style: textTheme.titleLarge),
+                const SizedBox(height: ZeniSpacing.xs),
+                Text(
+                  'Encontramos dados salvos na nuvem. Vamos trazer sua família para este aparelho.',
+                  style: textTheme.bodyMedium,
+                ),
+              ],
             ),
           ),
         ],

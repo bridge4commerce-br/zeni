@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/accessibility/zeni_accessibility_controller.dart';
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/feedback/zeni_haptics.dart';
 import '../../../../core/providers/zeni_repository_providers.dart';
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
@@ -47,6 +48,7 @@ import '../../../sync/presentation/providers/cloud_consistency_providers.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
 import '../../../sync/presentation/providers/device_bootstrap_providers.dart';
 import '../../../sync/presentation/providers/historical_restore_providers.dart';
+import '../../../sync/presentation/providers/opportunistic_sync_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
@@ -135,6 +137,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
         );
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_create_mission');
+    await ref.read(zeniHapticsProvider).confirm();
+    if (!mounted) return;
+
     ZeniSuccessPopup.show(
       context,
       title: 'Missão criada!',
@@ -186,6 +194,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (updatedMission == null) return;
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_update_mission');
+    await ref.read(zeniHapticsProvider).confirm();
+    if (!mounted) return;
+
     ZeniSuccessPopup.show(
       context,
       title: 'Missão atualizada!',
@@ -224,6 +238,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (archivedMission == null) return;
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_archive_mission');
+    await ref.read(zeniHapticsProvider).cancel();
+    if (!mounted) return;
+
     ZeniInfoPopup.show(
       context,
       title: 'Missão arquivada',
@@ -237,6 +257,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
         .read(missionRepositoryProvider)
         .restoreMission(mission.id);
     if (restoredMission == null) return;
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_restore_mission');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -279,6 +305,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           cost: result.cost,
           renewal: result.renewal,
         );
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_create_reward');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -327,6 +359,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (updatedReward == null) return;
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_update_reward');
+    await ref.read(zeniHapticsProvider).confirm();
+    if (!mounted) return;
+
     ZeniSuccessPopup.show(
       context,
       title: 'Mimo atualizado!',
@@ -365,6 +403,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (archivedReward == null) return;
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_archive_reward');
+    await ref.read(zeniHapticsProvider).cancel();
+    if (!mounted) return;
+
     ZeniInfoPopup.show(
       context,
       title: 'Mimo arquivado',
@@ -378,6 +422,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
         .read(rewardRepositoryProvider)
         .restoreReward(reward.id);
     if (restoredReward == null) return;
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_restore_reward');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -470,6 +520,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     await ref.read(missionRepositoryProvider).approveMissionLog(log.id);
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_approve_mission');
+    await ref.read(zeniHapticsProvider).confirm();
+    if (!mounted) return;
+
     ZeniSuccessPopup.show(
       context,
       title: 'Missão aprovada!',
@@ -485,6 +541,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     final child = data.childById(log.childId);
     final mission = data.missionById(log.missionId);
     await ref.read(missionRepositoryProvider).rejectMissionLog(log.id);
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_reject_mission');
+    await ref.read(zeniHapticsProvider).cancel();
     if (!mounted) return;
 
     ZeniInfoPopup.show(
@@ -508,6 +570,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     await ref.read(rewardRepositoryProvider).rejectRewardRequest(request.id);
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_reject_reward');
+    await ref.read(zeniHapticsProvider).cancel();
+    if (!mounted) return;
+
     ZeniInfoPopup.show(
       context,
       title: 'Pedido rejeitado',
@@ -524,6 +592,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     final child = data.childById(request.childId);
     final reward = data.rewardById(request.rewardId);
     await ref.read(rewardRepositoryProvider).approveRewardRequest(request.id);
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_approve_reward');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -543,6 +617,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     }
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_approve_mission_batch');
+    await ref.read(zeniHapticsProvider).confirm();
+    if (!mounted) return;
+
     ZeniSuccessPopup.show(
       context,
       title: 'Missões aprovadas!',
@@ -558,6 +638,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     }
     if (!mounted) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_reject_mission_batch');
+    await ref.read(zeniHapticsProvider).cancel();
+    if (!mounted) return;
+
     ZeniInfoPopup.show(
       context,
       title: 'Missões rejeitadas',
@@ -571,6 +657,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     for (final request in requests) {
       await ref.read(rewardRepositoryProvider).approveRewardRequest(request.id);
     }
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_approve_reward_batch');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -592,6 +684,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
       totalRefunded += reward?.cost ?? 0;
       await ref.read(rewardRepositoryProvider).rejectRewardRequest(request.id);
     }
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_reject_reward_batch');
+    await ref.read(zeniHapticsProvider).cancel();
     if (!mounted) return;
 
     ZeniInfoPopup.show(
@@ -631,7 +729,14 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           name: result.name,
           emoji: result.emoji,
           birthDate: result.birthDate,
+          ttsEnabled: result.ttsEnabled,
         );
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_create_child');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -658,6 +763,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             initialName: child.name,
             initialEmoji: child.emoji,
             initialBirthDate: child.birthDate,
+            initialTtsEnabled: child.ttsEnabled,
             title: 'Editar perfil',
             submitLabel: 'Salvar perfil',
           ),
@@ -675,8 +781,15 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           name: result.name,
           emoji: result.emoji,
           birthDate: result.birthDate,
+          ttsEnabled: result.ttsEnabled,
         );
     if (updatedChild == null) return;
+    if (!mounted) return;
+
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .scheduleSync(reason: 'parent_update_child');
+    await ref.read(zeniHapticsProvider).confirm();
     if (!mounted) return;
 
     ZeniSuccessPopup.show(
@@ -750,6 +863,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           ),
           child: AuthAccountSheet(
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+            bootstrapState: ZeniSupabaseBootstrap.state,
           ),
         );
       },
@@ -757,11 +871,15 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
 
     if (!mounted || didAuthenticate != true) return;
 
+    ref
+        .read(zeniOpportunisticSyncControllerProvider)
+        .syncNowBestEffort(reason: 'parent_login_completed');
+
     await ZeniSuccessPopup.show(
       context,
       title: 'Conta conectada!',
       message:
-          'Sua conta foi vinculada neste aparelho. A sincronização virá em uma próxima etapa.',
+          'Sua conta foi vinculada neste aparelho. O app continuará salvando localmente e tentará sincronizar quando a nuvem estiver disponível.',
     );
   }
 
@@ -904,6 +1022,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               isEnabled: false,
               message: null,
             );
+        final notificationsEnabled = appData.appSettings.notificationsEnabled;
+        final pendingNotificationCount = notificationsEnabled
+            ? data.awaitingLogs.length + data.pendingRequests.length
+            : 0;
 
         final pages = [
           _ParentDashboardPage(
@@ -1014,6 +1136,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             lastStarLedgerSyncAt: appData.appSettings.lastStarLedgerSyncAt,
             lastFullSyncAt: appData.appSettings.lastFullSyncAt,
             isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+            supabaseBootstrapState: ZeniSupabaseBootstrap.state,
+            isGoogleSignInAvailable: ref.watch(googleSignInAvailableProvider),
+            isAppleSignInAvailable: ref.watch(appleSignInAvailableProvider),
             showHistoricalRestoreStatus: historicalRestoreActionState.isVisible,
             showDeviceBootstrapStatus: deviceBootstrapActionState.isVisible,
             showDeviceBootstrapAction: deviceBootstrapActionState.showAction,
@@ -1059,22 +1184,46 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                 tooltip: 'Trocar perfil',
                 icon: const Icon(Icons.swap_horiz_rounded),
                 onPressed: () {
+                  ref.read(zeniHapticsProvider).selection();
                   context.go('/');
                 },
               ),
               const SizedBox(width: ZeniSpacing.sm),
-              ZeniIconActionButton(
-                icon: Icons.notifications_none_rounded,
-                tooltip: 'Notificações',
-                tone: ZeniIconActionTone.primary,
-                onPressed: () {
-                  ZeniInfoPopup.show(
-                    context,
-                    title: 'Notificações',
-                    message:
-                        'Aqui entrarão aprovações de missões, pedidos de mimos e lembretes.',
-                  );
-                },
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ZeniIconActionButton(
+                    icon: Icons.notifications_none_rounded,
+                    tooltip: 'Notificações',
+                    tone: ZeniIconActionTone.primary,
+                    onPressed: () {
+                      ref.read(zeniHapticsProvider).selection();
+                      if (!notificationsEnabled) {
+                        ZeniInfoPopup.show(
+                          context,
+                          title: 'Notificações desativadas',
+                          message:
+                              'Ative as notificações nos ajustes para destacar novas pendências do responsável.',
+                        );
+                        return;
+                      }
+                      showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (context) {
+                          return _PendingNotificationsSheet(data: data);
+                        },
+                      );
+                    },
+                  ),
+                  if (pendingNotificationCount > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: _PendingBadge(count: pendingNotificationCount),
+                    ),
+                ],
               ),
               const SizedBox(width: ZeniSpacing.sm),
             ],
@@ -1092,11 +1241,12 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           bottomNavigationBar: ZeniBottomNavBar(
             currentIndex: _currentIndex,
             onTap: (index) {
+              ref.read(zeniHapticsProvider).selection();
               setState(() {
                 _currentIndex = index;
               });
             },
-            items: const [
+            items: [
               ZeniBottomNavItem(
                 icon: Icons.dashboard_outlined,
                 selectedIcon: Icons.dashboard_rounded,
@@ -1106,11 +1256,15 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                 icon: Icons.check_circle_outline_rounded,
                 selectedIcon: Icons.check_circle_rounded,
                 label: 'Missões',
+                badgeCount: notificationsEnabled ? data.awaitingLogs.length : 0,
               ),
               ZeniBottomNavItem(
                 icon: Icons.card_giftcard_outlined,
                 selectedIcon: Icons.card_giftcard_rounded,
                 label: 'Mimos',
+                badgeCount: notificationsEnabled
+                    ? data.pendingRequests.length
+                    : 0,
               ),
               ZeniBottomNavItem(
                 icon: Icons.family_restroom_outlined,
@@ -1231,6 +1385,88 @@ class _ParentDashboardPage extends StatelessWidget {
   }
 }
 
+class _PendingNotificationsSheet extends StatelessWidget {
+  const _PendingNotificationsSheet({required this.data});
+
+  final _ParentModeData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: 'Pendências do responsável',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Missões enviadas e pedidos de mimo aparecem aqui até serem resolvidos.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          if (data.awaitingLogs.isEmpty && data.pendingRequests.isEmpty)
+            const Text('Nenhuma pendência no momento.')
+          else ...[
+            if (data.awaitingLogs.isNotEmpty) ...[
+              Text(
+                'Missões aguardando aprovação',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: ZeniSpacing.sm),
+              for (final log in data.awaitingLogs) ...[
+                Text(
+                  '• ${data.childById(log.childId)?.name ?? 'Criança'} enviou ${data.missionById(log.missionId)?.title ?? 'uma missão'}',
+                ),
+                const SizedBox(height: ZeniSpacing.xs),
+              ],
+              const SizedBox(height: ZeniSpacing.md),
+            ],
+            if (data.pendingRequests.isNotEmpty) ...[
+              Text(
+                'Pedidos de mimo',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: ZeniSpacing.sm),
+              for (final request in data.pendingRequests) ...[
+                Text(
+                  '• ${data.childById(request.childId)?.name ?? 'Criança'} pediu ${data.rewardById(request.rewardId)?.title ?? 'um mimo'}',
+                ),
+                const SizedBox(height: ZeniSpacing.xs),
+              ],
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingBadge extends StatelessWidget {
+  const _PendingBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.error,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
 class _ClearLocalDeviceDataSheet extends StatefulWidget {
   const _ClearLocalDeviceDataSheet({required this.onConfirm});
 
@@ -1241,7 +1477,8 @@ class _ClearLocalDeviceDataSheet extends StatefulWidget {
       _ClearLocalDeviceDataSheetState();
 }
 
-class _ClearLocalDeviceDataSheetState extends State<_ClearLocalDeviceDataSheet> {
+class _ClearLocalDeviceDataSheetState
+    extends State<_ClearLocalDeviceDataSheet> {
   final TextEditingController _confirmController = TextEditingController();
   bool _isClearing = false;
   String? _errorText;
@@ -1304,7 +1541,9 @@ class _ClearLocalDeviceDataSheetState extends State<_ClearLocalDeviceDataSheet> 
           const SizedBox(height: ZeniSpacing.lg),
           ZeniSecondaryButton(
             label: 'Cancelar',
-            onPressed: _isClearing ? null : () => Navigator.of(context).pop(false),
+            onPressed: _isClearing
+                ? null
+                : () => Navigator.of(context).pop(false),
           ),
           const SizedBox(height: ZeniSpacing.sm),
           ZeniPrimaryButton(
@@ -1396,9 +1635,7 @@ class _ManageAccountAndDataSheet extends StatelessWidget {
             ),
             trailing: Text(
               'Excluir',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
@@ -1517,9 +1754,9 @@ class _DeleteAccountAndRemoteFamilySheetState
               const SizedBox(height: ZeniSpacing.sm),
               Text(
                 _successText!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: ZeniColors.primaryDark,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.primaryDark),
               ),
               const SizedBox(height: ZeniSpacing.xs),
               Text(
@@ -1532,15 +1769,17 @@ class _DeleteAccountAndRemoteFamilySheetState
             const SizedBox(height: ZeniSpacing.lg),
             ZeniSecondaryButton(
               label: _successText == null ? 'Cancelar' : 'Fechar',
-              onPressed:
-                  _isSubmitting ? null : () => Navigator.of(context).pop(),
+              onPressed: _isSubmitting
+                  ? null
+                  : () => Navigator.of(context).pop(),
             ),
             const SizedBox(height: ZeniSpacing.sm),
             ZeniPrimaryButton(
               label: _isSubmitting
                   ? 'Excluindo...'
                   : 'Excluir conta e dados da nuvem',
-              onPressed: (_isSubmitting ||
+              onPressed:
+                  (_isSubmitting ||
                       !isConfirmationValid ||
                       _successText != null)
                   ? null
@@ -1573,7 +1812,8 @@ class _DeleteAccountAndRemoteFamilySheetState
       _isSubmitting = false;
       if (result.isSuccess) {
         _successText =
-            result.message ?? 'Sua conta e os dados da família foram removidos da nuvem.';
+            result.message ??
+            'Sua conta e os dados da família foram removidos da nuvem.';
       } else {
         _errorText =
             result.message ??

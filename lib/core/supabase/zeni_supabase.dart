@@ -14,6 +14,24 @@ class ZeniSupabaseConfig {
   final String anonKey;
 
   bool get isConfigured => url.trim().isNotEmpty && anonKey.trim().isNotEmpty;
+
+  List<String> get missingKeys {
+    final keys = <String>[];
+    if (url.trim().isEmpty) {
+      keys.add('SUPABASE_URL');
+    }
+    if (anonKey.trim().isEmpty) {
+      keys.add('SUPABASE_ANON_KEY');
+    }
+    return keys;
+  }
+
+  String get missingConfigurationMessage {
+    if (missingKeys.isEmpty) {
+      return 'Supabase configurado.';
+    }
+    return 'Defina ${missingKeys.join(' e ')} para habilitar autenticação, sync, backup e restauração.';
+  }
 }
 
 class ZeniSupabaseBootstrapState {
@@ -27,7 +45,8 @@ class ZeniSupabaseBootstrapState {
     : this(
         isConfigured: false,
         isInitialized: false,
-        message: 'Supabase não configurado.',
+        message:
+            'Supabase não configurado. Defina SUPABASE_URL e SUPABASE_ANON_KEY para habilitar auth e sync.',
       );
 
   const ZeniSupabaseBootstrapState.initialized()
@@ -54,7 +73,11 @@ class ZeniSupabaseBootstrap {
 
   static SupabaseClient? get client {
     if (!_state.isAvailable) return null;
-    return Supabase.instance.client;
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<ZeniSupabaseBootstrapState> initialize({
@@ -64,7 +87,11 @@ class ZeniSupabaseBootstrap {
     final resolvedConfig = config ?? ZeniSupabaseConfig.fromEnvironment();
 
     if (!resolvedConfig.isConfigured) {
-      _state = const ZeniSupabaseBootstrapState.unconfigured();
+      _state = ZeniSupabaseBootstrapState(
+        isConfigured: false,
+        isInitialized: false,
+        message: resolvedConfig.missingConfigurationMessage,
+      );
       return _state;
     }
 
@@ -96,4 +123,21 @@ class ZeniSupabaseBootstrap {
   static void resetForTests() {
     _state = const ZeniSupabaseBootstrapState.unconfigured();
   }
+}
+
+String zeniRedactTechnicalMessage(String? rawMessage) {
+  final message = rawMessage?.trim();
+  if (message == null || message.isEmpty) {
+    return 'Sem mensagem';
+  }
+
+  var sanitized = message.replaceAll(
+    RegExp(r'https?://[^\s,)]+'),
+    '[url oculta]',
+  );
+  sanitized = sanitized.replaceAllMapped(
+    RegExp(r'([A-Za-z0-9._-]{6})[A-Za-z0-9._-]{6,}'),
+    (match) => '${match.group(1)}...',
+  );
+  return sanitized;
 }

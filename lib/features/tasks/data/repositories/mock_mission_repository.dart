@@ -167,4 +167,11 @@ class MockMissionRepository implements MissionRepository {
         .read(zeniAppStateControllerProvider.notifier)
         .rejectMissionLog(logId);
   }
+
+  @override
+  Future<void> undoMissionCompletion(String logId) {
+    return _ref
+        .read(zeniAppStateControllerProvider.notifier)
+        .undoMissionCompletion(logId);
+  }
 }

@@ -63,6 +63,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) async {
     final current = _requireState();
     final now = DateTime.now();
@@ -73,6 +74,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       name: name,
       emoji: emoji,
       birthDate: birthDate,
+      ttsEnabled: ttsEnabled,
       createdAt: now,
     );
     final member = _buildChildFamilyMember(
@@ -95,6 +97,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    required bool ttsEnabled,
   }) async {
     final current = _requireState();
     final child = current.childById(childId);
@@ -106,6 +109,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       name: name,
       emoji: emoji,
       birthDate: birthDate,
+      ttsEnabled: ttsEnabled,
     );
     final updated = current.copyWith(
       children: [
@@ -744,6 +748,74 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     await _save(updated);
   }
 
+  Future<void> undoMissionCompletion(String logId) async {
+    final current = _requireState();
+    final log = current.missionLogs
+        .where((item) => item.id == logId)
+        .firstOrNull;
+    if (log == null || log.status != MissionLogStatus.approved) {
+      return;
+    }
+
+    final mission = current.missionById(log.missionId);
+    if (mission == null ||
+        mission.approvalMode != MissionApprovalMode.automatic) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final logDay = DateTime(
+      log.scheduledDate.year,
+      log.scheduledDate.month,
+      log.scheduledDate.day,
+    );
+    if (logDay != today) {
+      return;
+    }
+
+    final child = current.childById(log.childId);
+    if (child == null || child.starBalance < log.starsAwarded) {
+      return;
+    }
+
+    final adjustedBalance = child.starBalance - log.starsAwarded;
+    final adjustedLog = log.copyWith(
+      status: MissionLogStatus.pending,
+      approvedAt: null,
+    );
+
+    final updated = current.copyWith(
+      children: [
+        for (final item in current.children)
+          if (item.id == child.id)
+            item.copyWith(
+              starBalance: adjustedBalance,
+              streakCount: item.streakCount > 0 ? item.streakCount - 1 : 0,
+            )
+          else
+            item,
+      ],
+      missionLogs: _upsertMissionLog(current.missionLogs, adjustedLog),
+      starLedgerEntries: [
+        StarLedgerEntry(
+          id: _uuid.v4(),
+          familyId: current.family.id,
+          childId: child.id,
+          amount: -log.starsAwarded,
+          balanceAfter: adjustedBalance,
+          type: StarLedgerEntryType.adjusted,
+          title: 'Desfazer: ${mission.title}',
+          description: 'Conclusão automática desfeita no mesmo dia.',
+          createdAt: now,
+          relatedMissionLogId: log.id,
+        ),
+        ...current.starLedgerEntries,
+      ],
+    );
+    await _save(updated);
+  }
+
   Future<void> requestReward({
     required String childId,
     required Reward reward,
@@ -875,7 +947,9 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     }
 
     final currentChildIds = current.children.map((child) => child.id).toSet();
-    final currentMissionIds = current.missions.map((mission) => mission.id).toSet();
+    final currentMissionIds = current.missions
+        .map((mission) => mission.id)
+        .toSet();
     final currentRewardIds = current.rewards.map((reward) => reward.id).toSet();
 
     final hasUnknownChild = payload.rebuiltChildren.any(
@@ -887,7 +961,9 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     final hasUnknownReward = payload.rewardRequests.any(
       (request) => !currentRewardIds.contains(request.rewardId),
     );
-    final restoredMissionLogIds = payload.missionLogs.map((log) => log.id).toSet();
+    final restoredMissionLogIds = payload.missionLogs
+        .map((log) => log.id)
+        .toSet();
     final restoredRewardRequestIds = payload.rewardRequests
         .map((request) => request.id)
         .toSet();
@@ -1000,6 +1076,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    bool ttsEnabled = false,
     required DateTime createdAt,
   }) {
     return ChildProfile(
@@ -1008,6 +1085,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       name: name,
       emoji: emoji,
       birthDate: birthDate,
+      ttsEnabled: ttsEnabled,
       starBalance: 0,
       streakCount: 0,
       createdAt: createdAt,

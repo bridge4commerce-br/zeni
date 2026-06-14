@@ -8,15 +8,22 @@ import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/repositories/zeni_auth_repository.dart';
+import '../../data/repositories/google_native_sign_in_client.dart';
 import '../providers/zeni_auth_providers.dart';
 import 'auth_provider_button.dart';
+import '../../../../core/supabase/zeni_supabase.dart';
 
 enum AuthAccountAction { emailSignIn, emailSignUp, google, apple }
 
 class AuthAccountSheet extends ConsumerStatefulWidget {
-  const AuthAccountSheet({super.key, required this.isSupabaseConfigured});
+  const AuthAccountSheet({
+    super.key,
+    required this.isSupabaseConfigured,
+    required this.bootstrapState,
+  });
 
   final bool isSupabaseConfigured;
+  final ZeniSupabaseBootstrapState bootstrapState;
 
   @override
   ConsumerState<AuthAccountSheet> createState() => _AuthAccountSheetState();
@@ -42,6 +49,8 @@ class _AuthAccountSheetState extends ConsumerState<AuthAccountSheet> {
     final isGoogleAvailable = ref.watch(googleSignInAvailableProvider);
     final isAppleAvailable = ref.watch(appleSignInAvailableProvider);
     final isBusy = _activeAction != null;
+    final supabaseConfig = ZeniSupabaseConfig.fromEnvironment();
+    final googleConfig = ZeniGoogleSignInConfig.fromEnvironment();
 
     return ZeniModalSheetContainer(
       title: 'Conta da família',
@@ -55,13 +64,48 @@ class _AuthAccountSheetState extends ConsumerState<AuthAccountSheet> {
                 context,
               ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
             ),
-            if (!widget.isSupabaseConfigured) ...[
+            if (!widget.bootstrapState.isConfigured) ...[
               const SizedBox(height: ZeniSpacing.md),
               Text(
-                'A autenticação ainda não está disponível neste build. Você pode continuar usando o Zeni localmente.',
+                'A conexão com a nuvem não foi incluída neste build. Você pode continuar usando o Zeni localmente sem login, internet ou Supabase.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.error,
                 ),
+              ),
+              const SizedBox(height: ZeniSpacing.xs),
+              Text(
+                supabaseConfig.missingConfigurationMessage,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+              ),
+            ],
+            if (widget.bootstrapState.isConfigured &&
+                !widget.bootstrapState.isInitialized) ...[
+              const SizedBox(height: ZeniSpacing.md),
+              Text(
+                'A conexão com a nuvem falhou ao iniciar. Tente reinstalar ou contate o suporte.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              if (widget.bootstrapState.message != null) ...[
+                const SizedBox(height: ZeniSpacing.xs),
+                Text(
+                  zeniRedactTechnicalMessage(widget.bootstrapState.message),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+                ),
+              ],
+            ],
+            if (widget.isSupabaseConfigured && !isGoogleAvailable) ...[
+              const SizedBox(height: ZeniSpacing.md),
+              Text(
+                googleConfig.missingConfigurationMessage,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
               ),
             ],
             const SizedBox(height: ZeniSpacing.xl),
@@ -115,9 +159,7 @@ class _AuthAccountSheetState extends ConsumerState<AuthAccountSheet> {
               label: _activeAction == AuthAccountAction.google
                   ? 'Conectando com Google...'
                   : 'Entrar com Google',
-              onPressed: isBusy
-                  ? null
-                  : () => _submitGoogle(isGoogleAvailable),
+              onPressed: isBusy ? null : () => _submitGoogle(isGoogleAvailable),
             ),
             if (isAppleAvailable) ...[
               const SizedBox(height: ZeniSpacing.md),
@@ -181,12 +223,15 @@ class _AuthAccountSheetState extends ConsumerState<AuthAccountSheet> {
       _activeAction = AuthAccountAction.google;
     });
 
-    final result = await ref.read(zeniAuthControllerProvider).signInWithGoogle();
+    final result = await ref
+        .read(zeniAuthControllerProvider)
+        .signInWithGoogle();
     if (!mounted) return;
 
     setState(() {
       _activeAction = null;
-      _formError = result.message ??
+      _formError =
+          result.message ??
           (!isGoogleAvailable
               ? 'Google Sign-In não está configurado neste app.'
               : null);

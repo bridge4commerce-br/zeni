@@ -78,7 +78,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Supabase Auth não está configurado neste app.'),
+        find.text('A conexão com a nuvem não foi incluída neste build.'),
         findsOneWidget,
       );
       expect(find.text('Conta da família'), findsOneWidget);
@@ -122,7 +122,8 @@ void main() {
       find.byKey(const Key('auth-password-input')),
       '123456',
     );
-    await tester.tap(find.text('Criar conta'));
+    await tester.ensureVisible(find.text('Criar conta').last);
+    await tester.tap(find.text('Criar conta').last, warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(
@@ -480,7 +481,8 @@ void main() {
       find.byKey(const Key('auth-password-input')),
       '123456',
     );
-    await tester.tap(find.text('Criar conta'));
+    await tester.ensureVisible(find.text('Criar conta').last);
+    await tester.tap(find.text('Criar conta').last, warnIfMissed: false);
     await tester.pump();
 
     expect(find.text('Criando conta...'), findsOneWidget);

@@ -26,9 +26,11 @@ final historicalRestoreActionStateProvider =
       final appState = await ref.watch(zeniAppStateControllerProvider.future);
       final remoteFamily = await ref.watch(remoteFamilySummaryProvider.future);
 
-      final hasCatalogs = appState.children.isNotEmpty &&
+      final hasCatalogs =
+          appState.children.isNotEmpty &&
           (appState.missions.isNotEmpty || appState.rewards.isNotEmpty);
-      final hasEmptyHistory = appState.missionLogs.isEmpty &&
+      final hasEmptyHistory =
+          appState.missionLogs.isEmpty &&
           appState.rewardRequests.isEmpty &&
           appState.starLedgerEntries.isEmpty;
       final hasZeroBalances = appState.children.every(
@@ -45,7 +47,9 @@ final historicalRestoreActionStateProvider =
         );
       }
 
-      final remoteMissionLogs = await ref.watch(remoteMissionLogsProvider.future);
+      final remoteMissionLogs = await ref.watch(
+        remoteMissionLogsProvider.future,
+      );
       final remoteRewardRequests = await ref.watch(
         remoteRewardRequestsProvider.future,
       );
@@ -132,7 +136,8 @@ class HistoricalRestoreController {
     if (!_hasAlignedLocalCatalogBase(localState)) {
       return const HistoricalRestoreResult.failure(
         status: HistoricalRestoreResultStatus.catalogsNotAligned,
-        message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
+        message:
+            'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
       );
     }
 
@@ -158,6 +163,17 @@ class HistoricalRestoreController {
       final remoteChildBalances = await _ref
           .read(remoteChildBalanceRepositoryProvider)
           .getRemoteChildStarBalances(familyId: remoteFamily.familyId);
+      final hasRemoteHistory =
+          remoteMissionLogs.isNotEmpty ||
+          remoteRewardRequests.isNotEmpty ||
+          remoteStarLedgerEntries.isNotEmpty;
+      if (!hasRemoteHistory || remoteChildBalances.isEmpty) {
+        return const HistoricalRestoreResult.failure(
+          status: HistoricalRestoreResultStatus.remoteHistoryMissing,
+          message:
+              'Não foi possível restaurar histórico e saldo com segurança agora.',
+        );
+      }
 
       final mappedResult = _ref
           .read(remoteHistoricalRestoreMapperProvider)

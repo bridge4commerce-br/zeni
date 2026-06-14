@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,12 +8,49 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (!keystorePropertiesFile.exists()) {
+    throw GradleException(
+        "Arquivo android/key.properties não encontrado. Configure a assinatura release antes de gerar o bundle.",
+    )
+}
+
+keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+
+fun requiredKeystoreProperty(name: String): String {
+    return keystoreProperties.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: throw GradleException(
+            "Chave obrigatória ausente em android/key.properties: $name",
+        )
+}
+
+val releaseStoreFilePath = requiredKeystoreProperty("storeFile")
+val releaseStoreFile = file(releaseStoreFilePath)
+
+if (!releaseStoreFile.exists()) {
+    throw GradleException(
+        "O arquivo do keystore configurado em android/key.properties não foi encontrado: $releaseStoreFilePath",
+    )
+}
+
 android {
     namespace = "app.luminadigital.zeni"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    signingConfigs {
+        create("release") {
+            keyAlias = requiredKeystoreProperty("keyAlias")
+            keyPassword = requiredKeystoreProperty("keyPassword")
+            storeFile = releaseStoreFile
+            storePassword = requiredKeystoreProperty("storePassword")
+        }
+    }
+
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -20,10 +60,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "app.luminadigital.zeni"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -32,11 +69,13 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

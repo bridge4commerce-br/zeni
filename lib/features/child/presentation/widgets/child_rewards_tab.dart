@@ -16,6 +16,7 @@ class ChildRewardsTab extends StatelessWidget {
     required this.pendingRewardRequests,
     required this.rewardById,
     required this.onRedeemReward,
+    required this.onListenToReward,
   });
 
   final int childBalance;
@@ -23,6 +24,7 @@ class ChildRewardsTab extends StatelessWidget {
   final List<RewardRequest> pendingRewardRequests;
   final Reward? Function(String rewardId) rewardById;
   final ValueChanged<Reward> onRedeemReward;
+  final ValueChanged<Reward> onListenToReward;
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +91,8 @@ class ChildRewardsTab extends StatelessWidget {
                 if (!context.mounted) return;
 
                 switch (action) {
+                  case RewardChildDetailAction.listen:
+                    onListenToReward(reward);
                   case RewardChildDetailAction.redeem:
                     onRedeemReward(reward);
                   case null:

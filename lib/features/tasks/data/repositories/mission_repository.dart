@@ -58,4 +58,6 @@ abstract class MissionRepository {
   Future<void> approveMissionLog(String logId);
 
   Future<void> rejectMissionLog(String logId);
+
+  Future<void> undoMissionCompletion(String logId);
 }

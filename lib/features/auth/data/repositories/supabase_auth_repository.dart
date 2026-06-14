@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/supabase/zeni_supabase.dart';
 import 'apple_native_sign_in_client.dart';
 import 'google_native_sign_in_client.dart';
 import 'zeni_auth_repository.dart';
@@ -95,13 +96,25 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
     ZeniGoogleSignInClient? googleSignInClient,
     ZeniAppleSignInClient? appleSignInClient,
   }) : _authClient =
-           authClient ?? (client == null ? null : SupabaseGoTrueAuthClient(client.auth)),
+           authClient ??
+           (client == null ? null : SupabaseGoTrueAuthClient(client.auth)),
        _googleSignInClient = googleSignInClient ?? GoogleNativeSignInClient(),
        _appleSignInClient = appleSignInClient ?? AppleNativeSignInClient();
 
   final ZeniSupabaseAuthClient? _authClient;
   final ZeniGoogleSignInClient _googleSignInClient;
   final ZeniAppleSignInClient _appleSignInClient;
+
+  String get _cloudUnavailableMessage {
+    final state = ZeniSupabaseBootstrap.state;
+    if (!state.isConfigured) {
+      return 'A conexão com a nuvem não foi incluída neste build.';
+    }
+    if (!state.isInitialized) {
+      return 'A conexão com a nuvem falhou ao iniciar. Tente reinstalar ou contate o suporte.';
+    }
+    return 'A conexão com a nuvem não está disponível agora.';
+  }
 
   @override
   ZeniAuthUser? get currentUser => _mapUser(_authClient?.currentUser);
@@ -129,9 +142,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
   }) async {
     final authClient = _authClient;
     if (authClient == null) {
-      return const ZeniAuthOperationResult.failure(
-        'Supabase Auth não está configurado neste app.',
-      );
+      return ZeniAuthOperationResult.failure(_cloudUnavailableMessage);
     }
 
     try {
@@ -164,9 +175,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
   }) async {
     final authClient = _authClient;
     if (authClient == null) {
-      return const ZeniAuthOperationResult.failure(
-        'Supabase Auth não está configurado neste app.',
-      );
+      return ZeniAuthOperationResult.failure(_cloudUnavailableMessage);
     }
 
     try {
@@ -188,9 +197,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
   Future<ZeniAuthOperationResult> signInWithGoogle() async {
     final authClient = _authClient;
     if (authClient == null) {
-      return const ZeniAuthOperationResult.failure(
-        'Supabase Auth não está configurado neste app.',
-      );
+      return ZeniAuthOperationResult.failure(_cloudUnavailableMessage);
     }
 
     try {
@@ -235,9 +242,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
   Future<ZeniAuthOperationResult> signInWithApple() async {
     final authClient = _authClient;
     if (authClient == null) {
-      return const ZeniAuthOperationResult.failure(
-        'Supabase Auth não está configurado neste app.',
-      );
+      return ZeniAuthOperationResult.failure(_cloudUnavailableMessage);
     }
 
     try {
@@ -345,8 +350,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
         'O login com Apple não pôde ser concluído neste momento.',
       AuthorizationErrorCode.notInteractive =>
         'O login com Apple precisa de interação do usuário.',
-      AuthorizationErrorCode.unknown =>
-        error.message,
+      AuthorizationErrorCode.unknown => error.message,
     };
   }
 }
