@@ -9,18 +9,27 @@ import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/reward.dart';
+import '../../data/models/reward_request.dart';
 
-enum RewardChildDetailAction { listen, redeem }
+enum RewardChildDetailAction { redeem }
 
 class RewardChildDetailSheet extends StatelessWidget {
   const RewardChildDetailSheet({
     super.key,
     required this.reward,
     required this.childBalance,
+    required this.onListenToReward,
+    required this.onListenToRewardDetails,
+    this.pendingRequest,
+    this.showListenActions = true,
   });
 
   final Reward reward;
   final int childBalance;
+  final VoidCallback onListenToReward;
+  final VoidCallback onListenToRewardDetails;
+  final RewardRequest? pendingRequest;
+  final bool showListenActions;
 
   bool get canRedeem => childBalance >= reward.cost;
 
@@ -99,14 +108,28 @@ class RewardChildDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: ZeniSpacing.xl),
-            ZeniSecondaryButton(
-              label: 'Ouvir',
-              icon: Icons.volume_up_rounded,
-              onPressed: () {
-                Navigator.of(context).pop(RewardChildDetailAction.listen);
-              },
-            ),
-            const SizedBox(height: ZeniSpacing.md),
+            if (showListenActions) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _RewardSpeechActionButton(
+                      label: 'Mimo',
+                      semanticLabel: 'Ouvir mimo',
+                      onPressed: onListenToReward,
+                    ),
+                  ),
+                  const SizedBox(width: ZeniSpacing.sm),
+                  Expanded(
+                    child: _RewardSpeechActionButton(
+                      label: 'Completo',
+                      semanticLabel: 'Ouvir completo',
+                      onPressed: onListenToRewardDetails,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZeniSpacing.md),
+            ],
             if (canRedeem)
               ZeniPrimaryButton(
                 label: 'Pedir mimo',
@@ -125,6 +148,68 @@ class RewardChildDetailSheet extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RewardSpeechActionButton extends StatelessWidget {
+  const _RewardSpeechActionButton({
+    required this.label,
+    required this.semanticLabel,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useVerticalLayout = constraints.maxWidth < 150;
+          final icon = const Icon(Icons.volume_up_rounded);
+          final text = FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
+            ),
+          );
+
+          return OutlinedButton(
+            onPressed: onPressed,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: useVerticalLayout
+                  ? Column(
+                      key: const ValueKey('vertical'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        icon,
+                        const SizedBox(height: ZeniSpacing.xs),
+                        text,
+                      ],
+                    )
+                  : Row(
+                      key: const ValueKey('horizontal'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        icon,
+                        const SizedBox(width: ZeniSpacing.sm),
+                        Flexible(child: text),
+                      ],
+                    ),
+            ),
+          );
+        },
       ),
     );
   }

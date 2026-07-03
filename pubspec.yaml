@@ -1,8 +1,8 @@
 name: zeni
-description: "A new Flutter project."
+description: "Zeni ajuda famílias a criarem hábitos com missões, mimos e estrelas."
 publish_to: 'none'
 
-version: 1.0.7+8
+version: 1.0.10+10
 
 environment:
   sdk: ^3.10.8

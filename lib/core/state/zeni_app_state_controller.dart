@@ -16,6 +16,7 @@ import '../../features/sync/data/models/device_bootstrap_result.dart';
 import '../../features/sync/data/models/historical_restore_result.dart';
 import '../../features/tasks/data/models/mission.dart';
 import '../../features/tasks/data/models/mission_log.dart';
+import '../../features/tasks/domain/mission_undo_policy.dart';
 import '../domain/zeni_enums.dart';
 import '../security/parent_pin_security.dart';
 import 'zeni_app_state.dart';
@@ -140,6 +141,42 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
             child.copyWith(isActive: isActive)
           else
             child,
+      ],
+    );
+    await _save(updated);
+  }
+
+  Future<void> updateParentDisplayName(String name) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      return;
+    }
+
+    final current = _requireState();
+    final targetMemberId = current.familyMembers
+        .where((member) => member.role == ZeniUserRole.parent)
+        .fold<FamilyMember?>(null, (selected, member) {
+          if (selected == null) {
+            return member;
+          }
+          if (!selected.isOwner && member.isOwner) {
+            return member;
+          }
+          return selected;
+        })
+        ?.id;
+
+    if (targetMemberId == null) {
+      return;
+    }
+
+    final updated = current.copyWith(
+      familyMembers: [
+        for (final member in current.familyMembers)
+          if (member.id == targetMemberId)
+            member.copyWith(name: trimmedName)
+          else
+            member,
       ],
     );
     await _save(updated);
@@ -753,24 +790,13 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     final log = current.missionLogs
         .where((item) => item.id == logId)
         .firstOrNull;
-    if (log == null || log.status != MissionLogStatus.approved) {
+    if (log == null) {
       return;
     }
 
     final mission = current.missionById(log.missionId);
     if (mission == null ||
-        mission.approvalMode != MissionApprovalMode.automatic) {
-      return;
-    }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final logDay = DateTime(
-      log.scheduledDate.year,
-      log.scheduledDate.month,
-      log.scheduledDate.day,
-    );
-    if (logDay != today) {
+        !canUndoAutomaticMissionCompletion(mission: mission, log: log)) {
       return;
     }
 
@@ -779,10 +805,20 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       return;
     }
 
+    final now = DateTime.now();
     final adjustedBalance = child.starBalance - log.starsAwarded;
-    final adjustedLog = log.copyWith(
+    final adjustedLog = MissionLog(
+      id: log.id,
+      missionId: log.missionId,
+      childId: log.childId,
+      scheduledDate: log.scheduledDate,
       status: MissionLogStatus.pending,
+      starsAwarded: log.starsAwarded,
+      completedAt: log.completedAt,
       approvedAt: null,
+      rejectedAt: null,
+      photoUrl: log.photoUrl,
+      note: log.note,
     );
 
     final updated = current.copyWith(
@@ -987,6 +1023,70 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
 
     final updated = current.copyWith(
       children: payload.rebuiltChildren,
+      missionLogs: payload.missionLogs,
+      rewardRequests: payload.rewardRequests,
+      starLedgerEntries: payload.starLedgerEntries,
+    );
+    await _save(updated);
+    return HistoricalRestoreResult.success(payload: payload);
+  }
+
+  Future<HistoricalRestoreResult> applyRemoteSyncSnapshot(
+    HistoricalRestorePayload payload,
+  ) async {
+    final current = _requireState();
+    final currentChildIds = current.children.map((child) => child.id).toSet();
+    final currentMissionIds = current.missions
+        .map((mission) => mission.id)
+        .toSet();
+    final currentRewardIds = current.rewards.map((reward) => reward.id).toSet();
+
+    final hasUnknownChild = payload.rebuiltChildren.any(
+      (child) => !currentChildIds.contains(child.id),
+    );
+    final hasUnknownMission = payload.missionLogs.any(
+      (log) => !currentMissionIds.contains(log.missionId),
+    );
+    final hasUnknownReward = payload.rewardRequests.any(
+      (request) => !currentRewardIds.contains(request.rewardId),
+    );
+    final syncedMissionLogIds = payload.missionLogs
+        .map((log) => log.id)
+        .toSet();
+    final syncedRewardRequestIds = payload.rewardRequests
+        .map((request) => request.id)
+        .toSet();
+    final hasBrokenLedgerLinks = payload.starLedgerEntries.any(
+      (entry) =>
+          !currentChildIds.contains(entry.childId) ||
+          (entry.relatedMissionLogId != null &&
+              !syncedMissionLogIds.contains(entry.relatedMissionLogId)) ||
+          (entry.relatedRewardRequestId != null &&
+              !syncedRewardRequestIds.contains(entry.relatedRewardRequestId)),
+    );
+    if (hasUnknownChild ||
+        hasUnknownMission ||
+        hasUnknownReward ||
+        hasBrokenLedgerLinks) {
+      return const HistoricalRestoreResult.failure(
+        status: HistoricalRestoreResultStatus.applyBlocked,
+        message: 'Não foi possível atualizar os dados da conta agora.',
+      );
+    }
+
+    final rebuiltChildrenById = <String, ChildProfile>{
+      for (final child in payload.rebuiltChildren) child.id: child,
+    };
+    final updated = current.copyWith(
+      children: [
+        for (final child in current.children)
+          if (rebuiltChildrenById.containsKey(child.id))
+            child.copyWith(
+              starBalance: rebuiltChildrenById[child.id]!.starBalance,
+            )
+          else
+            child,
+      ],
       missionLogs: payload.missionLogs,
       rewardRequests: payload.rewardRequests,
       starLedgerEntries: payload.starLedgerEntries,

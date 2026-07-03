@@ -9,6 +9,7 @@ import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
+import '../../../tasks/domain/mission_undo_policy.dart';
 import '../../../tasks/presentation/widgets/task_child_detail_sheet.dart';
 import '../widgets/child_birthday_card.dart';
 import '../widgets/child_bonus_mission_card.dart';
@@ -31,6 +32,8 @@ class ChildHomeTab extends StatelessWidget {
     required this.onCancelMissionSubmission,
     required this.onUndoMissionCompletion,
     required this.onListenToMission,
+    required this.onListenToMissionDetails,
+    required this.canListenToMission,
     required this.onOpenRewards,
   });
 
@@ -46,8 +49,11 @@ class ChildHomeTab extends StatelessWidget {
   final void Function(Mission mission, MissionLog? log)
   onCancelMissionSubmission;
   final void Function(Mission mission) onListenToMission;
+  final void Function(Mission mission, MissionLog? log)
+  onListenToMissionDetails;
   final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
   final VoidCallback onOpenRewards;
+  final bool canListenToMission;
 
   @override
   Widget build(BuildContext context) {
@@ -163,10 +169,18 @@ class ChildHomeTab extends StatelessWidget {
           ),
           child: TaskChildDetailSheet(
             mission: mission,
+            onListenToMission: () {
+              onListenToMission(mission);
+            },
+            onListenToMissionDetails: () {
+              onListenToMissionDetails(mission, logForMission(mission.id));
+            },
             log: log,
-            canUndoCompletion:
-                log?.status == MissionLogStatus.approved &&
-                mission.approvalMode == MissionApprovalMode.automatic,
+            showListenActions: canListenToMission,
+            canUndoCompletion: canUndoAutomaticMissionCompletion(
+              mission: mission,
+              log: log,
+            ),
           ),
         );
       },
@@ -181,8 +195,6 @@ class ChildHomeTab extends StatelessWidget {
           logForMission(mission.id),
           missionAnchorKeyFor('home:${mission.id}'),
         );
-      case TaskChildDetailAction.listen:
-        onListenToMission(mission);
       case TaskChildDetailAction.cancelSubmission:
         onCancelMissionSubmission(mission, logForMission(mission.id));
       case TaskChildDetailAction.undoCompletion:

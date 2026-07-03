@@ -24,7 +24,6 @@ import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../auth/local/parent_biometric_auth.dart';
-import '../../../auth/data/repositories/zeni_account_repository.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
@@ -55,6 +54,7 @@ import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart
 import '../../../tasks/presentation/providers/remote_missions_providers.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
 import '../widgets/monthly_star_projection_card.dart';
+import '../widgets/mission_approval_card.dart';
 import '../widgets/parent_child_form_sheet.dart';
 import '../widgets/parent_child_summary_card.dart';
 import '../widgets/parent_family_tab.dart';
@@ -62,6 +62,7 @@ import '../widgets/parent_metric_card.dart';
 import '../widgets/parent_missions_tab.dart';
 import '../widgets/parent_rewards_tab.dart';
 import '../widgets/parent_settings_tab.dart';
+import '../widgets/reward_request_card.dart';
 
 class ParentShellPage extends ConsumerStatefulWidget {
   const ParentShellPage({super.key});
@@ -942,11 +943,6 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             Navigator.of(sheetContext).pop();
             await _confirmAndClearLocalDeviceData();
           },
-          onDeleteAccountAndRemoteFamily: () async {
-            return ref
-                .read(zeniAccountControllerProvider)
-                .deleteAccountAndRemoteFamily();
-          },
         );
       },
     );
@@ -1022,10 +1018,8 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               isEnabled: false,
               message: null,
             );
-        final notificationsEnabled = appData.appSettings.notificationsEnabled;
-        final pendingNotificationCount = notificationsEnabled
-            ? data.awaitingLogs.length + data.pendingRequests.length
-            : 0;
+        final pendingNotificationCount =
+            data.awaitingLogs.length + data.pendingRequests.length;
 
         final pages = [
           _ParentDashboardPage(
@@ -1050,6 +1044,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                 _currentIndex = 2;
               });
             },
+            onApproveMission: _approveMission,
+            onRejectMission: _rejectMission,
+            onApproveRewardRequest: _approveRewardRequest,
+            onRejectRewardRequest: _rejectRewardRequest,
           ),
           ParentMissionsTab(
             activeChildren: data.activeChildren,
@@ -1094,6 +1092,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onRestoreChild: _restoreChild,
           ),
           ParentSettingsTab(
+            parentDisplayName: _parentDisplayName(data.members),
             appSettings: appData.appSettings,
             accessibilitySettings: accessibility.settings,
             onThemeModeChanged: accessibility.setThemeModeOption,
@@ -1152,6 +1151,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onSignOut: _signOutAccount,
             onManageAccountAndData: _openManageAccountAndDataSheet,
             onClearLocalDeviceData: _confirmAndClearLocalDeviceData,
+            onUpdateParentDisplayName: (name) {
+              return ref
+                  .read(zeniAppStateControllerProvider.notifier)
+                  .updateParentDisplayName(name);
+            },
             onUpdateRemoteFamilyName: ({required familyId, required name}) {
               return ref
                   .read(zeniAccountControllerProvider)
@@ -1198,15 +1202,6 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                     tone: ZeniIconActionTone.primary,
                     onPressed: () {
                       ref.read(zeniHapticsProvider).selection();
-                      if (!notificationsEnabled) {
-                        ZeniInfoPopup.show(
-                          context,
-                          title: 'Notificações desativadas',
-                          message:
-                              'Ative as notificações nos ajustes para destacar novas pendências do responsável.',
-                        );
-                        return;
-                      }
                       showModalBottomSheet<void>(
                         context: context,
                         isScrollControlled: true,
@@ -1256,15 +1251,13 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                 icon: Icons.check_circle_outline_rounded,
                 selectedIcon: Icons.check_circle_rounded,
                 label: 'Missões',
-                badgeCount: notificationsEnabled ? data.awaitingLogs.length : 0,
+                badgeCount: data.awaitingLogs.length,
               ),
               ZeniBottomNavItem(
                 icon: Icons.card_giftcard_outlined,
                 selectedIcon: Icons.card_giftcard_rounded,
                 label: 'Mimos',
-                badgeCount: notificationsEnabled
-                    ? data.pendingRequests.length
-                    : 0,
+                badgeCount: data.pendingRequests.length,
               ),
               ZeniBottomNavItem(
                 icon: Icons.family_restroom_outlined,
@@ -1283,6 +1276,22 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
       },
     );
   }
+
+  String _parentDisplayName(List<FamilyMember> members) {
+    final parent = members
+        .where((member) => member.role == ZeniUserRole.parent)
+        .fold<FamilyMember?>(null, (selected, member) {
+          if (selected == null) {
+            return member;
+          }
+          if (!selected.isOwner && member.isOwner) {
+            return member;
+          }
+          return selected;
+        });
+    final name = parent?.name.trim() ?? '';
+    return name.isEmpty ? 'Responsável' : name;
+  }
 }
 
 class _ParentDashboardPage extends StatelessWidget {
@@ -1292,6 +1301,10 @@ class _ParentDashboardPage extends StatelessWidget {
     required this.onOpenMissionApprovals,
     required this.onOpenMissions,
     required this.onOpenRewardRequests,
+    required this.onApproveMission,
+    required this.onRejectMission,
+    required this.onApproveRewardRequest,
+    required this.onRejectRewardRequest,
   });
 
   final _ParentModeData data;
@@ -1299,6 +1312,10 @@ class _ParentDashboardPage extends StatelessWidget {
   final VoidCallback onOpenMissionApprovals;
   final VoidCallback onOpenMissions;
   final VoidCallback onOpenRewardRequests;
+  final Future<void> Function(MissionLog log) onApproveMission;
+  final Future<void> Function(MissionLog log) onRejectMission;
+  final Future<void> Function(RewardRequest request) onApproveRewardRequest;
+  final Future<void> Function(RewardRequest request) onRejectRewardRequest;
   static const MonthlyStarProjectionCalculator _projectionCalculator =
       MonthlyStarProjectionCalculator();
 
@@ -1320,6 +1337,16 @@ class _ParentDashboardPage extends StatelessWidget {
               context,
             ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
           ),
+          if (data.pendingCount > 0) ...[
+            const SizedBox(height: ZeniSpacing.xl),
+            _PendingTodaySection(
+              data: data,
+              onApproveMission: onApproveMission,
+              onRejectMission: onRejectMission,
+              onApproveRewardRequest: onApproveRewardRequest,
+              onRejectRewardRequest: onRejectRewardRequest,
+            ),
+          ],
           const SizedBox(height: ZeniSpacing.xl),
           Row(
             children: [
@@ -1451,6 +1478,7 @@ class _PendingBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = count > 99 ? '99+' : '$count';
     return Container(
+      key: const Key('parent-pending-badge'),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.error,
@@ -1463,6 +1491,81 @@ class _PendingBadge extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+}
+
+class _PendingTodaySection extends StatelessWidget {
+  const _PendingTodaySection({
+    required this.data,
+    required this.onApproveMission,
+    required this.onRejectMission,
+    required this.onApproveRewardRequest,
+    required this.onRejectRewardRequest,
+  });
+
+  final _ParentModeData data;
+  final Future<void> Function(MissionLog log) onApproveMission;
+  final Future<void> Function(MissionLog log) onRejectMission;
+  final Future<void> Function(RewardRequest request) onApproveRewardRequest;
+  final Future<void> Function(RewardRequest request) onRejectRewardRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingCount = data.pendingCount;
+    final title = pendingCount == 1
+        ? 'Você tem 1 pendência'
+        : 'Você tem $pendingCount pendências';
+
+    return Column(
+      key: const Key('parent-pending-today-section'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pendências de hoje',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: ZeniSpacing.xs),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+        ),
+        const SizedBox(height: ZeniSpacing.lg),
+        for (final log in data.awaitingLogs) ...[
+          Text(
+            '${data.childById(log.childId)?.name ?? 'Criança'} enviou uma missão',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: ZeniSpacing.xs),
+          MissionApprovalCard(
+            key: Key('parent-pending-mission-${log.id}'),
+            log: log,
+            mission: data.missionById(log.missionId),
+            child: data.childById(log.childId),
+            onApprove: () => onApproveMission(log),
+            onReject: () => onRejectMission(log),
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+        ],
+        for (final request in data.pendingRequests) ...[
+          Text(
+            '${data.childById(request.childId)?.name ?? 'Criança'} pediu um mimo',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: ZeniSpacing.xs),
+          RewardRequestCard(
+            key: Key('parent-pending-reward-${request.id}'),
+            request: request,
+            reward: data.rewardById(request.rewardId),
+            child: data.childById(request.childId),
+            onApprove: () => onApproveRewardRequest(request),
+            onReject: () => onRejectRewardRequest(request),
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+        ],
+      ],
     );
   }
 }
@@ -1586,240 +1689,70 @@ class _ClearLocalDeviceDataSheetState
 class _ManageAccountAndDataSheet extends StatelessWidget {
   const _ManageAccountAndDataSheet({
     required this.onClearLocalDeviceData,
-    required this.onDeleteAccountAndRemoteFamily,
   });
 
   final Future<void> Function() onClearLocalDeviceData;
-  final Future<ZeniDeleteAccountResult> Function()
-  onDeleteAccountAndRemoteFamily;
 
   @override
   Widget build(BuildContext context) {
     return ZeniModalSheetContainer(
       title: 'Gerenciar dados e conta',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ações avançadas sobre dados locais e conta.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
-          ZeniOptionRow(
-            title: 'Apagar dados deste aparelho',
-            subtitle:
-                'Apaga crianças, missões, mimos, histórico e saldo salvos localmente. Os dados da nuvem não serão apagados.',
-            leading: Icon(
-              Icons.delete_forever_rounded,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            trailing: Text(
-              'Apagar',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-            onTap: onClearLocalDeviceData,
-          ),
-          const SizedBox(height: ZeniSpacing.sm),
-          ZeniOptionRow(
-            title: 'Excluir conta e dados da nuvem',
-            subtitle:
-                'Remove a conta e os dados da família salvos na nuvem. Os dados deste aparelho não serão apagados automaticamente.',
-            leading: Icon(
-              Icons.cloud_off_rounded,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            trailing: Text(
-              'Excluir',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-            onTap: () => _openDeleteAccountSheet(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openDeleteAccountSheet(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
-          child: _DeleteAccountAndRemoteFamilySheet(
-            onConfirm: onDeleteAccountAndRemoteFamily,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _DeleteAccountAndRemoteFamilySheet extends StatefulWidget {
-  const _DeleteAccountAndRemoteFamilySheet({required this.onConfirm});
-
-  final Future<ZeniDeleteAccountResult> Function() onConfirm;
-
-  @override
-  State<_DeleteAccountAndRemoteFamilySheet> createState() =>
-      _DeleteAccountAndRemoteFamilySheetState();
-}
-
-class _DeleteAccountAndRemoteFamilySheetState
-    extends State<_DeleteAccountAndRemoteFamilySheet> {
-  final TextEditingController _confirmController = TextEditingController();
-  bool _isSubmitting = false;
-  String? _errorText;
-  String? _successText;
-
-  @override
-  void dispose() {
-    _confirmController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isConfirmationValid = _confirmController.text.trim() == 'EXCLUIR';
-
-    return ZeniModalSheetContainer(
-      title: 'Excluir conta e dados da nuvem',
       child: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Excluir conta e dados da nuvem remove sua conta e os dados da família salvos na nuvem.',
+              'Revise o que acontece com os dados deste aparelho e com a sua conta.',
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
             ),
-            const SizedBox(height: ZeniSpacing.sm),
-            Text(
-              'Esta ação não pode ser desfeita.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            const SizedBox(height: ZeniSpacing.lg),
+            ZeniOptionRow(
+              title: 'Apagar dados deste aparelho',
+              subtitle:
+                  'Apaga crianças, missões, mimos, histórico e saldo salvos localmente. Os dados da nuvem não serão apagados.',
+              leading: Icon(
+                Icons.delete_forever_rounded,
                 color: Theme.of(context).colorScheme.error,
               ),
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            Text(
-              'Os dados salvos neste aparelho não serão apagados automaticamente.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-            ),
-            const SizedBox(height: ZeniSpacing.xs),
-            Text(
-              'Você poderá apagar os dados locais separadamente depois.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-            ),
-            const SizedBox(height: ZeniSpacing.lg),
-            ZeniTextInput(
-              key: const Key('delete-account-confirm-input'),
-              controller: _confirmController,
-              label: 'Confirmação',
-              hint: 'Digite EXCLUIR',
-              textCapitalization: TextCapitalization.characters,
-              enabled: !_isSubmitting && _successText == null,
-              onChanged: (_) {
-                setState(() {
-                  _errorText = null;
-                });
-              },
-            ),
-            if (_errorText != null) ...[
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                _errorText!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              trailing: Text(
+                'Apagar',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: Theme.of(context).colorScheme.error,
                 ),
               ),
-            ],
-            if (_successText != null) ...[
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                _successText!,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.primaryDark),
-              ),
-              const SizedBox(height: ZeniSpacing.xs),
-              Text(
-                'Os dados deste aparelho continuam salvos localmente.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-              ),
-            ],
-            const SizedBox(height: ZeniSpacing.lg),
-            ZeniSecondaryButton(
-              label: _successText == null ? 'Cancelar' : 'Fechar',
-              onPressed: _isSubmitting
-                  ? null
-                  : () => Navigator.of(context).pop(),
+              onTap: onClearLocalDeviceData,
             ),
             const SizedBox(height: ZeniSpacing.sm),
-            ZeniPrimaryButton(
-              label: _isSubmitting
-                  ? 'Excluindo...'
-                  : 'Excluir conta e dados da nuvem',
-              onPressed:
-                  (_isSubmitting ||
-                      !isConfirmationValid ||
-                      _successText != null)
-                  ? null
-                  : _confirm,
+            ZeniOptionRow(
+              title: 'Excluir conta e dados da nuvem',
+              subtitle:
+                  'Indisponível nesta versão. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
+              leading: Icon(
+                Icons.cloud_off_rounded,
+                color: ZeniColors.mutedText,
+              ),
+              trailing: Text(
+                'Indisponível',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: ZeniColors.mutedText),
+              ),
+              enabled: false,
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Sair da conta remove apenas a sessão. Apagar dados deste aparelho remove apenas o que está salvo localmente. Nada daqui apaga automaticamente os dados da nuvem.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _confirm() async {
-    if (_confirmController.text.trim() != 'EXCLUIR') {
-      setState(() {
-        _errorText = 'Digite EXCLUIR para confirmar.';
-      });
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _errorText = null;
-      _successText = null;
-    });
-
-    final result = await widget.onConfirm();
-    if (!mounted) return;
-
-    setState(() {
-      _isSubmitting = false;
-      if (result.isSuccess) {
-        _successText =
-            result.message ??
-            'Sua conta e os dados da família foram removidos da nuvem.';
-      } else {
-        _errorText =
-            result.message ??
-            'Não foi possível excluir conta e dados da nuvem agora.';
-      }
-    });
   }
 }
 
@@ -1855,6 +1788,7 @@ class _ParentModeData {
       rewards.where((reward) => !reward.isActive).toList();
   final List<RewardRequest> pendingRequests;
   final List<StarLedgerEntry> ledgerEntries;
+  int get pendingCount => awaitingLogs.length + pendingRequests.length;
 
   ChildProfile? childById(String childId) {
     for (final child in children) {

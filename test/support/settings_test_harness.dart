@@ -48,6 +48,7 @@ void seedMockAppStateWith(ZeniAppState state) {
 
 Widget buildStaticSettingsHarness({
   required ZeniAuthState authState,
+  String parentDisplayName = 'Responsável',
   AppSettings appSettings = const AppSettings(),
   bool isSupabaseConfigured = true,
   ZeniSupabaseBootstrapState supabaseBootstrapState =
@@ -90,10 +91,12 @@ Widget buildStaticSettingsHarness({
   Future<HistoricalRestoreResult> Function()? onHistoricalRestore,
   VoidCallback? onManageAccountAndData,
   Future<void> Function()? onClearLocalDeviceData,
+  Future<void> Function(String name)? onUpdateParentDisplayName,
 }) {
   return MaterialApp(
     home: Scaffold(
       body: ParentSettingsTab(
+        parentDisplayName: parentDisplayName,
         appSettings: appSettings,
         accessibilitySettings: const ZeniAccessibilitySettings(),
         onThemeModeChanged: (_) {},
@@ -146,6 +149,7 @@ Widget buildStaticSettingsHarness({
         onSignOut: () {},
         onManageAccountAndData: onManageAccountAndData ?? () {},
         onClearLocalDeviceData: onClearLocalDeviceData ?? () async {},
+        onUpdateParentDisplayName: onUpdateParentDisplayName ?? (name) async {},
         onUpdateRemoteFamilyName:
             onUpdateRemoteFamilyName ??
             ({required familyId, required name}) async =>

@@ -3,7 +3,6 @@ import '../../../../core/state/zeni_app_state.dart';
 import '../../../balance/data/models/star_ledger_entry.dart';
 import '../../../balance/data/repositories/remote_child_balance_repository.dart';
 import '../../../balance/data/repositories/remote_star_ledger_repository.dart';
-import '../../../family/data/models/child_profile.dart';
 import '../../../family/data/repositories/remote_children_repository.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
@@ -15,8 +14,8 @@ import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/data/repositories/remote_mission_logs_repository.dart';
 import '../../../tasks/data/repositories/remote_missions_repository.dart';
 
-class RemoteHistoricalRestoreMapper {
-  const RemoteHistoricalRestoreMapper();
+class RemoteIncrementalSyncMapper {
+  const RemoteIncrementalSyncMapper();
 
   HistoricalRestoreResult map({
     required ZeniAppState localState,
@@ -29,38 +28,24 @@ class RemoteHistoricalRestoreMapper {
     required List<RemoteChildStarBalance> remoteChildBalances,
     DateTime? restoredAt,
   }) {
-    final childMapping = _buildChildMapping(
-      localChildren: localState.children,
-      remoteChildren: remoteChildren,
+    final childMapping = _buildFlexibleMapping(
+      localIds: localState.children.map((child) => child.id).toSet(),
+      remoteIdsToLocalIds: {
+        for (final child in remoteChildren) child.id: child.localId,
+      },
     );
-    if (childMapping == null) {
-      return const HistoricalRestoreResult.failure(
-        status: HistoricalRestoreResultStatus.catalogsNotAligned,
-        message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
-      );
-    }
-
-    final missionMapping = _buildMissionMapping(
-      localMissions: localState.missions,
-      remoteMissions: remoteMissions,
+    final missionMapping = _buildFlexibleMapping(
+      localIds: localState.missions.map((mission) => mission.id).toSet(),
+      remoteIdsToLocalIds: {
+        for (final mission in remoteMissions) mission.id: mission.localId,
+      },
     );
-    if (missionMapping == null) {
-      return const HistoricalRestoreResult.failure(
-        status: HistoricalRestoreResultStatus.catalogsNotAligned,
-        message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
-      );
-    }
-
-    final rewardMapping = _buildRewardMapping(
-      localRewards: localState.rewards,
-      remoteRewards: remoteRewards,
+    final rewardMapping = _buildFlexibleMapping(
+      localIds: localState.rewards.map((reward) => reward.id).toSet(),
+      remoteIdsToLocalIds: {
+        for (final reward in remoteRewards) reward.id: reward.localId,
+      },
     );
-    if (rewardMapping == null) {
-      return const HistoricalRestoreResult.failure(
-        status: HistoricalRestoreResultStatus.catalogsNotAligned,
-        message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
-      );
-    }
 
     final missionLogs = <MissionLog>[];
     final missionLogIdByRemoteId = <String, String>{};
@@ -74,7 +59,8 @@ class RemoteHistoricalRestoreMapper {
           !missionLogIds.add(localLogId)) {
         return const HistoricalRestoreResult.failure(
           status: HistoricalRestoreResultStatus.catalogsNotAligned,
-          message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
+          message:
+              'Não foi possível atualizar os dados da conta neste aparelho.',
         );
       }
 
@@ -111,7 +97,8 @@ class RemoteHistoricalRestoreMapper {
           !rewardRequestIds.add(localRequestId)) {
         return const HistoricalRestoreResult.failure(
           status: HistoricalRestoreResultStatus.catalogsNotAligned,
-          message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
+          message:
+              'Não foi possível atualizar os dados da conta neste aparelho.',
         );
       }
 
@@ -160,7 +147,8 @@ class RemoteHistoricalRestoreMapper {
       if (localChildId == null || !ledgerEntryIds.add(localEntryId)) {
         return const HistoricalRestoreResult.failure(
           status: HistoricalRestoreResultStatus.catalogsNotAligned,
-          message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
+          message:
+              'Não foi possível atualizar os dados da conta neste aparelho.',
         );
       }
 
@@ -168,7 +156,8 @@ class RemoteHistoricalRestoreMapper {
       if (entryType == null) {
         return const HistoricalRestoreResult.failure(
           status: HistoricalRestoreResultStatus.applyBlocked,
-          message: 'Não foi possível restaurar o histórico agora.',
+          message:
+              'Não foi possível conferir o saldo com segurança neste aparelho.',
         );
       }
 
@@ -193,12 +182,14 @@ class RemoteHistoricalRestoreMapper {
             )
           : null;
 
-      if ((remoteEntry.sourceType == 'mission_log' && localMissionLogId == null) ||
+      if ((remoteEntry.sourceType == 'mission_log' &&
+              localMissionLogId == null) ||
           (remoteEntry.sourceType == 'reward_request' &&
               localRewardRequestId == null)) {
         return const HistoricalRestoreResult.failure(
           status: HistoricalRestoreResultStatus.catalogsNotAligned,
-          message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
+          message:
+              'Não foi possível atualizar os dados da conta neste aparelho.',
         );
       }
 
@@ -228,33 +219,18 @@ class RemoteHistoricalRestoreMapper {
       );
     }
 
-    final remoteBalanceByLocalChildId = <String, int>{};
-    for (final remoteBalance in remoteChildBalances) {
-      final localChildId = childMapping[remoteBalance.childId];
-      if (localChildId == null) {
-        return const HistoricalRestoreResult.failure(
-          status: HistoricalRestoreResultStatus.catalogsNotAligned,
-          message: 'Sincronize crianças, missões e mimos antes de restaurar o histórico.',
-        );
-      }
-      remoteBalanceByLocalChildId[localChildId] = remoteBalance.derivedBalance;
-    }
-
-    if (remoteBalanceByLocalChildId.length != localState.children.length) {
+    if (remoteChildBalances.isNotEmpty &&
+        !_matchesRemoteBalanceView(
+          localState: localState,
+          childMapping: childMapping,
+          rebuiltBalances: balancesByChildId,
+          remoteChildBalances: remoteChildBalances,
+        )) {
       return const HistoricalRestoreResult.failure(
         status: HistoricalRestoreResultStatus.unsafeBalanceMismatch,
-        message: 'Não foi possível restaurar o histórico com segurança. O saldo da nuvem não confere com os eventos.',
+        message:
+            'Não foi possível conferir o saldo com segurança neste aparelho.',
       );
-    }
-
-    for (final child in localState.children) {
-      final rebuiltBalance = balancesByChildId[child.id] ?? 0;
-      if (remoteBalanceByLocalChildId[child.id] != rebuiltBalance) {
-        return const HistoricalRestoreResult.failure(
-          status: HistoricalRestoreResultStatus.unsafeBalanceMismatch,
-          message: 'Não foi possível restaurar o histórico com segurança. O saldo da nuvem não confere com os eventos.',
-        );
-      }
     }
 
     final rebuiltChildren = [
@@ -273,70 +249,50 @@ class RemoteHistoricalRestoreMapper {
     );
   }
 
-  Map<String, String>? _buildChildMapping({
-    required List<ChildProfile> localChildren,
-    required List<RemoteChildSummary> remoteChildren,
+  Map<String, String> _buildFlexibleMapping({
+    required Set<String> localIds,
+    required Map<String, String?> remoteIdsToLocalIds,
   }) {
-    if (localChildren.isEmpty || remoteChildren.length != localChildren.length) {
-      return null;
-    }
-
-    final localIds = localChildren.map((child) => child.id).toSet();
     final mapping = <String, String>{};
-    final usedLocalIds = <String>{};
-    for (final remoteChild in remoteChildren) {
-      final localId = _preferredLocalId(remoteChild.localId, remoteChild.id);
-      if (!localIds.contains(localId) || !usedLocalIds.add(localId)) {
-        return null;
+    for (final entry in remoteIdsToLocalIds.entries) {
+      final localId = _preferredLocalId(entry.value, entry.key);
+      if (localIds.contains(localId)) {
+        mapping[entry.key] = localId;
       }
-      mapping[remoteChild.id] = localId;
     }
-
-    return usedLocalIds.length == localIds.length ? mapping : null;
+    return mapping;
   }
 
-  Map<String, String>? _buildMissionMapping({
-    required List<Mission> localMissions,
-    required List<RemoteMissionSummary> remoteMissions,
+  bool _matchesRemoteBalanceView({
+    required ZeniAppState localState,
+    required Map<String, String> childMapping,
+    required Map<String, int> rebuiltBalances,
+    required List<RemoteChildStarBalance> remoteChildBalances,
   }) {
-    final localIds = localMissions.map((mission) => mission.id).toSet();
-    if (remoteMissions.length != localIds.length) {
-      return null;
-    }
-
-    final mapping = <String, String>{};
-    final usedLocalIds = <String>{};
-    for (final remoteMission in remoteMissions) {
-      final localId = _preferredLocalId(remoteMission.localId, remoteMission.id);
-      if (!localIds.contains(localId) || !usedLocalIds.add(localId)) {
-        return null;
+    final remoteBalanceByLocalChildId = <String, int>{};
+    for (final remoteBalance in remoteChildBalances) {
+      final localChildId = childMapping[remoteBalance.childId];
+      if (localChildId == null) {
+        continue;
       }
-      mapping[remoteMission.id] = localId;
+      remoteBalanceByLocalChildId[localChildId] = remoteBalance.derivedBalance;
     }
 
-    return usedLocalIds.length == localIds.length ? mapping : null;
-  }
-
-  Map<String, String>? _buildRewardMapping({
-    required List<Reward> localRewards,
-    required List<RemoteRewardSummary> remoteRewards,
-  }) {
-    final localIds = localRewards.map((reward) => reward.id).toSet();
-    if (remoteRewards.length != localIds.length) {
-      return null;
-    }
-
-    final mapping = <String, String>{};
-    final usedLocalIds = <String>{};
-    for (final remoteReward in remoteRewards) {
-      final localId = _preferredLocalId(remoteReward.localId, remoteReward.id);
-      if (!localIds.contains(localId) || !usedLocalIds.add(localId)) {
-        return null;
+    for (final child in localState.children) {
+      final rebuiltBalance = rebuiltBalances[child.id] ?? 0;
+      final remoteBalance = remoteBalanceByLocalChildId[child.id];
+      if (remoteBalance == null) {
+        if (rebuiltBalance != 0) {
+          return false;
+        }
+        continue;
       }
-      mapping[remoteReward.id] = localId;
-    }
 
-    return usedLocalIds.length == localIds.length ? mapping : null;
+      if (remoteBalance != rebuiltBalance) {
+        return false;
+      }
+    }
+    return true;
   }
 
   String _preferredLocalId(String? localId, String remoteId) {
@@ -345,6 +301,14 @@ class RemoteHistoricalRestoreMapper {
       return trimmed;
     }
     return remoteId;
+  }
+
+  String _localLedgerEntryIdFor(RemoteStarLedgerEntrySummary entry) {
+    final idempotencyKey = entry.idempotencyKey.trim();
+    if (idempotencyKey.isNotEmpty) {
+      return 'remote:$idempotencyKey';
+    }
+    return _preferredLocalId(entry.sourceLocalId, entry.id);
   }
 
   MissionLogStatus _missionLogStatusFromRemote(String rawStatus) {
@@ -386,9 +350,7 @@ class RemoteHistoricalRestoreMapper {
     return a.id.compareTo(b.id);
   }
 
-  StarLedgerEntryType? _mapLedgerEntryType(
-    RemoteStarLedgerEntrySummary entry,
-  ) {
+  StarLedgerEntryType? _mapLedgerEntryType(RemoteStarLedgerEntrySummary entry) {
     if (entry.sourceType == 'mission_log' && entry.direction == 'credit') {
       return StarLedgerEntryType.earned;
     }
@@ -415,14 +377,6 @@ class RemoteHistoricalRestoreMapper {
   int _signedAmount(RemoteStarLedgerEntrySummary entry) {
     final absoluteAmount = entry.amount.abs();
     return entry.direction == 'debit' ? -absoluteAmount : absoluteAmount;
-  }
-
-  String _localLedgerEntryIdFor(RemoteStarLedgerEntrySummary entry) {
-    final idempotencyKey = entry.idempotencyKey.trim();
-    if (idempotencyKey.isNotEmpty) {
-      return 'remote:$idempotencyKey';
-    }
-    return _preferredLocalId(entry.sourceLocalId, entry.id);
   }
 
   String? _resolveRelatedId({
@@ -460,23 +414,25 @@ class RemoteHistoricalRestoreMapper {
       final mission = log == null ? null : localMissionById[log.missionId];
       if (entryType == StarLedgerEntryType.adjusted) {
         return mission == null
-            ? 'Desfazer restaurado'
+            ? 'Desfazer sincronizado'
             : 'Desfazer: ${mission.title}';
       }
-      return mission?.title ?? 'Missão restaurada';
+      return mission?.title ?? 'Missão sincronizada';
     }
 
     if (localRewardRequestId != null) {
       final request = rewardRequestById[localRewardRequestId];
       final reward = request == null ? null : localRewardById[request.rewardId];
       if (entryType == StarLedgerEntryType.refunded) {
-        return reward == null ? 'Reembolso restaurado' : 'Reembolso: ${reward.title}';
+        return reward == null
+            ? 'Reembolso sincronizado'
+            : 'Reembolso: ${reward.title}';
       }
-      return reward?.title ?? 'Mimo restaurado';
+      return reward?.title ?? 'Mimo sincronizado';
     }
 
     return remoteEntry.reason?.trim().isNotEmpty == true
         ? remoteEntry.reason!.trim()
-        : 'Ajuste manual';
+        : 'Ajuste sincronizado';
   }
 }

@@ -285,7 +285,22 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           remoteMissionsRepositoryProvider.overrideWithValue(
-            _FakeRemoteMissionsRepository(),
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
           ),
         ],
       );
@@ -2291,6 +2306,86 @@ void main() {
   );
 
   test(
+    'automatic mission completion creates local credit and remote earned entry',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(
+          ZeniAppState.initial().copyWith(
+            children: [
+              ChildProfile(
+                id: 'child-local-1',
+                familyId: 'local-family',
+                name: 'Luna',
+                emoji: '🦊',
+                starBalance: 0,
+                streakCount: 0,
+                createdAt: DateTime(2026, 5, 28),
+              ),
+            ],
+            missions: [
+              Mission(
+                id: 'mission-local-1',
+                familyId: 'local-family',
+                childId: 'child-local-1',
+                title: 'Arrumar brinquedos',
+                description: 'Guardar tudo',
+                stars: 10,
+                recurrence: MissionRecurrence.daily,
+                timeGroup: MissionTimeGroup.anytime,
+                approvalMode: MissionApprovalMode.automatic,
+                status: MissionStatus.active,
+                createdAt: DateTime(2026, 5, 28),
+                updatedAt: DateTime(2026, 5, 28),
+              ),
+            ],
+          ).toJson(),
+        ),
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final mission = (await container.read(zeniAppStateControllerProvider.future))
+          .missionById('mission-local-1')!;
+      await container.read(missionRepositoryProvider).submitMission(
+        childId: 'child-local-1',
+        mission: mission,
+        currentLog: null,
+      );
+
+      final appState = await container.read(zeniAppStateControllerProvider.future);
+      final ledgerEntry = appState.starLedgerEntries.single;
+      expect(ledgerEntry.type, StarLedgerEntryType.earned);
+      expect(ledgerEntry.amount, 10);
+      expect(appState.childById('child-local-1')!.starBalance, 10);
+
+      final tableClient = _FakeStarLedgerTableClient();
+      final repository = SupabaseRemoteStarLedgerRepository(
+        client: null,
+        tableClient: tableClient,
+        currentUserIdOverride: 'user-1',
+      );
+
+      final result = await repository.ensureRemoteStarLedger(
+        familyId: 'family-1',
+        localEntries: appState.starLedgerEntries,
+        remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
+        remoteMissionLogIdByLocalMissionLogId: {
+          ledgerEntry.relatedMissionLogId!: 'remote-log-1',
+        },
+        remoteRewardRequestIdByLocalRewardRequestId: const {},
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(tableClient.insertedPayloads, hasLength(1));
+      expect(
+        tableClient.insertedPayloads.single['idempotency_key'],
+        'mission_log:${ledgerEntry.relatedMissionLogId}:earned',
+      );
+      expect(tableClient.insertedPayloads.single['direction'], 'credit');
+    },
+  );
+
+  test(
     'mission credit generates correct star ledger idempotency key',
     () async {
       final tableClient = _FakeStarLedgerTableClient();
@@ -2334,6 +2429,48 @@ void main() {
       expect(tableClient.insertedPayloads.single['source_id'], 'remote-log-1');
     },
   );
+
+  test('mission reversal generates correct star ledger idempotency key', () async {
+    final tableClient = _FakeStarLedgerTableClient();
+    final repository = SupabaseRemoteStarLedgerRepository(
+      client: null,
+      tableClient: tableClient,
+      currentUserIdOverride: 'user-1',
+    );
+
+    final result = await repository.ensureRemoteStarLedger(
+      familyId: 'family-1',
+      localEntries: [
+        StarLedgerEntry(
+          id: 'ledger-local-reversal-1',
+          familyId: 'local-family',
+          childId: 'child-local-1',
+          amount: -12,
+          balanceAfter: 0,
+          type: StarLedgerEntryType.adjusted,
+          title: 'Desfazer: Arrumar brinquedos',
+          description: 'Conclusão automática desfeita no mesmo dia.',
+          createdAt: DateTime(2026, 5, 28, 10, 5),
+          relatedMissionLogId: 'log-local-1',
+        ),
+      ],
+      remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
+      remoteMissionLogIdByLocalMissionLogId: const {
+        'log-local-1': 'remote-log-1',
+      },
+      remoteRewardRequestIdByLocalRewardRequestId: const {},
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(
+      tableClient.insertedPayloads.single['idempotency_key'],
+      'mission_log:log-local-1:reversal',
+    );
+    expect(tableClient.insertedPayloads.single['direction'], 'debit');
+    expect(tableClient.insertedPayloads.single['amount'], 12);
+    expect(tableClient.insertedPayloads.single['source_type'], 'mission_log');
+    expect(tableClient.insertedPayloads.single['source_id'], 'remote-log-1');
+  });
 
   test('reward debit generates correct star ledger idempotency key', () async {
     final tableClient = _FakeStarLedgerTableClient();
@@ -2463,6 +2600,110 @@ void main() {
     expect(tableClient.insertedPayloads, hasLength(1));
     expect(tableClient.updatedPayloads, hasLength(1));
   });
+
+  test(
+    'undoing automatic mission completion creates local reversal and repeated sync does not duplicate it',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(
+          ZeniAppState.initial().copyWith(
+            children: [
+              ChildProfile(
+                id: 'child-local-1',
+                familyId: 'local-family',
+                name: 'Luna',
+                emoji: '🦊',
+                starBalance: 0,
+                streakCount: 0,
+                createdAt: DateTime(2026, 5, 28),
+              ),
+            ],
+            missions: [
+              Mission(
+                id: 'mission-local-1',
+                familyId: 'local-family',
+                childId: 'child-local-1',
+                title: 'Arrumar brinquedos',
+                description: 'Guardar tudo',
+                stars: 10,
+                recurrence: MissionRecurrence.daily,
+                timeGroup: MissionTimeGroup.anytime,
+                approvalMode: MissionApprovalMode.automatic,
+                status: MissionStatus.active,
+                createdAt: DateTime(2026, 5, 28),
+                updatedAt: DateTime(2026, 5, 28),
+              ),
+            ],
+          ).toJson(),
+        ),
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final mission = (await container.read(zeniAppStateControllerProvider.future))
+          .missionById('mission-local-1')!;
+      await container.read(missionRepositoryProvider).submitMission(
+        childId: 'child-local-1',
+        mission: mission,
+        currentLog: null,
+      );
+      final completedState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      final missionLogId = completedState.starLedgerEntries.single.relatedMissionLogId!;
+
+      await container.read(missionRepositoryProvider).undoMissionCompletion(
+        missionLogId,
+      );
+
+      final appState = await container.read(zeniAppStateControllerProvider.future);
+      final reversalEntries = appState.starLedgerEntries
+          .where((entry) => entry.type == StarLedgerEntryType.adjusted)
+          .toList();
+      expect(reversalEntries, hasLength(1));
+      expect(reversalEntries.single.amount, -10);
+      expect(appState.childById('child-local-1')!.starBalance, 0);
+
+      final tableClient = _FakeStarLedgerTableClient();
+      final repository = SupabaseRemoteStarLedgerRepository(
+        client: null,
+        tableClient: tableClient,
+        currentUserIdOverride: 'user-1',
+      );
+
+      final first = await repository.ensureRemoteStarLedger(
+        familyId: 'family-1',
+        localEntries: appState.starLedgerEntries,
+        remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
+        remoteMissionLogIdByLocalMissionLogId: {missionLogId: 'remote-log-1'},
+        remoteRewardRequestIdByLocalRewardRequestId: const {},
+      );
+      final second = await repository.ensureRemoteStarLedger(
+        familyId: 'family-1',
+        localEntries: appState.starLedgerEntries,
+        remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
+        remoteMissionLogIdByLocalMissionLogId: {missionLogId: 'remote-log-1'},
+        remoteRewardRequestIdByLocalRewardRequestId: const {},
+      );
+
+      expect(first.isSuccess, isTrue);
+      expect(second.isSuccess, isTrue);
+      expect(tableClient.rows, hasLength(2));
+      expect(
+        tableClient.rows.map((row) => row['idempotency_key']),
+        containsAll(<String>[
+          'mission_log:$missionLogId:earned',
+          'mission_log:$missionLogId:reversal',
+        ]),
+      );
+      expect(
+        tableClient.rows
+            .where((row) => row['idempotency_key'] == 'mission_log:$missionLogId:reversal')
+            .single['direction'],
+        'debit',
+      );
+    },
+  );
 
   test(
     'successful remote star ledger sync updates lastStarLedgerSyncAt without altering local balance',
@@ -3117,6 +3358,1041 @@ void main() {
     expect(result.isSuccess, isTrue);
     expect(appState.appSettings.lastFullSyncAt, isNotNull);
   });
+
+  test(
+    'pulling remote mission log awaiting approval creates local pending approval without duplication',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 3,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missions: [
+          Mission(
+            id: 'mission-local-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            title: 'Arrumar brinquedos',
+            description: 'Guardar tudo',
+            stars: 10,
+            recurrence: MissionRecurrence.daily,
+            timeGroup: MissionTimeGroup.anytime,
+            approvalMode: MissionApprovalMode.parentApproval,
+            status: MissionStatus.active,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(
+              ensureResult: ZeniEnsureRemoteMissionLogsResult.success([
+                RemoteMissionLogSummary(
+                  id: 'remote-log-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  missionId: 'remote-mission-1',
+                  localId: 'log-local-1',
+                  status: 'awaitingApproval',
+                  starsAwarded: 10,
+                  scheduledDate: DateTime(2026, 5, 28),
+                  submittedAt: DateTime(2026, 5, 28, 9, 0),
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      final syncedLogs = appState.missionLogs
+          .where((log) => log.id == 'log-local-1')
+          .toList();
+
+      expect(syncedLogs, hasLength(1));
+      expect(syncedLogs.single.status, MissionLogStatus.awaitingApproval);
+    },
+  );
+
+  test(
+    'pulling remote reward request pending creates local request without duplication',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 2,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        rewards: [
+          Reward(
+            id: 'reward-local-1',
+            familyId: 'local-family',
+            title: 'Escolher filme',
+            description: 'Cinema em casa',
+            emoji: '🎬',
+            cost: 40,
+            renewal: RewardRenewal.weekly,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(
+              ensureResult: const ZeniEnsureRemoteRewardsResult.success([
+                RemoteRewardSummary(
+                  id: 'remote-reward-1',
+                  familyId: 'family-1',
+                  localId: 'reward-local-1',
+                  title: 'Escolher filme',
+                  cost: 40,
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(
+              ensureResult: ZeniEnsureRemoteRewardRequestsResult.success([
+                RemoteRewardRequestSummary(
+                  id: 'remote-request-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  rewardId: 'remote-reward-1',
+                  localId: 'request-local-1',
+                  status: 'pending',
+                  starsSpent: 40,
+                  requestedAt: DateTime(2026, 5, 28, 16, 20),
+                ),
+              ]),
+            ),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      final syncedRequests = appState.rewardRequests
+          .where((request) => request.id == 'request-local-1')
+          .toList();
+
+      expect(syncedRequests, hasLength(1));
+      expect(syncedRequests.single.status, RewardRequestStatus.pending);
+    },
+  );
+
+  test(
+    'pulling remote ledger applies local balance, keeps streak and stays idempotent',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 8,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missions: [
+          Mission(
+            id: 'mission-local-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            title: 'Arrumar brinquedos',
+            description: 'Guardar tudo',
+            stars: 10,
+            recurrence: MissionRecurrence.daily,
+            timeGroup: MissionTimeGroup.anytime,
+            approvalMode: MissionApprovalMode.parentApproval,
+            status: MissionStatus.active,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(
+              ensureResult: ZeniEnsureRemoteMissionLogsResult.success([
+                RemoteMissionLogSummary(
+                  id: 'remote-log-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  missionId: 'remote-mission-1',
+                  localId: 'log-local-1',
+                  status: 'approved',
+                  starsAwarded: 10,
+                  scheduledDate: DateTime(2026, 5, 28),
+                  submittedAt: DateTime(2026, 5, 28, 9, 0),
+                  approvedAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(
+              ensureResult: ZeniEnsureRemoteStarLedgerResult.success([
+                RemoteStarLedgerEntrySummary(
+                  id: 'remote-ledger-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  sourceType: 'mission_log',
+                  sourceId: 'remote-log-1',
+                  sourceLocalId: 'log-local-1',
+                  idempotencyKey: 'mission_log:log-local-1:earned',
+                  direction: 'credit',
+                  amount: 10,
+                  occurredAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+              ]),
+            ),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(
+              balances: const [
+                RemoteChildStarBalance(
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  childName: 'Luna',
+                  creditsTotal: 10,
+                  debitsTotal: 0,
+                  derivedBalance: 10,
+                  ledgerEventsCount: 1,
+                ),
+              ],
+            ),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+      await container.read(zeniCloudSyncControllerProvider).syncCloudDataNow();
+
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      final child = appState.childById('child-local-1')!;
+      final syncedLog = appState.missionLogs.singleWhere(
+        (log) => log.id == 'log-local-1',
+      );
+      final ledgerEntries = appState.starLedgerEntries
+          .where(
+            (entry) =>
+                entry.id == 'remote:mission_log:log-local-1:earned' &&
+                entry.relatedMissionLogId == 'log-local-1',
+          )
+          .toList();
+
+      expect(child.starBalance, 10);
+      expect(child.streakCount, 8);
+      expect(syncedLog.status, MissionLogStatus.approved);
+      expect(ledgerEntries, hasLength(1));
+    },
+  );
+
+  test(
+    'device can pull approved mission and updated balance from remote account data',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 5,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missions: [
+          Mission(
+            id: 'mission-local-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            title: 'Arrumar brinquedos',
+            description: 'Guardar tudo',
+            stars: 10,
+            recurrence: MissionRecurrence.daily,
+            timeGroup: MissionTimeGroup.anytime,
+            approvalMode: MissionApprovalMode.parentApproval,
+            status: MissionStatus.active,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missionLogs: [
+          MissionLog(
+            id: 'log-local-1',
+            missionId: 'mission-local-1',
+            childId: 'child-local-1',
+            scheduledDate: DateTime(2026, 5, 28),
+            status: MissionLogStatus.awaitingApproval,
+            starsAwarded: 10,
+            completedAt: DateTime(2026, 5, 28, 9, 0),
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(
+              ensureResult: ZeniEnsureRemoteMissionLogsResult.success([
+                RemoteMissionLogSummary(
+                  id: 'remote-log-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  missionId: 'remote-mission-1',
+                  localId: 'log-local-1',
+                  status: 'approved',
+                  starsAwarded: 10,
+                  scheduledDate: DateTime(2026, 5, 28),
+                  submittedAt: DateTime(2026, 5, 28, 9, 0),
+                  approvedAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(
+              ensureResult: ZeniEnsureRemoteStarLedgerResult.success([
+                RemoteStarLedgerEntrySummary(
+                  id: 'remote-ledger-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  sourceType: 'mission_log',
+                  sourceId: 'remote-log-1',
+                  sourceLocalId: 'log-local-1',
+                  idempotencyKey: 'mission_log:log-local-1:earned',
+                  direction: 'credit',
+                  amount: 10,
+                  occurredAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+              ]),
+            ),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(
+              balances: const [
+                RemoteChildStarBalance(
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  childName: 'Luna',
+                  creditsTotal: 10,
+                  debitsTotal: 0,
+                  derivedBalance: 10,
+                  ledgerEventsCount: 1,
+                ),
+              ],
+            ),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      final result = await container
+          .read(zeniCloudSyncControllerProvider)
+          .syncCloudDataNow();
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(appState.childById('child-local-1')!.starBalance, 10);
+      expect(
+        appState.missionLogs
+            .singleWhere((log) => log.id == 'log-local-1')
+            .status,
+        MissionLogStatus.approved,
+      );
+    },
+  );
+
+  test(
+    'sync plus pull after undo keeps balance coherent with ledger and does not give stars back',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 5,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missions: [
+          Mission(
+            id: 'mission-local-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            title: 'Arrumar brinquedos',
+            description: 'Guardar tudo',
+            stars: 10,
+            recurrence: MissionRecurrence.daily,
+            timeGroup: MissionTimeGroup.anytime,
+            approvalMode: MissionApprovalMode.automatic,
+            status: MissionStatus.active,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missionLogs: [
+          MissionLog(
+            id: 'log-local-1',
+            missionId: 'mission-local-1',
+            childId: 'child-local-1',
+            scheduledDate: DateTime(2026, 5, 28),
+            status: MissionLogStatus.pending,
+            starsAwarded: 10,
+            completedAt: DateTime(2026, 5, 28, 9, 0),
+          ),
+        ],
+        starLedgerEntries: [
+          StarLedgerEntry(
+            id: 'ledger-local-earned-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            amount: 10,
+            balanceAfter: 10,
+            type: StarLedgerEntryType.earned,
+            title: 'Arrumar brinquedos',
+            createdAt: DateTime(2026, 5, 28, 9, 10),
+            relatedMissionLogId: 'log-local-1',
+          ),
+          StarLedgerEntry(
+            id: 'ledger-local-reversal-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            amount: -10,
+            balanceAfter: 0,
+            type: StarLedgerEntryType.adjusted,
+            title: 'Desfazer: Arrumar brinquedos',
+            description: 'Conclusão automática desfeita no mesmo dia.',
+            createdAt: DateTime(2026, 5, 28, 9, 20),
+            relatedMissionLogId: 'log-local-1',
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: false,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(
+              ensureResult: ZeniEnsureRemoteMissionLogsResult.success([
+                RemoteMissionLogSummary(
+                  id: 'remote-log-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  missionId: 'remote-mission-1',
+                  localId: 'log-local-1',
+                  status: 'pending',
+                  starsAwarded: 10,
+                  scheduledDate: DateTime(2026, 5, 28),
+                  submittedAt: DateTime(2026, 5, 28, 9, 0),
+                  completedAt: DateTime(2026, 5, 28, 9, 0),
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(
+              ensureResult: ZeniEnsureRemoteStarLedgerResult.success([
+                RemoteStarLedgerEntrySummary(
+                  id: 'remote-ledger-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  sourceType: 'mission_log',
+                  sourceId: 'remote-log-1',
+                  sourceLocalId: 'log-local-1',
+                  idempotencyKey: 'mission_log:log-local-1:earned',
+                  direction: 'credit',
+                  amount: 10,
+                  occurredAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+                RemoteStarLedgerEntrySummary(
+                  id: 'remote-ledger-2',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  sourceType: 'mission_log',
+                  sourceId: 'remote-log-1',
+                  sourceLocalId: 'log-local-1',
+                  idempotencyKey: 'mission_log:log-local-1:reversal',
+                  direction: 'debit',
+                  amount: 10,
+                  occurredAt: DateTime(2026, 5, 28, 9, 20),
+                ),
+              ]),
+            ),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(
+              balances: const [
+                RemoteChildStarBalance(
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  childName: 'Luna',
+                  creditsTotal: 10,
+                  debitsTotal: 10,
+                  derivedBalance: 0,
+                  ledgerEventsCount: 2,
+                ),
+              ],
+            ),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      final result = await container
+          .read(zeniCloudSyncControllerProvider)
+          .syncCloudDataNow();
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      final child = appState.childById('child-local-1')!;
+      final syncedLog = appState.missionLogs.singleWhere(
+        (log) => log.id == 'log-local-1',
+      );
+      final earnedEntry = appState.starLedgerEntries.singleWhere(
+        (entry) => entry.id == 'remote:mission_log:log-local-1:earned',
+      );
+      final reversalEntry = appState.starLedgerEntries.singleWhere(
+        (entry) => entry.id == 'remote:mission_log:log-local-1:reversal',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(child.starBalance, 0);
+      expect(child.streakCount, 5);
+      expect(syncedLog.status, MissionLogStatus.pending);
+      expect(earnedEntry.type, StarLedgerEntryType.earned);
+      expect(reversalEntry.type, StarLedgerEntryType.adjusted);
+      expect(reversalEntry.amount, -10);
+    },
+  );
+
+  test(
+    'remote balance divergence blocks ledger application and does not copy balance directly',
+    () async {
+      final initialState = ZeniAppState.initial().copyWith(
+        children: [
+          ChildProfile(
+            id: 'child-local-1',
+            familyId: 'local-family',
+            name: 'Luna',
+            emoji: '🦊',
+            starBalance: 0,
+            streakCount: 4,
+            createdAt: DateTime(2026, 5, 28),
+          ),
+        ],
+        missions: [
+          Mission(
+            id: 'mission-local-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            title: 'Arrumar brinquedos',
+            description: 'Guardar tudo',
+            stars: 10,
+            recurrence: MissionRecurrence.daily,
+            timeGroup: MissionTimeGroup.anytime,
+            approvalMode: MissionApprovalMode.parentApproval,
+            status: MissionStatus.active,
+            createdAt: DateTime(2026, 5, 28),
+            updatedAt: DateTime(2026, 5, 28),
+          ),
+        ],
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initialState.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_TestAuthRepository()),
+          accountRepositoryProvider.overrideWithValue(_FakeAccountRepository()),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              ensureResult: const ZeniEnsureRemoteChildrenResult.success([
+                RemoteChildSummary(
+                  id: 'remote-child-1',
+                  familyId: 'family-1',
+                  localId: 'child-local-1',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ]),
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              ensureResult: const ZeniEnsureRemoteMissionsResult.success([
+                RemoteMissionSummary(
+                  id: 'remote-mission-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  localId: 'mission-local-1',
+                  title: 'Arrumar brinquedos',
+                  stars: 10,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(),
+          ),
+          remoteMissionLogsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionLogsRepository(
+              ensureResult: ZeniEnsureRemoteMissionLogsResult.success([
+                RemoteMissionLogSummary(
+                  id: 'remote-log-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  missionId: 'remote-mission-1',
+                  localId: 'log-local-1',
+                  status: 'approved',
+                  starsAwarded: 10,
+                  scheduledDate: DateTime(2026, 5, 28),
+                ),
+              ]),
+            ),
+          ),
+          remoteRewardRequestsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardRequestsRepository(),
+          ),
+          remoteStarLedgerRepositoryProvider.overrideWithValue(
+            _FakeRemoteStarLedgerRepository(
+              ensureResult: ZeniEnsureRemoteStarLedgerResult.success([
+                RemoteStarLedgerEntrySummary(
+                  id: 'remote-ledger-1',
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  sourceType: 'mission_log',
+                  sourceId: 'remote-log-1',
+                  sourceLocalId: 'log-local-1',
+                  idempotencyKey: 'mission_log:log-local-1:earned',
+                  direction: 'credit',
+                  amount: 10,
+                  occurredAt: DateTime(2026, 5, 28, 9, 10),
+                ),
+              ]),
+            ),
+          ),
+          remoteChildBalanceRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildBalanceRepository(
+              balances: const [
+                RemoteChildStarBalance(
+                  familyId: 'family-1',
+                  childId: 'remote-child-1',
+                  childName: 'Luna',
+                  creditsTotal: 999,
+                  debitsTotal: 0,
+                  derivedBalance: 999,
+                  ledgerEventsCount: 1,
+                ),
+              ],
+            ),
+          ),
+          remoteFamilySummaryProvider.overrideWith(
+            (ref) async => const RemoteFamilySummary(
+              familyId: 'family-1',
+              familyName: 'Minha família',
+              role: 'owner',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+
+      final result = await container
+          .read(zeniCloudSyncControllerProvider)
+          .syncCloudDataNow();
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(appState.childById('child-local-1')!.starBalance, 0);
+      expect(appState.childById('child-local-1')!.starBalance, isNot(999));
+      expect(appState.starLedgerEntries, isEmpty);
+      expect(appState.missionLogs, isEmpty);
+    },
+  );
 
   test('failed rewards sync keeps previous lastFullSyncAt', () async {
     final previousSyncAt = DateTime(2026, 5, 28, 16, 10);
@@ -3962,8 +5238,11 @@ class _FakeRemoteStarLedgerRepository implements RemoteStarLedgerRepository {
 
 class _FakeRemoteChildBalanceRepository
     implements RemoteChildBalanceRepository {
-  _FakeRemoteChildBalanceRepository();
+  _FakeRemoteChildBalanceRepository({
+    this.balances = const <RemoteChildStarBalance>[],
+  });
   int readCalls = 0;
+  final List<RemoteChildStarBalance> balances;
 
   @override
   bool get isConfigured => true;
@@ -3973,7 +5252,7 @@ class _FakeRemoteChildBalanceRepository
     required String familyId,
   }) async {
     readCalls += 1;
-    return const <RemoteChildStarBalance>[];
+    return balances;
   }
 }
 

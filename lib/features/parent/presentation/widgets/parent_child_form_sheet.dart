@@ -134,7 +134,7 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
             ),
             const SizedBox(height: ZeniSpacing.xl),
             ZeniSwitch(
-              title: 'Leitura em voz alta neste perfil',
+              title: 'Leitura em voz alta para esta criança',
               subtitle:
                   'Quando o app usar a configuração por criança, ${_nameController.text.trim().isEmpty ? 'este perfil' : _nameController.text.trim()} poderá ouvir missões e mimos.',
               icon: Icons.record_voice_over_rounded,

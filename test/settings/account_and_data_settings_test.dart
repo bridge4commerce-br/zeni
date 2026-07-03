@@ -10,13 +10,14 @@ import 'package:zeni/features/auth/data/repositories/zeni_account_repository.dar
 import 'package:zeni/features/auth/data/repositories/zeni_auth_repository.dart';
 import 'package:zeni/features/auth/presentation/providers/zeni_account_providers.dart';
 import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.dart';
+import 'package:zeni/features/settings/data/models/app_settings.dart';
 import '../support/settings_test_harness.dart';
 import '../support/widget_test_fakes.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('authenticated settings show email and sign out action', (
+  testWidgets('responsible profile appears at the top with name and email', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -24,13 +25,16 @@ void main() {
         authState: const ZeniAuthState.authenticated(
           ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
         ),
+        parentDisplayName: 'Carla',
       ),
     );
     await tester.pump();
 
-    expect(find.text('Conta conectada'), findsOneWidget);
+    expect(find.text('Carla'), findsOneWidget);
     expect(find.text('responsavel@zeni.app'), findsOneWidget);
-    expect(find.text('Sair da conta'), findsOneWidget);
+    final profileTop = tester.getTopLeft(find.text('Carla')).dy;
+    final securityTop = tester.getTopLeft(find.text('Segurança')).dy;
+    expect(profileTop, lessThan(securityTop));
   });
 
   testWidgets('owner role appears as friendly responsible principal label', (
@@ -50,8 +54,37 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Família remota preparada'), findsOneWidget);
-    expect(find.text('Minha família · Responsável principal'), findsOneWidget);
+    expect(find.text('Nome da família no backup'), findsOneWidget);
+    expect(find.text('Minha família'), findsOneWidget);
+  });
+
+  testWidgets('tapping profile card opens parent name editor', (tester) async {
+    var savedName = '';
+
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        parentDisplayName: 'Carla',
+        onUpdateParentDisplayName: (name) async {
+          savedName = name;
+        },
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Carla'));
+    await tester.pumpAndSettle();
+    expect(find.text('Perfil do responsável'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('parent-display-name-input')),
+      'Marina',
+    );
+    await tester.tap(find.text('Salvar nome'));
+    await tester.pumpAndSettle();
+
+    expect(savedName, 'Marina');
   });
 
   testWidgets('responsible role appears as friendly label', (tester) async {
@@ -69,10 +102,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Minha família · Responsável'), findsOneWidget);
+    expect(find.text('Minha família'), findsOneWidget);
   });
 
-  testWidgets('account and data section separates account local and cloud areas', (
+  testWidgets('settings use simple groups and no danger zone label', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -88,42 +121,120 @@ void main() {
       ),
     );
 
+    expect(find.text('Segurança'), findsOneWidget);
+    expect(find.text('Preferências'), findsOneWidget);
+    expect(find.text('Sincronização e backup'), findsWidgets);
+    expect(find.text('Ajuda e informações'), findsOneWidget);
     expect(find.text('Conta e dados'), findsOneWidget);
-    expect(find.text('Conta'), findsOneWidget);
-    expect(find.text('Neste aparelho'), findsOneWidget);
-    expect(find.text('Na nuvem'), findsOneWidget);
-    expect(find.text('Conta conectada'), findsOneWidget);
+    expect(find.text('Zona de perigo'), findsNothing);
     expect(find.text('Sair da conta'), findsOneWidget);
     expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
-    expect(find.text('Excluir conta e dados da nuvem'), findsWidgets);
-    expect(find.text('Gerenciar dados e conta'), findsNothing);
     expect(
-      find.text(
-        'Os dados locais ficam salvos neste aparelho para o Zeni funcionar mesmo offline.',
-      ),
-      findsOneWidget,
+      tester.getTopLeft(find.text('Segurança')).dy,
+      lessThan(tester.getTopLeft(find.text('Sincronização e backup').first).dy),
     );
     expect(
-      find.text(
-        'Quando você sincroniza, uma cópia segura dos dados principais fica vinculada à sua conta.',
+      tester.getTopLeft(find.text('Apagar dados deste aparelho')).dy,
+      greaterThan(
+        tester.getTopLeft(find.text('Sincronização e backup').first).dy,
       ),
-      findsOneWidget,
     );
   });
 
-  testWidgets('legal and support section appears in settings', (tester) async {
+  testWidgets('help and support section appears in settings', (tester) async {
     await tester.pumpWidget(
       buildStaticSettingsHarness(
         authState: const ZeniAuthState.unauthenticated(),
       ),
     );
 
-    expect(find.text('Legal e suporte'), findsOneWidget);
+    expect(find.text('Ajuda e informações'), findsOneWidget);
+    expect(find.text('Suporte'), findsOneWidget);
     expect(find.text('Política de Privacidade'), findsOneWidget);
     expect(find.text('Termos de Uso'), findsOneWidget);
-    expect(find.text('Suporte'), findsOneWidget);
-    expect(find.text('Dados locais e nuvem'), findsOneWidget);
-    expect(find.text('Diagnóstico técnico'), findsOneWidget);
+    expect(find.text('Como seus dados são salvos'), findsOneWidget);
+    expect(find.text('Informações técnicas para suporte'), findsOneWidget);
+  });
+
+  testWidgets('sync section shows a simple summary on the main screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        appSettings: AppSettings(lastFullSyncAt: DateTime(2026, 6, 15, 10, 30)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Tudo salvo na sua conta'), findsOneWidget);
+    expect(
+      find.text('Última sincronização: 15/06/2026 às 10:30'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Crianças preparadas · Missões preparadas'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('sync technical details appear only after tapping view details', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        appSettings: AppSettings(
+          lastChildrenSyncAt: DateTime(2026, 6, 15, 10),
+          lastMissionsSyncAt: DateTime(2026, 6, 15, 10),
+          lastRewardsSyncAt: DateTime(2026, 6, 15, 10),
+          lastMissionLogsSyncAt: DateTime(2026, 6, 15, 10),
+          lastRewardRequestsSyncAt: DateTime(2026, 6, 15, 10),
+          lastStarLedgerSyncAt: DateTime(2026, 6, 15, 10),
+          lastFullSyncAt: DateTime(2026, 6, 15, 10),
+        ),
+        remoteChildrenCount: 2,
+        remoteMissionsCount: 2,
+        remoteRewardsCount: 1,
+        remoteMissionLogsCount: 3,
+        remoteRewardRequestsCount: 1,
+        remoteStarLedgerCount: 4,
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
+      ),
+      findsNothing,
+    );
+
+    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver detalhes'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('technical diagnostics show safe bootstrap and auth availability', (
@@ -141,9 +252,12 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(find.text('Diagnóstico técnico'), 300);
+    await tester.scrollUntilVisible(
+      find.text('Informações técnicas para suporte'),
+      300,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Diagnóstico técnico'));
+    await tester.tap(find.text('Informações técnicas para suporte'));
     await tester.pumpAndSettle();
 
     expect(find.text('Supabase configurado'), findsOneWidget);
@@ -170,14 +284,14 @@ void main() {
       ),
     );
 
-    expect(find.text('Criar conta para sincronizar'), findsOneWidget);
+    expect(find.text('Conectar conta'), findsOneWidget);
     expect(
-      find.text('A nuvem falhou ao iniciar neste aparelho'),
+      find.text('A conexão com a nuvem falhou ao iniciar neste aparelho.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('legal and support items open internal content sheets', (
+  testWidgets('help and support items open internal content sheets', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -210,6 +324,8 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Suporte'), 300);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Suporte'));
     await tester.pumpAndSettle();
     expect(
@@ -222,17 +338,22 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Dados locais e nuvem'));
+    await tester.scrollUntilVisible(
+      find.text('Como seus dados são salvos'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Como seus dados são salvos'));
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. Excluir conta e dados da nuvem não apaga automaticamente os dados locais.',
+        'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
       ),
       findsOneWidget,
     );
   });
 
-  testWidgets('remote deletion item appears as unavailable and informative', (
+  testWidgets('remote deletion area appears as unavailable and informative', (
     tester,
   ) async {
     seedMockAppState();
@@ -265,13 +386,69 @@ void main() {
     await openParentSettings(tester);
     await tester.pumpAndSettle();
 
-    expect(find.text('Excluir conta e dados da nuvem'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gerenciar dados e conta'), findsOneWidget);
     expect(
       find.text(
-        'Exclusão da conta e dados da nuvem ainda não está disponível nesta versão.',
+        'Indisponível nesta versão. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
       ),
       findsOneWidget,
     );
+    expect(find.text('Indisponível'), findsOneWidget);
+    expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
+  });
+
+  testWidgets('remote deletion UI does not execute real deletion', (tester) async {
+    seedMockAppState();
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final fakeAuthRepository = FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final fakeAccountRepository = FakeZeniAccountRepository(
+      summary: const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+        accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await openParentSettings(tester);
+    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAccountRepository.deleteCalls, 0);
+    expect(find.text('Indisponível'), findsOneWidget);
+    expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 
   testWidgets(
@@ -300,10 +477,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await openParentSettings(tester);
-      await tester.scrollUntilVisible(
-        find.text('Apagar dados deste aparelho'),
-        300,
-      );
+      await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Apagar dados deste aparelho'));
       await tester.pumpAndSettle();
@@ -385,10 +559,7 @@ void main() {
     final before = await container.read(zeniAppStateControllerProvider.future);
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Apagar dados deste aparelho'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Apagar dados deste aparelho'));
     await tester.pumpAndSettle();

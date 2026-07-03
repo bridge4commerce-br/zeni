@@ -5,6 +5,7 @@ import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
+import '../../../tasks/domain/mission_undo_policy.dart';
 import '../../../tasks/presentation/widgets/task_child_detail_sheet.dart';
 import '../../../tasks/presentation/widgets/task_compact_child_card.dart';
 import '../../../tasks/presentation/widgets/task_time_group_header.dart';
@@ -19,6 +20,8 @@ class ChildMissionsTab extends StatelessWidget {
     required this.onCancelMissionSubmission,
     required this.onUndoMissionCompletion,
     required this.onListenToMission,
+    required this.onListenToMissionDetails,
+    required this.canListenToMission,
   });
 
   final List<Mission> missions;
@@ -29,7 +32,10 @@ class ChildMissionsTab extends StatelessWidget {
   final void Function(Mission mission, MissionLog? log)
   onCancelMissionSubmission;
   final void Function(Mission mission) onListenToMission;
+  final void Function(Mission mission, MissionLog? log)
+  onListenToMissionDetails;
   final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
+  final bool canListenToMission;
 
   @override
   Widget build(BuildContext context) {
@@ -80,11 +86,22 @@ class ChildMissionsTab extends StatelessWidget {
                               ),
                               child: TaskChildDetailSheet(
                                 mission: mission,
+                                onListenToMission: () {
+                                  onListenToMission(mission);
+                                },
+                                onListenToMissionDetails: () {
+                                  onListenToMissionDetails(
+                                    mission,
+                                    logForMission(mission.id),
+                                  );
+                                },
                                 log: log,
+                                showListenActions: canListenToMission,
                                 canUndoCompletion:
-                                    log?.status == MissionLogStatus.approved &&
-                                    mission.approvalMode ==
-                                        MissionApprovalMode.automatic,
+                                    canUndoAutomaticMissionCompletion(
+                                      mission: mission,
+                                      log: log,
+                                    ),
                               ),
                             );
                           },
@@ -99,8 +116,6 @@ class ChildMissionsTab extends StatelessWidget {
                           logForMission(mission.id),
                           missionAnchorKeyFor('missions:${mission.id}'),
                         );
-                      case TaskChildDetailAction.listen:
-                        onListenToMission(mission);
                       case TaskChildDetailAction.cancelSubmission:
                         onCancelMissionSubmission(
                           mission,

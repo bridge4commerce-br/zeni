@@ -24,7 +24,7 @@ void main() {
 
     await openParentSettings(tester);
 
-    expect(find.text('Criar conta para sincronizar'), findsOneWidget);
+    expect(find.text('Conectar conta'), findsOneWidget);
   });
 
   testWidgets('tapping account CTA opens account sheet', (tester) async {
@@ -34,12 +34,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     expect(find.text('Conta da família'), findsOneWidget);
@@ -57,12 +54,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await openParentSettings(tester);
-      await tester.scrollUntilVisible(
-        find.text('Criar conta para sincronizar'),
-        300,
-      );
+      await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Criar conta para sincronizar'));
+      await tester.tap(find.text('Conectar conta'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -106,12 +100,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -150,12 +141,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -170,7 +158,7 @@ void main() {
     await tester.tap(find.text('Entrar').last, warnIfMissed: false);
     await tester.pumpAndSettle();
 
-    expect(find.text('Conta conectada'), findsOneWidget);
+    expect(find.text('Responsável'), findsOneWidget);
     expect(find.text('responsavel@zeni.app'), findsOneWidget);
     expect(find.text('Sair da conta'), findsOneWidget);
   });
@@ -197,12 +185,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const Key('auth-google-button')));
@@ -242,12 +227,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const Key('auth-google-button')));
@@ -293,12 +275,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const Key('auth-google-button')));
@@ -349,12 +328,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const Key('auth-apple-button')));
@@ -405,12 +381,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -465,12 +438,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -568,7 +538,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeAuthRepository.signOutCalls, 1);
-    expect(find.text('Criar conta para sincronizar'), findsOneWidget);
+    expect(find.text('Conectar conta'), findsOneWidget);
     expect(find.text('Sair da conta'), findsNothing);
     expect(
       container.read(zeniAppStateControllerProvider).asData!.value.children,
@@ -605,12 +575,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('auth-apple-button')), findsOneWidget);
@@ -638,12 +605,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(
-      find.text('Criar conta para sincronizar'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar conta para sincronizar'));
+    await tester.tap(find.text('Conectar conta'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const Key('auth-apple-button')));

@@ -18,11 +18,18 @@ import 'package:zeni/features/settings/data/models/app_settings.dart';
 import 'package:zeni/features/tasks/data/repositories/mission_repository.dart';
 import 'package:zeni/features/tasks/data/repositories/mock_mission_repository.dart';
 import 'package:zeni/features/tasks/data/models/mission_log.dart';
+import 'package:zeni/features/tasks/domain/mission_undo_policy.dart';
 
 void main() {
   void seedMockAppState() {
     SharedPreferences.setMockInitialValues({
       'zeni_app_state_v1': jsonEncode(ZeniAppState.seeded().toJson()),
+    });
+  }
+
+  void seedMockAppStateWith(ZeniAppState state) {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(state.toJson()),
     });
   }
 
@@ -788,6 +795,155 @@ void main() {
       expect(updatedState.starLedgerEntries.length, ledgerCountBefore);
     },
   );
+
+  test(
+    'automatic mission completed today can be undone with audit ledger',
+    () async {
+      seedMockAppState();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final missionRepository = container.read(missionRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
+
+      final initialState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final childBefore = initialState.childById('child-1')!;
+      final automaticLog = initialState.missionLogs
+          .where((log) => log.id == 'log-2')
+          .first;
+
+      await missionRepository.undoMissionCompletion(automaticLog.id);
+
+      final updatedState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final childAfter = updatedState.childById('child-1')!;
+      final updatedLog = updatedState.missionLogs
+          .where((log) => log.id == automaticLog.id)
+          .first;
+      final adjustmentEntries = updatedState.starLedgerEntries
+          .where((entry) => entry.relatedMissionLogId == automaticLog.id)
+          .where((entry) => entry.type == StarLedgerEntryType.adjusted)
+          .toList();
+
+      expect(updatedLog.status, MissionLogStatus.pending);
+      expect(updatedLog.approvedAt, isNull);
+      expect(
+        childAfter.starBalance,
+        childBefore.starBalance - automaticLog.starsAwarded,
+      );
+      expect(adjustmentEntries, hasLength(1));
+      expect(adjustmentEntries.single.amount, -automaticLog.starsAwarded);
+    },
+  );
+
+  test(
+    'undoing the same automatic mission twice does not duplicate the adjustment',
+    () async {
+      seedMockAppState();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final missionRepository = container.read(missionRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
+
+      await missionRepository.undoMissionCompletion('log-2');
+      await missionRepository.undoMissionCompletion('log-2');
+
+      final updatedState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final adjustmentEntries = updatedState.starLedgerEntries
+          .where((entry) => entry.relatedMissionLogId == 'log-2')
+          .where((entry) => entry.type == StarLedgerEntryType.adjusted)
+          .toList();
+
+      expect(adjustmentEntries, hasLength(1));
+    },
+  );
+
+  test(
+    'undoing an automatic mission never makes the balance negative',
+    () async {
+      final seededState = ZeniAppState.seeded();
+      final currentChild = seededState.childById('child-1')!;
+      final lowerBalanceState = seededState.copyWith(
+        children: [
+          for (final child in seededState.children)
+            if (child.id == currentChild.id)
+              child.copyWith(starBalance: 3)
+            else
+              child,
+        ],
+      );
+      seedMockAppStateWith(lowerBalanceState);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final missionRepository = container.read(missionRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
+
+      await missionRepository.undoMissionCompletion('log-2');
+
+      final updatedState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      final childAfter = updatedState.childById('child-1')!;
+      final updatedLog = updatedState.missionLogs
+          .where((log) => log.id == 'log-2')
+          .first;
+      final adjustmentEntries = updatedState.starLedgerEntries
+          .where((entry) => entry.relatedMissionLogId == 'log-2')
+          .where((entry) => entry.type == StarLedgerEntryType.adjusted)
+          .toList();
+
+      expect(childAfter.starBalance, 3);
+      expect(updatedLog.status, MissionLogStatus.approved);
+      expect(adjustmentEntries, isEmpty);
+    },
+  );
+
+  test('undo policy only allows automatic approved missions from today', () {
+    final state = ZeniAppState.seeded();
+    final automaticMission = state.missionById('mission-2')!;
+    final approvedLog = state.missionLogs
+        .where((log) => log.id == 'log-2')
+        .first;
+    final yesterdayLog = MissionLog(
+      id: approvedLog.id,
+      missionId: approvedLog.missionId,
+      childId: approvedLog.childId,
+      scheduledDate: DateTime.now().subtract(const Duration(days: 1)),
+      status: approvedLog.status,
+      starsAwarded: approvedLog.starsAwarded,
+      completedAt: approvedLog.completedAt,
+      approvedAt: approvedLog.approvedAt,
+      photoUrl: approvedLog.photoUrl,
+      note: approvedLog.note,
+    );
+
+    expect(
+      canUndoAutomaticMissionCompletion(
+        mission: automaticMission,
+        log: approvedLog,
+      ),
+      isTrue,
+    );
+    expect(
+      canUndoAutomaticMissionCompletion(
+        mission: automaticMission,
+        log: yesterdayLog,
+      ),
+      isFalse,
+    );
+  });
 
   test('today logs repository excludes logs from previous days', () async {
     final initialState = ZeniAppState.seeded();

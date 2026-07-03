@@ -38,51 +38,124 @@ class CounterStepper extends StatelessWidget {
         borderRadius: BorderRadius.circular(ZeniRadius.lg),
         border: Border.all(color: ZeniColors.border),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.titleMedium),
-                if (subtitle != null) ...[
-                  const SizedBox(height: ZeniSpacing.xs),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ZeniColors.mutedText,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          _StepperButton(
-            tooltip: 'Diminuir $label',
-            icon: Icons.remove_rounded,
-            enabled: _canDecrease,
-            onPressed: () => onChanged((value - step).clamp(min, max)),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: ZeniSpacing.md),
-            child: Semantics(
-              label: '$label: $value ${suffix ?? ''}',
-              child: Text(
-                suffix == null ? '$value' : '$value $suffix',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stackControlsVertically = constraints.maxWidth < 260;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium,
+                softWrap: true,
               ),
-            ),
-          ),
-          _StepperButton(
-            tooltip: 'Aumentar $label',
-            icon: Icons.add_rounded,
-            enabled: _canIncrease,
-            onPressed: () => onChanged((value + step).clamp(min, max)),
-          ),
-        ],
+              if (subtitle != null) ...[
+                const SizedBox(height: ZeniSpacing.xs),
+                Text(
+                  subtitle!,
+                  softWrap: true,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+                ),
+              ],
+              const SizedBox(height: ZeniSpacing.md),
+              stackControlsVertically
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _StepperValue(
+                          label: label,
+                          value: value,
+                          suffix: suffix,
+                        ),
+                        const SizedBox(height: ZeniSpacing.md),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StepperButton(
+                                tooltip: 'Diminuir $label',
+                                icon: Icons.remove_rounded,
+                                enabled: _canDecrease,
+                                onPressed: () =>
+                                    onChanged((value - step).clamp(min, max)),
+                              ),
+                            ),
+                            const SizedBox(width: ZeniSpacing.md),
+                            Expanded(
+                              child: _StepperButton(
+                                tooltip: 'Aumentar $label',
+                                icon: Icons.add_rounded,
+                                enabled: _canIncrease,
+                                onPressed: () =>
+                                    onChanged((value + step).clamp(min, max)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _StepperValue(
+                            label: label,
+                            value: value,
+                            suffix: suffix,
+                            alignStart: true,
+                          ),
+                        ),
+                        const SizedBox(width: ZeniSpacing.md),
+                        _StepperButton(
+                          tooltip: 'Diminuir $label',
+                          icon: Icons.remove_rounded,
+                          enabled: _canDecrease,
+                          onPressed: () =>
+                              onChanged((value - step).clamp(min, max)),
+                        ),
+                        const SizedBox(width: ZeniSpacing.sm),
+                        _StepperButton(
+                          tooltip: 'Aumentar $label',
+                          icon: Icons.add_rounded,
+                          enabled: _canIncrease,
+                          onPressed: () =>
+                              onChanged((value + step).clamp(min, max)),
+                        ),
+                      ],
+                    ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StepperValue extends StatelessWidget {
+  const _StepperValue({
+    required this.label,
+    required this.value,
+    this.suffix,
+    this.alignStart = false,
+  });
+
+  final String label;
+  final int value;
+  final String? suffix;
+  final bool alignStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label: $value ${suffix ?? ''}',
+      child: Text(
+        suffix == null ? '$value' : '$value $suffix',
+        textAlign: alignStart ? TextAlign.start : TextAlign.center,
+        softWrap: false,
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -103,10 +176,13 @@ class _StepperButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      tooltip: tooltip,
-      onPressed: enabled ? onPressed : null,
-      icon: Icon(icon),
+    return SizedBox(
+      height: 48,
+      child: IconButton.filledTonal(
+        tooltip: tooltip,
+        onPressed: enabled ? onPressed : null,
+        icon: Icon(icon),
+      ),
     );
   }
 }

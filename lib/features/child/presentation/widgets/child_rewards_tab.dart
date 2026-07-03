@@ -17,6 +17,8 @@ class ChildRewardsTab extends StatelessWidget {
     required this.rewardById,
     required this.onRedeemReward,
     required this.onListenToReward,
+    required this.onListenToRewardDetails,
+    required this.canListenToReward,
   });
 
   final int childBalance;
@@ -25,6 +27,19 @@ class ChildRewardsTab extends StatelessWidget {
   final Reward? Function(String rewardId) rewardById;
   final ValueChanged<Reward> onRedeemReward;
   final ValueChanged<Reward> onListenToReward;
+  final void Function(Reward reward, RewardRequest? request)
+  onListenToRewardDetails;
+  final bool canListenToReward;
+
+  RewardRequest? _pendingRequestForReward(String rewardId) {
+    for (final request in pendingRewardRequests) {
+      if (request.rewardId == rewardId) {
+        return request;
+      }
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +85,7 @@ class ChildRewardsTab extends StatelessWidget {
               reward: reward,
               childBalance: childBalance,
               onTap: () async {
+                final pendingRequest = _pendingRequestForReward(reward.id);
                 final action =
                     await showModalBottomSheet<RewardChildDetailAction>(
                       context: context,
@@ -83,6 +99,14 @@ class ChildRewardsTab extends StatelessWidget {
                           child: RewardChildDetailSheet(
                             reward: reward,
                             childBalance: childBalance,
+                            onListenToReward: () {
+                              onListenToReward(reward);
+                            },
+                            onListenToRewardDetails: () {
+                              onListenToRewardDetails(reward, pendingRequest);
+                            },
+                            pendingRequest: pendingRequest,
+                            showListenActions: canListenToReward,
                           ),
                         );
                       },
@@ -91,8 +115,6 @@ class ChildRewardsTab extends StatelessWidget {
                 if (!context.mounted) return;
 
                 switch (action) {
-                  case RewardChildDetailAction.listen:
-                    onListenToReward(reward);
                   case RewardChildDetailAction.redeem:
                     onRedeemReward(reward);
                   case null:

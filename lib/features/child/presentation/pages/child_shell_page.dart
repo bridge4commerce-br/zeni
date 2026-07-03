@@ -12,6 +12,7 @@ import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_balance_pill.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
+import '../../../../core/widgets/feedback/zeni_confirm_action_sheet.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
@@ -25,6 +26,8 @@ import '../../../rewards/data/models/reward_request.dart';
 import '../../../sync/presentation/providers/opportunistic_sync_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
+import '../../../tasks/domain/mission_undo_policy.dart';
+import '../../../tts/domain/zeni_speech_text_builders.dart';
 import '../../../tts/presentation/providers/zeni_tts_service.dart';
 import '../../../tasks/presentation/widgets/task_completion_sheet.dart';
 import '../widgets/child_home_tab.dart';
@@ -63,10 +66,9 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     ref.read(zeniHapticsProvider).selection();
     final result = await ref
         .read(zeniTtsServiceProvider)
-        .speakForChild(
+        .speakTextForChild(
           child: data.child,
-          title: mission.title,
-          description: mission.description,
+          text: ZeniMissionSpeechTextBuilder.buildMissionShortSpeech(mission),
         );
     if (!mounted || result.didSpeak) return;
 
@@ -86,10 +88,63 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     ref.read(zeniHapticsProvider).selection();
     final result = await ref
         .read(zeniTtsServiceProvider)
-        .speakForChild(
+        .speakTextForChild(
           child: data.child,
-          title: reward.title,
-          description: reward.description,
+          text: ZeniRewardSpeechTextBuilder.buildRewardShortSpeech(reward),
+        );
+    if (!mounted || result.didSpeak) return;
+
+    ZeniInfoPopup.show(
+      context,
+      title: 'Leitura em voz alta',
+      message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
+    );
+  }
+
+  Future<void> _listenToMissionDetails(Mission mission, MissionLog? log) async {
+    final appState = _currentAppState;
+    if (appState == null) return;
+    final data = _buildChildModeData(appState);
+    if (data == null) return;
+
+    ref.read(zeniHapticsProvider).selection();
+    final result = await ref
+        .read(zeniTtsServiceProvider)
+        .speakTextForChild(
+          child: data.child,
+          text: ZeniMissionSpeechTextBuilder.buildMissionDetailsSpeech(
+            mission: mission,
+            log: log,
+          ),
+        );
+    if (!mounted || result.didSpeak) return;
+
+    ZeniInfoPopup.show(
+      context,
+      title: 'Leitura em voz alta',
+      message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
+    );
+  }
+
+  Future<void> _listenToRewardDetails(
+    Reward reward,
+    RewardRequest? request,
+  ) async {
+    final appState = _currentAppState;
+    if (appState == null) return;
+    final data = _buildChildModeData(appState);
+    if (data == null) return;
+
+    ref.read(zeniHapticsProvider).selection();
+    final result = await ref
+        .read(zeniTtsServiceProvider)
+        .speakTextForChild(
+          child: data.child,
+          text: ZeniRewardSpeechTextBuilder.buildRewardDetailsSpeech(
+            reward: reward,
+            childBalance: data.child.starBalance,
+            request: request,
+          ),
         );
     if (!mounted || result.didSpeak) return;
 
@@ -303,6 +358,30 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
   }
 
   Future<void> _undoMissionCompletion(Mission mission, MissionLog log) async {
+    if (!canUndoAutomaticMissionCompletion(mission: mission, log: log)) {
+      return;
+    }
+
+    final shouldUndo =
+        await showModalBottomSheet<bool>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (context) {
+            return const Padding(
+              padding: EdgeInsets.zero,
+              child: ZeniConfirmActionSheet(
+                title: 'Desfazer esta missão?',
+                message:
+                    'As estrelas ganhas nesta conclusão serão removidas do saldo.',
+                confirmLabel: 'Desfazer conclusão',
+              ),
+            );
+          },
+        ) ??
+        false;
+    if (!shouldUndo || !mounted) return;
+
     await ref.read(missionRepositoryProvider).undoMissionCompletion(log.id);
     if (!mounted) return;
 
@@ -339,6 +418,9 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             child: Center(child: Text('Não encontramos essa criança.')),
           );
         }
+        final canUseReadAloud = ref
+            .watch(zeniTtsServiceProvider)
+            .isEnabledForChild(data.child);
 
         final pages = [
           ChildHomeTab(
@@ -353,6 +435,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onCancelMissionSubmission: _cancelMissionSubmission,
             onUndoMissionCompletion: _undoMissionCompletion,
             onListenToMission: _listenToMission,
+            onListenToMissionDetails: _listenToMissionDetails,
+            canListenToMission: canUseReadAloud,
             onOpenRewards: () {
               ref.read(zeniHapticsProvider).selection();
               setState(() {
@@ -368,6 +452,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onCancelMissionSubmission: _cancelMissionSubmission,
             onUndoMissionCompletion: _undoMissionCompletion,
             onListenToMission: _listenToMission,
+            onListenToMissionDetails: _listenToMissionDetails,
+            canListenToMission: canUseReadAloud,
           ),
           ChildRewardsTab(
             childBalance: data.child.starBalance,
@@ -376,6 +462,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             rewardById: data.rewardById,
             onRedeemReward: _redeemReward,
             onListenToReward: _listenToReward,
+            onListenToRewardDetails: _listenToRewardDetails,
+            canListenToReward: canUseReadAloud,
           ),
           _ChildBalancePage(data: data),
         ];

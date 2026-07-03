@@ -113,26 +113,39 @@ class ZeniTtsService {
     required String title,
     String? description,
   }) async {
-    if (!isEnabledForChild(child)) {
-      return ZeniTtsSpeakResult.skipped(disabledMessageForChild(child));
-    }
-
     final text = [
       title.trim(),
       if (description != null && description.trim().isNotEmpty)
         description.trim(),
     ].join('. ');
+    return speakTextForChild(child: child, text: text);
+  }
+
+  Future<ZeniTtsSpeakResult> speakTextForChild({
+    required ChildProfile child,
+    required String text,
+  }) async {
+    if (!isEnabledForChild(child)) {
+      return ZeniTtsSpeakResult.skipped(disabledMessageForChild(child));
+    }
+
     if (text.trim().isEmpty) {
       return const ZeniTtsSpeakResult.skipped(
         'Não há texto disponível para ouvir agora.',
       );
     }
 
-    await _platform.stop();
-    await _platform.setLanguage('pt-BR');
-    await _platform.setSpeechRate(0.45);
-    await _platform.setPitch(1.0);
-    await _platform.speak(text);
-    return const ZeniTtsSpeakResult.spoken();
+    try {
+      await _platform.stop();
+      await _platform.setLanguage('pt-BR');
+      await _platform.setSpeechRate(0.45);
+      await _platform.setPitch(1.0);
+      await _platform.speak(text);
+      return const ZeniTtsSpeakResult.spoken();
+    } catch (_) {
+      return const ZeniTtsSpeakResult.skipped(
+        'Não foi possível reproduzir o áudio agora.',
+      );
+    }
   }
 }

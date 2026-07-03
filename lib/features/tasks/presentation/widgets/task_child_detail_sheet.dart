@@ -11,24 +11,25 @@ import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/mission.dart';
 import '../../data/models/mission_log.dart';
 
-enum TaskChildDetailAction {
-  listen,
-  complete,
-  cancelSubmission,
-  undoCompletion,
-}
+enum TaskChildDetailAction { complete, cancelSubmission, undoCompletion }
 
 class TaskChildDetailSheet extends StatelessWidget {
   const TaskChildDetailSheet({
     super.key,
     required this.mission,
+    required this.onListenToMission,
+    required this.onListenToMissionDetails,
     this.log,
     this.canUndoCompletion = false,
+    this.showListenActions = true,
   });
 
   final Mission mission;
+  final VoidCallback onListenToMission;
+  final VoidCallback onListenToMissionDetails;
   final MissionLog? log;
   final bool canUndoCompletion;
+  final bool showListenActions;
 
   @override
   Widget build(BuildContext context) {
@@ -117,14 +118,28 @@ class TaskChildDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: ZeniSpacing.xl),
-            ZeniSecondaryButton(
-              label: 'Ouvir',
-              icon: Icons.volume_up_rounded,
-              onPressed: () {
-                Navigator.of(context).pop(TaskChildDetailAction.listen);
-              },
-            ),
-            const SizedBox(height: ZeniSpacing.md),
+            if (showListenActions) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _TaskSpeechActionButton(
+                      label: 'Missão',
+                      semanticLabel: 'Ouvir missão',
+                      onPressed: onListenToMission,
+                    ),
+                  ),
+                  const SizedBox(width: ZeniSpacing.sm),
+                  Expanded(
+                    child: _TaskSpeechActionButton(
+                      label: 'Completo',
+                      semanticLabel: 'Ouvir completo',
+                      onPressed: onListenToMissionDetails,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZeniSpacing.md),
+            ],
             if (status == MissionLogStatus.pending)
               ZeniPrimaryButton(
                 label: 'Concluir missão',
@@ -202,5 +217,67 @@ class TaskChildDetailSheet extends StatelessWidget {
       MissionLogStatus.rejected => StatusBadgeTone.error,
       MissionLogStatus.skipped => StatusBadgeTone.neutral,
     };
+  }
+}
+
+class _TaskSpeechActionButton extends StatelessWidget {
+  const _TaskSpeechActionButton({
+    required this.label,
+    required this.semanticLabel,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useVerticalLayout = constraints.maxWidth < 150;
+          final icon = const Icon(Icons.volume_up_rounded);
+          final text = FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
+            ),
+          );
+
+          return OutlinedButton(
+            onPressed: onPressed,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: useVerticalLayout
+                  ? Column(
+                      key: const ValueKey('vertical'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        icon,
+                        const SizedBox(height: ZeniSpacing.xs),
+                        text,
+                      ],
+                    )
+                  : Row(
+                      key: const ValueKey('horizontal'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        icon,
+                        const SizedBox(width: ZeniSpacing.sm),
+                        Flexible(child: text),
+                      ],
+                    ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

@@ -470,9 +470,9 @@ void main() {
       expect(run.result.isSuccess, isTrue);
       expect(run.result.restoredStarLedgerEntriesCount, 3);
       expect(run.state.starLedgerEntries.map((entry) => entry.id), [
-        'mission-log-local-1',
-        'mission-log-local-2',
-        'reward-request-local-1',
+        'remote:restore-1',
+        'remote:restore-2',
+        'remote:restore-3',
       ]);
       expect(run.state.starLedgerEntries.map((entry) => entry.amount), [10, 5, -4]);
       expect(

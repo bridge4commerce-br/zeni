@@ -168,14 +168,24 @@ class SupabaseRemoteStarLedgerRepository implements RemoteStarLedgerRepository {
         );
       }
 
+      final isEarned = entry.type == StarLedgerEntryType.earned && entry.amount > 0;
+      final isReversal =
+          entry.type == StarLedgerEntryType.adjusted && entry.amount < 0;
+      if (!isEarned && !isReversal) {
+        return const _PayloadBuildResult.failure(
+          'Alguns eventos locais ainda não podem ser preparados na nuvem.',
+        );
+      }
+
       return _PayloadBuildResult.success({
         'family_id': familyId,
         'child_id': remoteChildId,
         'source_type': 'mission_log',
         'source_id': remoteSourceId,
         'source_local_id': sourceLocalId,
-        'idempotency_key': 'mission_log:$sourceLocalId:earned',
-        'direction': 'credit',
+        'idempotency_key':
+            'mission_log:$sourceLocalId:${isReversal ? 'reversal' : 'earned'}',
+        'direction': isReversal ? 'debit' : 'credit',
         'amount': amount,
         'reason': entry.description ?? entry.title,
         'occurred_at': entry.createdAt.toIso8601String(),
