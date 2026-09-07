@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "preferences": [
+    {
+      "id": "instruction_density",
+      "options": [
+        "checklist_short",
+        "one_step_at_a_time"
+      ],
+      "default": "one_step_at_a_time"
+    },
+    {
+      "id": "visual_support",
+      "options": [
+        "off",
+        "optional",
+        "preferred"
+      ],
+      "default": "optional"
+    },
+    {
+      "id": "tts_support",
+      "options": [
+        "off",
+        "button",
+        "preferred"
+      ],
+      "default": "button"
+    },
+    {
+      "id": "timer_preference",
+      "options": [
+        "avoid",
+        "optional",
+        "helpful"
+      ],
+      "default": "optional"
+    },
+    {
+      "id": "transition_warning",
+      "options": [
+        "off",
+        "2m",
+        "5m",
+        "custom"
+      ],
+      "default": "off"
+    },
+    {
+      "id": "step_confirmation",
+      "options": [
+        "off",
+        "on"
+      ],
+      "default": "on_for_routines"
+    },
+    {
+      "id": "reminder_style",
+      "options": [
+        "visual_only",
+        "visual_and_sound",
+        "none"
+      ],
+      "default": "visual_only"
+    },
+    {
+      "id": "repeat_instruction",
+      "options": [
+        "manual",
+        "light_auto"
+      ],
+      "default": "manual"
+    },
+    {
+      "id": "routine_order",
+      "options": [
+        "fixed",
+        "flexible"
+      ],
+      "default": "fixed"
+    },
+    {
+      "id": "reward_style",
+      "options": [
+        "none",
+        "optional",
+        "per_step",
+        "per_routine"
+      ],
+      "default": "optional"
+    },
+    {
+      "id": "support_fade",
+      "options": [
+        "off",
+        "suggested"
+      ],
+      "default": "suggested"
+    },
+    {
+      "id": "celebration_intensity",
+      "options": [
+        "low",
+        "normal",
+        "high"
+      ],
+      "default": "normal"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "strategy": "global_core_with_localization",
+  "rules": [
+    "Do not maintain independent mission catalogs per country.",
+    "Use the same stable IDs across locales.",
+    "Localize language and examples naturally.",
+    "Use culturalRelevance=contextual for pet, school-device, travel and similar content.",
+    "Do not infer a family's routine from nationality alone.",
+    "Family configuration and actual choices outrank locale-based defaults."
+  ],
+  "localeOverrideSupported": true,
+  "initialLocaleOverrides": {}
+}

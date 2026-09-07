@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "profiles": {
+    "pt-BR": {
+      "name": "Português do Brasil",
+      "tone": "simples, acolhedor, direto e familiar",
+      "regionalStrategy": "Brasil como base editorial"
+    },
+    "en": {
+      "name": "English",
+      "tone": "clear, warm, concise and child-friendly",
+      "regionalStrategy": "neutral international English; store copy may later split by region"
+    },
+    "es": {
+      "name": "Español",
+      "tone": "claro, cercano, breve y natural para familias",
+      "regionalStrategy": "español internacional; evitar regionalismos fuertes"
+    },
+    "fr": {
+      "name": "Français",
+      "tone": "clair, chaleureux, concis et naturel",
+      "regionalStrategy": "français standard; adaptations régionales possibles plus tard"
+    },
+    "de": {
+      "name": "Deutsch",
+      "tone": "klar, freundlich, kurz und kindgerecht; du-Ansprache",
+      "regionalStrategy": "Standarddeutsch; regionale Store-Texte können später angepasst werden"
+    },
+    "ja": {
+      "name": "日本語",
+      "tone": "短く、やさしく、具体的で、子どもが理解しやすい表現",
+      "regionalStrategy": "自然な日本語を優先し、英語の直訳調を避ける"
+    }
+  },
+  "rule": "Locale adapts language and cultural phrasing. Support level is a separate preference and is never inferred from diagnosis."
+}

@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "priority_autonomy",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "priority_study",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "id": "priority_home",
+      "type": "enum",
+      "options": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    {
+      "id": "priority_routines",
+      "type": "enum",
+      "options": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "high"
+    },
+    {
+      "id": "priority_digital",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "id": "use_extra_missions",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "id": "default_reward",
+      "type": "enum",
+      "options": [
+        "no_basic_rewards",
+        "optional",
+        "reward_all"
+      ],
+      "default": "optional"
+    },
+    {
+      "id": "default_approval",
+      "type": "enum",
+      "options": [
+        "automatic",
+        "selected",
+        "all"
+      ],
+      "default": "selected"
+    },
+    {
+      "id": "routine_complexity",
+      "type": "enum",
+      "options": [
+        "2_3",
+        "4_5",
+        "6_plus"
+      ],
+      "default": "2_3"
+    }
+  ]
+}

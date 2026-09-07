@@ -1,0 +1,525 @@
+{
+  "version": "1.0.0",
+  "routines": [
+    {
+      "id": "after_school",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "put_backpack_away_on_arrival",
+        "organize_shoes",
+        "wash_hands_on_arrival",
+        "put_lunchbox_in_kitchen",
+        "empty_lunchbox",
+        "take_plate_to_sink",
+        "throw_packaging_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "after_meal",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "take_plate_to_sink",
+        "take_cup_to_sink",
+        "throw_packaging_away",
+        "clean_own_meal_area"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Normalmente sem estrelas",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "school_morning",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "get_dressed",
+        "brush_teeth",
+        "comb_hair",
+        "prepare_water_bottle",
+        "prepare_backpack",
+        "check_items_before_leaving"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez ou checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "bedtime",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "put_belongings_away",
+        "brush_teeth",
+        "prepare_school_uniform",
+        "prepare_backpack",
+        "bedtime_checklist"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "homework_start",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "organize_desk",
+        "start_homework",
+        "review_homework",
+        "put_activity_materials_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Por rotina ou tarefa",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "quick_room_reset",
+      "tier": "primary",
+      "ageMin": 6,
+      "ageMax": 14,
+      "steps": [
+        "dirty_clothes_hamper",
+        "put_away_toys",
+        "organize_shoes",
+        "put_belongings_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "sports_return",
+      "tier": "contextual",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "organize_shoes",
+        "put_water_bottle_away",
+        "change_clothes",
+        "put_towel_to_dry",
+        "put_belongings_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "prepare_to_leave",
+      "tier": "primary",
+      "ageMin": 6,
+      "ageMax": 14,
+      "steps": [
+        "get_dressed",
+        "prepare_items_for_activity",
+        "prepare_water_bottle",
+        "check_items_before_leaving"
+      ],
+      "defaultPresentationSource": "Checklist curto ou uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "pet_care",
+      "tier": "contextual",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "check_pet_water",
+        "feed_pet"
+      ],
+      "defaultPresentationSource": "Checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional / por etapa",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Baixa",
+      "priority": "P2",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "study_session",
+      "tier": "primary",
+      "ageMin": 8,
+      "ageMax": 14,
+      "steps": [
+        "organize_desk",
+        "study_for_test_15_minutes",
+        "organize_notes",
+        "put_activity_materials_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Por sessão",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "weekend_reset",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "organize_bookshelf",
+        "organize_drawer",
+        "put_clean_clothes_away",
+        "tidy_room_5_minutes"
+      ],
+      "defaultPresentationSource": "Checklist ou uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Por etapa ou rotina",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P2",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "next_day_prep",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "check_tomorrow_calendar",
+        "prepare_school_uniform",
+        "prepare_backpack",
+        "prepare_water_bottle"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "after_shower",
+      "tier": "primary",
+      "ageMin": 6,
+      "ageMax": 14,
+      "steps": [
+        "put_towel_to_dry",
+        "dirty_clothes_hamper",
+        "leave_bathroom_tidy"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Normalmente sem estrelas",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "after_play",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 11,
+      "steps": [
+        "put_away_toys",
+        "put_activity_materials_away",
+        "reset_play_area"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "trip_prep",
+      "tier": "contextual",
+      "ageMin": 8,
+      "ageMax": 14,
+      "steps": [
+        "choose_clothes_for_weather",
+        "prepare_items_for_activity",
+        "pack_for_overnight",
+        "check_items_before_leaving"
+      ],
+      "defaultPresentationSource": "Checklist",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P2",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "digital_school",
+      "tier": "contextual",
+      "ageMin": 8,
+      "ageMax": 14,
+      "steps": [
+        "check_device_battery",
+        "put_device_in_charging_place",
+        "prepare_headphones",
+        "prepare_device_for_class"
+      ],
+      "defaultPresentationSource": "Checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Normalmente sem estrelas",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P2",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "screen_end",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "end_screen_time_routine",
+        "put_device_away_after_use",
+        "keep_charger_in_place"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "before_meal",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "wash_hands_before_meal",
+        "set_table",
+        "prepare_water_bottle"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez ou checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Normalmente sem estrelas",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P0",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "weekend_morning",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "make_bed",
+        "wash_face",
+        "brush_teeth",
+        "comb_hair",
+        "get_dressed"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez ou checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "school_week_prep",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "check_tomorrow_calendar",
+        "organize_school_materials",
+        "prepare_school_uniform",
+        "check_device_battery"
+      ],
+      "defaultPresentationSource": "Checklist curto",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional / por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "return_from_outing",
+      "tier": "contextual",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "organize_shoes",
+        "put_jacket_away",
+        "put_belongings_away",
+        "check_belongings_before_returning"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Normalmente sem estrelas",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Alta",
+      "priority": "P2",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "clothing_care",
+      "tier": "primary",
+      "ageMin": 7,
+      "ageMax": 14,
+      "steps": [
+        "dirty_clothes_hamper",
+        "sort_own_dirty_clothes",
+        "put_clean_clothes_away",
+        "organize_drawer"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez ou checklist",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional / por etapa",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "lunchbox_reset",
+      "tier": "primary",
+      "ageMin": 6,
+      "ageMax": 14,
+      "steps": [
+        "put_lunchbox_in_kitchen",
+        "empty_lunchbox",
+        "put_water_bottle_away",
+        "prepare_lunchbox"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Sem estrelas ou por rotina",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "creative_cleanup",
+      "tier": "primary",
+      "ageMin": 5,
+      "ageMax": 14,
+      "steps": [
+        "put_activity_materials_away",
+        "wipe_table",
+        "put_belongings_away"
+      ],
+      "defaultPresentationSource": "Uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional",
+      "autonomyValueSource": "Alta",
+      "transitionSupportSource": "Alta",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    },
+    {
+      "id": "overnight_prep",
+      "tier": "contextual",
+      "ageMin": 9,
+      "ageMax": 14,
+      "steps": [
+        "pack_for_overnight",
+        "prepare_hygiene_kit",
+        "choose_clothes_for_weather",
+        "check_items_before_leaving"
+      ],
+      "defaultPresentationSource": "Checklist",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional / por rotina",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P2",
+      "culturalRelevance": "contextual",
+      "status": "approved"
+    },
+    {
+      "id": "shared_space_reset",
+      "tier": "primary",
+      "ageMin": 6,
+      "ageMax": 14,
+      "steps": [
+        "put_belongings_away",
+        "reset_play_area",
+        "wipe_table"
+      ],
+      "defaultPresentationSource": "Checklist curto ou uma etapa por vez",
+      "orderEditable": true,
+      "rewardModeSource": "Opcional / por rotina",
+      "autonomyValueSource": "Média",
+      "transitionSupportSource": "Média",
+      "priority": "P1",
+      "culturalRelevance": "global",
+      "status": "approved"
+    }
+  ]
+}
