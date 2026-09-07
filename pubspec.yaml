@@ -52,6 +52,28 @@ flutter:
     - assets/smart_content/config/
 
   fonts:
-    - family: OpenDyslexic
-      fonts:
-        - asset: assets/fonts/opendislexy/OpenDyslexic-Regular.otf
+  - family: Fredoka
+    fonts:
+      - asset: assets/fonts/fredoka/Fredoka-Light.ttf
+        weight: 300
+      - asset: assets/fonts/fredoka/Fredoka-Regular.ttf
+        weight: 400
+      - asset: assets/fonts/fredoka/Fredoka-Medium.ttf
+        weight: 500
+      - asset: assets/fonts/fredoka/Fredoka-SemiBold.ttf
+        weight: 600
+      - asset: assets/fonts/fredoka/Fredoka-Bold.ttf
+        weight: 700
+
+  - family: OpenDyslexic
+    fonts:
+      - asset: assets/fonts/opendislexy/OpenDyslexic-Regular.otf
+        weight: 400
+      - asset: assets/fonts/opendislexy/OpenDyslexic-Bold.otf
+        weight: 700
+      - asset: assets/fonts/opendislexy/OpenDyslexic-Italic.otf
+        weight: 400
+        style: italic
+      - asset: assets/fonts/opendislexy/OpenDyslexic-BoldItalic.otf
+        weight: 700
+        style: italic
