@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "hardFilters": [
+    "child_age_in_range",
+    "family_domain_enabled",
+    "context_applicable",
+    "not_duplicate_active_mission"
+  ],
+  "weights": {
+    "family_priority": 30,
+    "current_context": 25,
+    "target_skill": 20,
+    "age_fit": 10,
+    "not_recently_suggested": 10,
+    "controlled_novelty": 5
+  },
+  "penalties": {
+    "recently_rejected_by_parent": -30,
+    "requires_supervision_not_available": -40,
+    "already_active": -100
+  },
+  "maxSuggestions": 5,
+  "familyPreferencesOutrankLocalePriority": true,
+  "aiFallback": "future_online_only"
+}

@@ -1,0 +1,4055 @@
+{
+  "version": "1.0.0",
+  "missions": [
+    {
+      "id": "brush_teeth",
+      "domain": "self_care",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "variable",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "wash_hands_before_meal",
+      "domain": "self_care",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "food_meal",
+        "meal",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "meal"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "wash_hands_on_arrival",
+      "domain": "self_care",
+      "priority": "P0",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_school",
+        "arrival",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "after_school",
+        "arrival"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "wash_face",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "comb_hair",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "variable",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "take_shower",
+      "domain": "self_care",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "10–20 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "variable",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "medium",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "change_clothes",
+      "domain": "self_care",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_towel_to_dry",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 1,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "clean_glasses",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_hygiene_kit",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "self_care",
+        "travel"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "travel",
+        "planning"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "floss_teeth",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "variable",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "use_deodorant",
+      "domain": "self_care",
+      "priority": "P1",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 1,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "variable",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "self_care"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning"
+      ],
+      "skills": [
+        "self_care",
+        "sequence_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "make_bed",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_away_toys",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 11,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_desk",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "dirty_clothes_hamper",
+      "domain": "belongings",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "clothing",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "tidy_room_5_minutes",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "5 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "helpful",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_bookshelf",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_school_materials",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "planning",
+        "school"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "school",
+        "planning"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_drawer",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_shoes",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_belongings_away",
+      "domain": "belongings",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "reset_play_area",
+      "domain": "belongings",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 11,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "belongings",
+        "family_defined"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_activity_materials_away",
+      "domain": "belongings",
+      "priority": "P0",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_activity",
+        "belongings",
+        "outing_travel"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "after_activity"
+      ],
+      "skills": [
+        "organization",
+        "belongings_responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_lunchbox_in_kitchen",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_school",
+        "arrival",
+        "food_meal",
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_school",
+        "meal",
+        "arrival"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "empty_lunchbox",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_school",
+        "food_meal",
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_school",
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_water_bottle_away",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_school",
+        "arrival",
+        "food_meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_school",
+        "arrival"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "take_plate_to_sink",
+      "domain": "meals",
+      "priority": "P0",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_meal",
+        "food_meal",
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_meal",
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "take_cup_to_sink",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_meal",
+        "food_meal",
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_meal",
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "throw_packaging_away",
+      "domain": "meals",
+      "priority": "P0",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "clean_own_meal_area",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_meal",
+        "food_meal",
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "after_meal",
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_water_bottle",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "food_meal",
+        "meals",
+        "planning",
+        "school"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "school",
+        "planning"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "help_prepare_simple_snack",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "10–20 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "medium",
+      "rewardMode": "optional",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "attention",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_lunchbox",
+      "domain": "meals",
+      "priority": "P2",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "food_meal",
+        "meal",
+        "meals",
+        "planning",
+        "school_prep"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "school_prep",
+        "meal",
+        "planning"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "set_table",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "clear_table",
+      "domain": "meals",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "meal",
+        "meals"
+      ],
+      "status": "approved",
+      "familyFit": "family_routine_adaptable",
+      "contexts": [
+        "meal"
+      ],
+      "skills": [
+        "autonomy",
+        "routine_participation"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "read_10_minutes",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "helpful",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "medium",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "start_homework",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "school"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "review_homework",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "school"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_backpack",
+      "domain": "study",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "school",
+        "planning"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "check_school_schedule",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "school",
+        "planning"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "practice_math_10_minutes",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "helpful",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "medium",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "write_three_sentences",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 11,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "read_aloud_5_minutes",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 11,
+      "estimatedDuration": "5 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "helpful",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_notes",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "study",
+        "planning"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "review_flashcards",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "study"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "study_for_test_15_minutes",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "15 min",
+      "suggestedStars": 5,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "helpful",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "study"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "medium",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "advance_school_project",
+      "domain": "study",
+      "priority": "P1",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "10–20 min",
+      "suggestedStars": 5,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "school_context",
+      "contexts": [
+        "planning",
+        "school"
+      ],
+      "skills": [
+        "task_initiation_focus",
+        "planning_review"
+      ],
+      "effort": "medium",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "water_plants",
+      "domain": "home_participation",
+      "priority": "P2",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "food_meal",
+        "home_participation"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "feed_pet",
+      "domain": "home_participation",
+      "priority": "P2",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "family_defined",
+        "home_participation",
+        "pet"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "check_pet_water",
+      "domain": "home_participation",
+      "priority": "P2",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "family_defined",
+        "food_meal",
+        "home_participation",
+        "pet"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "pair_socks",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 11,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "home_participation",
+        "laundry"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "laundry"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "fold_towels",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "home_participation",
+        "laundry"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "laundry"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "wipe_table",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "home_participation",
+        "meal"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "meal"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "sort_recycling",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 3,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "home_participation"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_groceries_away",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 4,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "home_participation"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "attention",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "fill_water_bottles",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": true,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "food_meal",
+        "home_participation",
+        "planning"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "planning"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_clean_clothes_away",
+      "domain": "home_participation",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "home_participation",
+        "laundry"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "laundry"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "help_change_bed_linen",
+      "domain": "home_participation",
+      "priority": "P2",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "home_participation",
+        "weekly"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "weekly"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "take_light_trash_out",
+      "domain": "home_participation",
+      "priority": "P2",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "home_participation"
+      ],
+      "status": "approved",
+      "familyFit": "family_participation_configurable",
+      "contexts": [
+        "home_participation"
+      ],
+      "skills": [
+        "family_participation",
+        "responsibility"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "attention",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "put_backpack_away_on_arrival",
+      "domain": "transitions",
+      "priority": "P0",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_school",
+        "arrival",
+        "school",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "after_school",
+        "arrival"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_room_for_bed",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "noite_antes_de_dormir",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "noite_antes_de_dormir"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_clothes_tomorrow",
+      "domain": "transitions",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "noite_antes_de_dormir",
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning",
+        "noite_antes_de_dormir"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "get_dressed",
+      "domain": "transitions",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_pajamas_away",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 1,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "after_school_unpack",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "school",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "school"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_sports_bag",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "check_tomorrow_calendar",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "noite_antes_de_dormir",
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning",
+        "noite_antes_de_dormir"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "set_alarm",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 1,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "noite_antes_de_dormir",
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning",
+        "planning",
+        "noite_antes_de_dormir"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "morning_checklist",
+      "domain": "transitions",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "morning",
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "morning",
+        "planning"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "bedtime_checklist",
+      "domain": "transitions",
+      "priority": "P0",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "noite_antes_de_dormir",
+        "planning",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "noite_antes_de_dormir",
+        "planning"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "leave_bathroom_tidy",
+      "domain": "transitions",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_hygiene",
+        "transitions"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "after_hygiene"
+      ],
+      "skills": [
+        "transitions",
+        "planning_working_memory"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_school_uniform",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 6,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "clothing",
+        "life_skills",
+        "noite_antes_de_dormir",
+        "planning",
+        "school",
+        "school_prep"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "noite_antes_de_dormir",
+        "school_prep",
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "check_items_before_leaving",
+      "domain": "life_skills",
+      "priority": "P0",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "high",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "before_leaving",
+        "life_skills",
+        "planning"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "before_leaving",
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "check_belongings_before_returning",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "before_returning",
+        "life_skills",
+        "planning"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "before_returning",
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "put_jacket_away",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 5,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "arrival",
+        "life_skills"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "arrival"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_items_for_activity",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "life_skills",
+        "outing_travel",
+        "planning"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "pack_for_overnight",
+      "domain": "life_skills",
+      "priority": "P2",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "life_skills",
+        "outing_travel",
+        "planning",
+        "travel"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "travel",
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "unpack_after_trip",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "after_trip",
+        "life_skills",
+        "outing_travel"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "after_trip"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "choose_clothes_for_weather",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "life_skills",
+        "planning"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "clean_small_spill",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "family_defined",
+        "life_skills"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "family_defined"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "attention",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "sort_own_dirty_clothes",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "clothing",
+        "laundry",
+        "life_skills"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "laundry"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_simple_breakfast",
+      "domain": "life_skills",
+      "priority": "P1",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "10–20 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "global",
+      "culturalTags": [
+        "food_meal",
+        "life_skills",
+        "meal"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "meal"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "medium",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "supervision_or_help",
+      "safetyLevel": "attention",
+      "applicability": "general",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_library_return",
+      "domain": "life_skills",
+      "priority": "P2",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 2,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "life_skills",
+        "planning",
+        "school"
+      ],
+      "status": "approved",
+      "familyFit": "autonomy_core",
+      "contexts": [
+        "planning",
+        "school"
+      ],
+      "skills": [
+        "independence",
+        "planning"
+      ],
+      "effort": "low",
+      "rewardMode": "family_optional_or_recommended",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "charge_school_device",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": true,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "planning",
+        "school"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "school",
+        "planning"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "put_device_away_after_use",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "depois_de_tela",
+        "digital"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "depois_de_tela"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "put_device_in_charging_place",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "charging",
+        "digital"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "charging"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "check_device_battery",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 8,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "planning",
+        "school_prep"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "school_prep",
+        "planning"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_headphones",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "school_prep"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "school_prep"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "organize_school_files",
+      "domain": "digital",
+      "priority": "P2",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "study"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "check_school_platform",
+      "domain": "digital",
+      "priority": "P2",
+      "ageMin": 10,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "planning",
+        "school",
+        "study"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "study",
+        "planning"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "keep_charger_in_place",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "prepare_device_for_class",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 9,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "recommended",
+        "tts": "recommended",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "long_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital",
+        "planning",
+        "school_prep"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital",
+        "school_prep",
+        "planning"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    },
+    {
+      "id": "end_screen_time_routine",
+      "domain": "digital",
+      "priority": "P1",
+      "ageMin": 7,
+      "ageMax": 14,
+      "estimatedDuration": "2–10 min",
+      "suggestedStars": 0,
+      "eligibleAsExtra": false,
+      "requiresApprovalByDefault": false,
+      "support": {
+        "oneStepAtATime": "recommended",
+        "visual": "optional",
+        "tts": "optional",
+        "timer": "neutral",
+        "transition": "low",
+        "sensoryLoad": "low",
+        "cognitiveLoad": "short_sequence",
+        "canSplit": true
+      },
+      "masteryPath": "support_reminder_independent",
+      "culturalRelevance": "contextual",
+      "culturalTags": [
+        "digital"
+      ],
+      "status": "approved",
+      "familyFit": "digital_if_applicable",
+      "contexts": [
+        "digital"
+      ],
+      "skills": [
+        "digital_responsibility",
+        "planning_organization"
+      ],
+      "effort": "low",
+      "rewardMode": "usually_none_or_optional",
+      "adultSupport": "none_or_reminder",
+      "safetyLevel": "routine_safe",
+      "applicability": "contextual",
+      "localePriority": {}
+    }
+  ]
+}

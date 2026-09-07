@@ -1,0 +1,1078 @@
+{
+  "version": "1.0.0",
+  "locale": "pt-BR",
+  "missions": [
+    {
+      "id": "brush_teeth",
+      "title": "Escovar os dentes",
+      "description": "Cuide do seu sorriso.",
+      "helpSteps": [
+        "Coloque um pouco de creme dental na escova.",
+        "Escove todos os lados dos dentes.",
+        "Enxágue e guarde a escova."
+      ]
+    },
+    {
+      "id": "wash_hands_before_meal",
+      "title": "Lavar as mãos antes da refeição",
+      "description": "Deixe as mãos limpas antes de comer.",
+      "helpSteps": [
+        "Molhe as mãos.",
+        "Use sabonete e esfregue bem.",
+        "Enxágue e seque."
+      ]
+    },
+    {
+      "id": "wash_hands_on_arrival",
+      "title": "Lavar as mãos ao chegar",
+      "description": "Lavar as mãos ao chegar em casa antes de seguir a rotina.",
+      "helpSteps": [
+        "Ir até a pia.",
+        "Lavar as mãos com água e sabonete.",
+        "Secar as mãos."
+      ]
+    },
+    {
+      "id": "wash_face",
+      "title": "Lavar o rosto",
+      "description": "Comece ou termine o dia com o rosto limpo.",
+      "helpSteps": [
+        "Molhe o rosto com cuidado.",
+        "Lave como sua família orienta.",
+        "Seque com uma toalha limpa."
+      ]
+    },
+    {
+      "id": "comb_hair",
+      "title": "Pentear o cabelo",
+      "description": "Deixe seu cabelo arrumado.",
+      "helpSteps": [
+        "Pegue o pente ou escova.",
+        "Penteie com calma.",
+        "Guarde o pente ou escova."
+      ]
+    },
+    {
+      "id": "take_shower",
+      "title": "Tomar banho",
+      "description": "Cuide da sua higiene.",
+      "helpSteps": [
+        "Separe toalha e roupa limpa.",
+        "Tome seu banho com calma.",
+        "Seque-se e deixe o banheiro organizado."
+      ]
+    },
+    {
+      "id": "change_clothes",
+      "title": "Trocar de roupa",
+      "description": "Coloque uma roupa limpa e adequada para o momento.",
+      "helpSteps": [
+        "Escolha a roupa.",
+        "Troque as peças usadas.",
+        "Guarde ou coloque a roupa usada no cesto."
+      ]
+    },
+    {
+      "id": "put_towel_to_dry",
+      "title": "Pendurar a toalha",
+      "description": "Deixe a toalha secando no lugar certo.",
+      "helpSteps": [
+        "Pegue a toalha usada.",
+        "Abra a toalha para ela secar melhor.",
+        "Pendure no local combinado."
+      ]
+    },
+    {
+      "id": "clean_glasses",
+      "title": "Limpar os óculos",
+      "description": "Deixe as lentes limpas para enxergar melhor.",
+      "helpSteps": [
+        "Use o pano apropriado.",
+        "Limpe as lentes com cuidado.",
+        "Guarde o pano no lugar."
+      ]
+    },
+    {
+      "id": "prepare_hygiene_kit",
+      "title": "Preparar o kit de higiene",
+      "description": "Separe os itens de higiene que vai precisar.",
+      "helpSteps": [
+        "Veja quais itens serão necessários.",
+        "Separe tudo em uma nécessaire ou bolsa.",
+        "Confira se não esqueceu nada."
+      ]
+    },
+    {
+      "id": "floss_teeth",
+      "title": "Usar fio dental",
+      "description": "Complete o cuidado com os dentes.",
+      "helpSteps": [
+        "Separe o fio dental.",
+        "Use com calma entre os dentes, como foi ensinado.",
+        "Jogue o fio usado no lixo."
+      ]
+    },
+    {
+      "id": "use_deodorant",
+      "title": "Usar desodorante",
+      "description": "Complete sua rotina de higiene.",
+      "helpSteps": [
+        "Pegue seu desodorante.",
+        "Use como sua família orienta.",
+        "Guarde no lugar."
+      ]
+    },
+    {
+      "id": "make_bed",
+      "title": "Arrumar a cama",
+      "description": "Deixe sua cama pronta para o dia.",
+      "helpSteps": [
+        "Estique o lençol.",
+        "Coloque o travesseiro no lugar.",
+        "Arrume a coberta ou colcha."
+      ]
+    },
+    {
+      "id": "put_away_toys",
+      "title": "Guardar os brinquedos",
+      "description": "Coloque os brinquedos de volta em seus lugares.",
+      "helpSteps": [
+        "Junte os brinquedos que estão fora do lugar.",
+        "Separe por tipo ou por onde ficam.",
+        "Guarde cada grupo."
+      ]
+    },
+    {
+      "id": "organize_desk",
+      "title": "Organizar a mesa de estudos",
+      "description": "Deixe seu espaço pronto para estudar ou criar.",
+      "helpSteps": [
+        "Retire o que não precisa ficar na mesa.",
+        "Guarde papéis e materiais.",
+        "Deixe à mão só o que vai usar."
+      ]
+    },
+    {
+      "id": "dirty_clothes_hamper",
+      "title": "Colocar a roupa suja no cesto",
+      "description": "Leve as roupas usadas para o lugar certo.",
+      "helpSteps": [
+        "Junte as roupas usadas.",
+        "Confira se ficou alguma fora do lugar.",
+        "Coloque tudo no cesto."
+      ]
+    },
+    {
+      "id": "tidy_room_5_minutes",
+      "title": "Organizar o quarto por 5 minutos",
+      "description": "Faça uma arrumação rápida no seu espaço.",
+      "helpSteps": [
+        "Escolha uma pequena área.",
+        "Guarde o que estiver fora do lugar.",
+        "Pare após 5 minutos ou ao terminar a área."
+      ]
+    },
+    {
+      "id": "organize_bookshelf",
+      "title": "Organizar os livros",
+      "description": "Deixe livros e gibis arrumados.",
+      "helpSteps": [
+        "Junte os livros que estão fora do lugar.",
+        "Separe como achar mais fácil.",
+        "Coloque todos na estante."
+      ]
+    },
+    {
+      "id": "organize_school_materials",
+      "title": "Organizar o material escolar",
+      "description": "Deixe seus materiais fáceis de encontrar.",
+      "helpSteps": [
+        "Junte os materiais escolares.",
+        "Separe por tipo ou matéria.",
+        "Guarde cada item no lugar certo."
+      ]
+    },
+    {
+      "id": "organize_drawer",
+      "title": "Organizar uma gaveta",
+      "description": "Arrume uma gaveta de cada vez.",
+      "helpSteps": [
+        "Retire o que não pertence à gaveta.",
+        "Dobre ou agrupe os itens.",
+        "Coloque tudo de volta de forma organizada."
+      ]
+    },
+    {
+      "id": "organize_shoes",
+      "title": "Organizar os sapatos",
+      "description": "Coloque os sapatos no lugar combinado.",
+      "helpSteps": [
+        "Junte os pares.",
+        "Leve-os ao local certo.",
+        "Deixe os pares juntos e organizados."
+      ]
+    },
+    {
+      "id": "put_belongings_away",
+      "title": "Guardar minhas coisas",
+      "description": "Coloque seus objetos de volta no lugar.",
+      "helpSteps": [
+        "Observe o que está fora do lugar.",
+        "Pegue um item de cada vez.",
+        "Guarde cada coisa onde pertence."
+      ]
+    },
+    {
+      "id": "reset_play_area",
+      "title": "Organizar o espaço de brincar",
+      "description": "Deixe o espaço pronto para a próxima brincadeira.",
+      "helpSteps": [
+        "Guarde brinquedos grandes primeiro.",
+        "Junte as peças pequenas.",
+        "Confira se o chão ficou livre."
+      ]
+    },
+    {
+      "id": "put_activity_materials_away",
+      "title": "Guardar o material depois de usar",
+      "description": "Guardar materiais escolares, de desenho ou brincadeira ao terminar.",
+      "helpSteps": [
+        "Juntar os materiais usados.",
+        "Separar o que vai para cada lugar.",
+        "Guardar tudo."
+      ]
+    },
+    {
+      "id": "put_lunchbox_in_kitchen",
+      "title": "Levar a lancheira para a cozinha",
+      "description": "Colocar a lancheira no local combinado ao chegar.",
+      "helpSteps": [
+        "Pegar a lancheira.",
+        "Levar até a cozinha.",
+        "Colocar no local combinado."
+      ]
+    },
+    {
+      "id": "empty_lunchbox",
+      "title": "Esvaziar a lancheira",
+      "description": "Retirar potes, garrafa e resíduos da lancheira e colocá-los nos locais combinados.",
+      "helpSteps": [
+        "Abrir a lancheira.",
+        "Retirar potes, garrafa e resíduos.",
+        "Guardar ou descartar cada item no lugar correto."
+      ]
+    },
+    {
+      "id": "put_water_bottle_away",
+      "title": "Guardar a garrafa de água",
+      "description": "Levar a garrafa para o local combinado depois da escola ou atividade.",
+      "helpSteps": [
+        "Pegar a garrafa.",
+        "Levar para o local combinado.",
+        "Deixar pronta para lavar ou reutilizar."
+      ]
+    },
+    {
+      "id": "take_plate_to_sink",
+      "title": "Levar o prato para a pia",
+      "description": "Ao terminar a refeição, levar prato e talheres para o local combinado.",
+      "helpSteps": [
+        "Juntar prato e talheres.",
+        "Levar com cuidado.",
+        "Colocar no local combinado."
+      ]
+    },
+    {
+      "id": "take_cup_to_sink",
+      "title": "Levar o copo para a pia",
+      "description": "Ao terminar de usar, levar o copo para o local combinado.",
+      "helpSteps": [
+        "Pegar o copo.",
+        "Levar com cuidado.",
+        "Colocar no local combinado."
+      ]
+    },
+    {
+      "id": "throw_packaging_away",
+      "title": "Jogar embalagens no lixo",
+      "description": "Descartar embalagens e pequenos resíduos no recipiente correto.",
+      "helpSteps": [
+        "Juntar as embalagens ou resíduos.",
+        "Identificar o recipiente correto.",
+        "Descartar e deixar o local limpo."
+      ]
+    },
+    {
+      "id": "clean_own_meal_area",
+      "title": "Organizar o próprio lugar após a refeição",
+      "description": "Retirar pequenos resíduos e deixar o espaço usado organizado.",
+      "helpSteps": [
+        "Retirar prato, copo e resíduos.",
+        "Limpar pequenos resíduos se necessário.",
+        "Deixar cadeira e espaço organizados."
+      ]
+    },
+    {
+      "id": "prepare_water_bottle",
+      "title": "Preparar a garrafa de água",
+      "description": "Deixe sua garrafa pronta.",
+      "helpSteps": [
+        "Pegue a garrafa.",
+        "Encha com água.",
+        "Feche e deixe no lugar combinado."
+      ]
+    },
+    {
+      "id": "help_prepare_simple_snack",
+      "title": "Ajudar a preparar um lanche simples",
+      "description": "Prepare um lanche simples com autorização.",
+      "helpSteps": [
+        "Confirme com um responsável o que pode preparar.",
+        "Separe os ingredientes seguros.",
+        "Prepare e organize o local depois."
+      ]
+    },
+    {
+      "id": "prepare_lunchbox",
+      "title": "Ajudar a preparar a lancheira",
+      "description": "Com orientação do responsável, separar itens seguros para o próximo dia.",
+      "helpSteps": [
+        "Conferir o que será levado.",
+        "Separar os itens seguros.",
+        "Guardar tudo na lancheira."
+      ]
+    },
+    {
+      "id": "set_table",
+      "title": "Ajudar a pôr a mesa",
+      "description": "Prepare a mesa para a refeição.",
+      "helpSteps": [
+        "Pergunte ao responsável o que será necessário.",
+        "Coloque pratos e talheres com cuidado.",
+        "Ajude com copos ou guardanapos se for seguro."
+      ]
+    },
+    {
+      "id": "clear_table",
+      "title": "Ajudar a tirar a mesa",
+      "description": "Ajude a organizar depois da refeição.",
+      "helpSteps": [
+        "Retire primeiro os itens leves e seguros.",
+        "Leve-os ao local indicado.",
+        "Confira se ficou algo na mesa."
+      ]
+    },
+    {
+      "id": "read_10_minutes",
+      "title": "Ler por 10 minutos",
+      "description": "Escolha uma leitura e aproveite alguns minutos.",
+      "helpSteps": [
+        "Escolha um livro, gibi ou texto.",
+        "Encontre um lugar confortável.",
+        "Leia por 10 minutos com atenção."
+      ]
+    },
+    {
+      "id": "start_homework",
+      "title": "Começar a tarefa de casa",
+      "description": "Dê o primeiro passo na tarefa escolar.",
+      "helpSteps": [
+        "Separe o material necessário.",
+        "Leia o que precisa ser feito.",
+        "Comece pela primeira questão ou atividade."
+      ]
+    },
+    {
+      "id": "review_homework",
+      "title": "Revisar a tarefa de casa",
+      "description": "Confira seu trabalho antes de terminar.",
+      "helpSteps": [
+        "Leia novamente as respostas.",
+        "Veja se deixou algo em branco.",
+        "Corrija o que perceber."
+      ]
+    },
+    {
+      "id": "prepare_backpack",
+      "title": "Preparar a mochila",
+      "description": "Deixe o material de amanhã pronto.",
+      "helpSteps": [
+        "Confira as matérias ou atividades de amanhã.",
+        "Separe livros, cadernos e estojo.",
+        "Coloque tudo na mochila."
+      ]
+    },
+    {
+      "id": "check_school_schedule",
+      "title": "Conferir o horário da escola",
+      "description": "Veja o que terá no próximo dia de aula.",
+      "helpSteps": [
+        "Abra o horário ou agenda.",
+        "Confira as matérias e compromissos.",
+        "Separe o que precisar."
+      ]
+    },
+    {
+      "id": "practice_math_10_minutes",
+      "title": "Praticar matemática por 10 minutos",
+      "description": "Treine um pouco de matemática.",
+      "helpSteps": [
+        "Escolha alguns exercícios.",
+        "Resolva primeiro no papel.",
+        "Confira suas respostas."
+      ]
+    },
+    {
+      "id": "write_three_sentences",
+      "title": "Escrever 3 frases",
+      "description": "Pratique a escrita com frases curtas.",
+      "helpSteps": [
+        "Escolha um assunto.",
+        "Escreva três frases completas.",
+        "Leia o que escreveu."
+      ]
+    },
+    {
+      "id": "read_aloud_5_minutes",
+      "title": "Ler em voz alta por 5 minutos",
+      "description": "Pratique leitura e expressão.",
+      "helpSteps": [
+        "Escolha um trecho curto.",
+        "Leia em voz alta com calma.",
+        "Tente respeitar pontos e pausas."
+      ]
+    },
+    {
+      "id": "organize_notes",
+      "title": "Organizar anotações",
+      "description": "Deixe suas anotações fáceis de revisar.",
+      "helpSteps": [
+        "Junte as anotações do assunto.",
+        "Coloque em ordem.",
+        "Marque títulos ou palavras importantes."
+      ]
+    },
+    {
+      "id": "review_flashcards",
+      "title": "Revisar cartões de estudo",
+      "description": "Faça uma revisão rápida usando cartões.",
+      "helpSteps": [
+        "Separe os cartões.",
+        "Tente responder antes de virar.",
+        "Separe os que precisa revisar novamente."
+      ]
+    },
+    {
+      "id": "study_for_test_15_minutes",
+      "title": "Estudar por 15 minutos",
+      "description": "Faça uma revisão curta para uma prova.",
+      "helpSteps": [
+        "Escolha um assunto importante.",
+        "Revise por 15 minutos.",
+        "Anote uma dúvida para perguntar depois."
+      ]
+    },
+    {
+      "id": "advance_school_project",
+      "title": "Avançar no trabalho escolar",
+      "description": "Dê um passo no seu projeto.",
+      "helpSteps": [
+        "Veja qual é a próxima etapa.",
+        "Trabalhe apenas nessa etapa.",
+        "Marque o que ficou pronto."
+      ]
+    },
+    {
+      "id": "water_plants",
+      "title": "Regar as plantas",
+      "description": "Ajude a cuidar das plantas da casa.",
+      "helpSteps": [
+        "Confirme quais plantas precisam de água.",
+        "Use a quantidade indicada.",
+        "Guarde o regador."
+      ]
+    },
+    {
+      "id": "feed_pet",
+      "title": "Dar comida ao pet",
+      "description": "Ajude a cuidar do animal da família.",
+      "helpSteps": [
+        "Confirme a quantidade de comida.",
+        "Coloque a comida no recipiente.",
+        "Guarde a ração no lugar."
+      ]
+    },
+    {
+      "id": "check_pet_water",
+      "title": "Conferir a água do pet",
+      "description": "Veja se o animal tem água limpa.",
+      "helpSteps": [
+        "Confira o recipiente de água.",
+        "Peça ajuda se precisar trocar ou completar.",
+        "Deixe o local organizado."
+      ]
+    },
+    {
+      "id": "pair_socks",
+      "title": "Juntar pares de meias",
+      "description": "Ajude a organizar as meias limpas.",
+      "helpSteps": [
+        "Junte todas as meias.",
+        "Encontre os pares.",
+        "Separe ou dobre os pares."
+      ]
+    },
+    {
+      "id": "fold_towels",
+      "title": "Dobrar toalhas",
+      "description": "Ajude a organizar as toalhas limpas.",
+      "helpSteps": [
+        "Abra uma toalha.",
+        "Dobre com cuidado.",
+        "Coloque com as outras toalhas."
+      ]
+    },
+    {
+      "id": "wipe_table",
+      "title": "Limpar a mesa",
+      "description": "Ajude a deixar a mesa limpa.",
+      "helpSteps": [
+        "Peça o pano adequado.",
+        "Passe o pano na superfície.",
+        "Guarde o pano como orientado."
+      ]
+    },
+    {
+      "id": "sort_recycling",
+      "title": "Separar recicláveis",
+      "description": "Ajude a separar materiais para reciclagem.",
+      "helpSteps": [
+        "Veja quais itens podem ser reciclados.",
+        "Separe por tipo, se sua casa fizer isso.",
+        "Coloque no recipiente correto."
+      ]
+    },
+    {
+      "id": "put_groceries_away",
+      "title": "Ajudar a guardar as compras",
+      "description": "Ajude a colocar as compras nos lugares certos.",
+      "helpSteps": [
+        "Pergunte o que você pode guardar.",
+        "Separe os itens seguros.",
+        "Coloque cada item no local indicado."
+      ]
+    },
+    {
+      "id": "fill_water_bottles",
+      "title": "Encher as garrafas de água",
+      "description": "Ajude a deixar água pronta para a família.",
+      "helpSteps": [
+        "Separe as garrafas.",
+        "Encha com água.",
+        "Feche e coloque no lugar combinado."
+      ]
+    },
+    {
+      "id": "put_clean_clothes_away",
+      "title": "Guardar roupas limpas",
+      "description": "Colocar roupas limpas no armário ou gaveta.",
+      "helpSteps": [
+        "Separar as roupas.",
+        "Dobrar ou organizar se necessário.",
+        "Guardar no local correto."
+      ]
+    },
+    {
+      "id": "help_change_bed_linen",
+      "title": "Ajudar a trocar a roupa de cama",
+      "description": "Participar de uma parte segura da troca de lençóis e fronhas.",
+      "helpSteps": [
+        "Retirar itens conforme orientação.",
+        "Ajudar a posicionar lençol ou fronha.",
+        "Guardar a roupa usada no local correto."
+      ]
+    },
+    {
+      "id": "take_light_trash_out",
+      "title": "Levar lixo leve ao local combinado",
+      "description": "Levar um saco ou recipiente leve e seguro ao local definido pelo responsável.",
+      "helpSteps": [
+        "Confirmar se o lixo é leve e seguro.",
+        "Levar ao local combinado.",
+        "Higienizar as mãos depois."
+      ]
+    },
+    {
+      "id": "put_backpack_away_on_arrival",
+      "title": "Guardar a mochila ao chegar",
+      "description": "Guardar a mochila no local combinado assim que chegar em casa.",
+      "helpSteps": [
+        "Retirar a mochila.",
+        "Levar ao local combinado.",
+        "Deixar pronta para organizar depois, se necessário."
+      ]
+    },
+    {
+      "id": "prepare_room_for_bed",
+      "title": "Preparar o quarto para dormir",
+      "description": "Deixe o quarto tranquilo para a hora de dormir.",
+      "helpSteps": [
+        "Guarde objetos que estão fora do lugar.",
+        "Separe o que vai precisar à noite.",
+        "Deixe cama e caminho livres."
+      ]
+    },
+    {
+      "id": "prepare_clothes_tomorrow",
+      "title": "Separar a roupa de amanhã",
+      "description": "Escolha e deixe sua roupa pronta.",
+      "helpSteps": [
+        "Pense no que fará amanhã.",
+        "Escolha as peças.",
+        "Deixe tudo junto em um lugar organizado."
+      ]
+    },
+    {
+      "id": "get_dressed",
+      "title": "Vestir-se",
+      "description": "Prepare-se para começar o dia.",
+      "helpSteps": [
+        "Separe ou pegue a roupa escolhida.",
+        "Vista-se com calma.",
+        "Guarde o que ficou fora do lugar."
+      ]
+    },
+    {
+      "id": "put_pajamas_away",
+      "title": "Guardar o pijama",
+      "description": "Deixe o pijama no lugar depois de acordar.",
+      "helpSteps": [
+        "Pegue o pijama.",
+        "Dobre ou coloque no local combinado.",
+        "Deixe o quarto organizado."
+      ]
+    },
+    {
+      "id": "after_school_unpack",
+      "title": "Organizar as coisas ao chegar da escola",
+      "description": "Guarde o que trouxe da escola.",
+      "helpSteps": [
+        "Coloque mochila e sapatos no lugar.",
+        "Retire lancheira ou garrafa.",
+        "Separe recados ou materiais importantes."
+      ]
+    },
+    {
+      "id": "prepare_sports_bag",
+      "title": "Preparar a bolsa de esporte",
+      "description": "Separe o que precisa para a atividade.",
+      "helpSteps": [
+        "Confira o que será necessário.",
+        "Separe roupas e materiais.",
+        "Coloque tudo na bolsa."
+      ]
+    },
+    {
+      "id": "check_tomorrow_calendar",
+      "title": "Conferir o calendário de amanhã",
+      "description": "Veja os compromissos do próximo dia.",
+      "helpSteps": [
+        "Abra o calendário ou agenda.",
+        "Confira escola, atividades e compromissos.",
+        "Separe algo que precise levar."
+      ]
+    },
+    {
+      "id": "set_alarm",
+      "title": "Programar o alarme",
+      "description": "Prepare o horário para acordar.",
+      "helpSteps": [
+        "Confirme a hora de acordar.",
+        "Programe o alarme.",
+        "Deixe o aparelho no lugar combinado."
+      ]
+    },
+    {
+      "id": "morning_checklist",
+      "title": "Conferir a rotina da manhã",
+      "description": "Veja se está pronto para começar o dia.",
+      "helpSteps": [
+        "Confira roupa e higiene.",
+        "Confira mochila ou itens necessários.",
+        "Veja se falta alguma coisa antes de sair."
+      ]
+    },
+    {
+      "id": "bedtime_checklist",
+      "title": "Conferir a rotina da noite",
+      "description": "Prepare-se para encerrar o dia.",
+      "helpSteps": [
+        "Confira higiene e pijama.",
+        "Separe o que precisa para amanhã.",
+        "Deixe o quarto pronto para dormir."
+      ]
+    },
+    {
+      "id": "leave_bathroom_tidy",
+      "title": "Deixar o banheiro organizado após usar",
+      "description": "Guardar itens pessoais, pendurar toalha e deixar o espaço organizado.",
+      "helpSteps": [
+        "Guardar itens pessoais.",
+        "Pendurar a toalha.",
+        "Conferir se o espaço ficou organizado."
+      ]
+    },
+    {
+      "id": "prepare_school_uniform",
+      "title": "Separar a roupa ou uniforme da escola",
+      "description": "Deixar a roupa do próximo dia pronta.",
+      "helpSteps": [
+        "Conferir o que será usado.",
+        "Separar as peças.",
+        "Deixar tudo junto no local combinado."
+      ]
+    },
+    {
+      "id": "check_items_before_leaving",
+      "title": "Conferir o que precisa levar antes de sair",
+      "description": "Fazer uma conferência curta dos itens necessários antes de sair.",
+      "helpSteps": [
+        "Pensar para onde vai.",
+        "Conferir os itens necessários.",
+        "Guardar o que falta antes de sair."
+      ]
+    },
+    {
+      "id": "check_belongings_before_returning",
+      "title": "Conferir se não esqueceu nada",
+      "description": "Antes de sair de escola, esporte ou passeio, conferir os próprios objetos.",
+      "helpSteps": [
+        "Olhar ao redor.",
+        "Conferir objetos importantes.",
+        "Guardar tudo antes de sair."
+      ]
+    },
+    {
+      "id": "put_jacket_away",
+      "title": "Guardar casaco ou agasalho",
+      "description": "Colocar o casaco no local combinado depois de usar.",
+      "helpSteps": [
+        "Pegar o casaco.",
+        "Levar ao local correto.",
+        "Pendurar ou guardar."
+      ]
+    },
+    {
+      "id": "prepare_items_for_activity",
+      "title": "Separar itens para uma atividade",
+      "description": "Preparar antecipadamente o que será necessário para esporte, aula ou passeio.",
+      "helpSteps": [
+        "Identificar a atividade.",
+        "Listar mentalmente o que precisa.",
+        "Separar e colocar os itens juntos."
+      ]
+    },
+    {
+      "id": "pack_for_overnight",
+      "title": "Preparar uma bolsa para dormir fora",
+      "description": "Separar itens pessoais para uma noite fora com orientação do responsável.",
+      "helpSteps": [
+        "Conferir roupas e higiene.",
+        "Separar itens pessoais.",
+        "Revisar a bolsa com um responsável."
+      ]
+    },
+    {
+      "id": "unpack_after_trip",
+      "title": "Desfazer a bolsa depois de um passeio ou viagem",
+      "description": "Guardar roupas, objetos e resíduos nos lugares corretos.",
+      "helpSteps": [
+        "Retirar tudo da bolsa.",
+        "Separar roupa usada, limpa e objetos.",
+        "Guardar cada grupo no lugar."
+      ]
+    },
+    {
+      "id": "choose_clothes_for_weather",
+      "title": "Escolher roupa adequada para o clima",
+      "description": "Escolher roupas considerando clima e atividade, com apoio quando necessário.",
+      "helpSteps": [
+        "Verificar como está o clima.",
+        "Pensar na atividade do dia.",
+        "Escolher roupas adequadas."
+      ]
+    },
+    {
+      "id": "clean_small_spill",
+      "title": "Limpar um pequeno derramamento",
+      "description": "Limpar água ou outro líquido seguro derramado, usando material apropriado.",
+      "helpSteps": [
+        "Confirmar que é seguro limpar.",
+        "Pegar pano ou papel adequado.",
+        "Limpar e guardar o material."
+      ]
+    },
+    {
+      "id": "sort_own_dirty_clothes",
+      "title": "Separar as próprias roupas para lavar",
+      "description": "Colocar roupas usadas no local definido pela família.",
+      "helpSteps": [
+        "Juntar as roupas usadas.",
+        "Separar conforme a regra da casa, se houver.",
+        "Colocar no cesto correto."
+      ]
+    },
+    {
+      "id": "prepare_simple_breakfast",
+      "title": "Preparar um café da manhã simples",
+      "description": "Preparar uma opção simples e segura com autorização do responsável.",
+      "helpSteps": [
+        "Confirmar o que pode preparar.",
+        "Separar itens seguros.",
+        "Preparar e organizar o local depois."
+      ]
+    },
+    {
+      "id": "prepare_library_return",
+      "title": "Separar livro ou material para devolver",
+      "description": "Deixar pronto um item que precisa ser devolvido à escola, biblioteca ou atividade.",
+      "helpSteps": [
+        "Identificar o item.",
+        "Colocar no local ou bolsa correta.",
+        "Conferir antes de sair."
+      ]
+    },
+    {
+      "id": "charge_school_device",
+      "title": "Carregar o dispositivo da escola",
+      "description": "Deixe o dispositivo pronto para o próximo uso.",
+      "helpSteps": [
+        "Confira a bateria.",
+        "Conecte ao carregador no local seguro.",
+        "Lembre-se de guardar depois."
+      ]
+    },
+    {
+      "id": "put_device_away_after_use",
+      "title": "Guardar o dispositivo depois de usar",
+      "description": "Colocar tablet, celular ou computador no local combinado após o uso.",
+      "helpSteps": [
+        "Encerrar o que estava usando.",
+        "Guardar o dispositivo com cuidado.",
+        "Guardar acessórios se houver."
+      ]
+    },
+    {
+      "id": "put_device_in_charging_place",
+      "title": "Colocar o dispositivo para carregar",
+      "description": "Levar o dispositivo ao local seguro de carregamento quando necessário.",
+      "helpSteps": [
+        "Conferir a bateria.",
+        "Levar ao local de carregamento.",
+        "Conectar conforme orientação da família."
+      ]
+    },
+    {
+      "id": "check_device_battery",
+      "title": "Conferir a bateria antes da escola ou atividade",
+      "description": "Verificar se o dispositivo necessário está com bateria suficiente.",
+      "helpSteps": [
+        "Verificar a bateria.",
+        "Comparar com o que será necessário.",
+        "Colocar para carregar se precisar."
+      ]
+    },
+    {
+      "id": "prepare_headphones",
+      "title": "Guardar ou preparar fones de ouvido",
+      "description": "Deixar os fones no local correto para o próximo uso.",
+      "helpSteps": [
+        "Guardar os fones sem embolar.",
+        "Conferir estojo ou cabo.",
+        "Colocar no local combinado."
+      ]
+    },
+    {
+      "id": "organize_school_files",
+      "title": "Organizar arquivos escolares digitais",
+      "description": "Guardar arquivos escolares em pastas ou locais definidos.",
+      "helpSteps": [
+        "Identificar os arquivos escolares.",
+        "Mover para a pasta correta.",
+        "Apagar apenas o que tiver certeza que não precisa."
+      ]
+    },
+    {
+      "id": "check_school_platform",
+      "title": "Conferir a plataforma da escola",
+      "description": "Verificar tarefas ou avisos escolares em um momento definido pela família.",
+      "helpSteps": [
+        "Abrir a plataforma escolar.",
+        "Conferir tarefas e avisos.",
+        "Anotar ou separar o que precisa fazer."
+      ]
+    },
+    {
+      "id": "keep_charger_in_place",
+      "title": "Guardar o carregador no lugar",
+      "description": "Devolver o carregador ao local combinado depois de usar.",
+      "helpSteps": [
+        "Desconectar com cuidado.",
+        "Organizar o cabo.",
+        "Guardar no local certo."
+      ]
+    },
+    {
+      "id": "prepare_device_for_class",
+      "title": "Preparar o dispositivo para a aula",
+      "description": "Deixar o dispositivo pronto com bateria e acessórios necessários.",
+      "helpSteps": [
+        "Conferir a bateria.",
+        "Separar fones ou acessórios.",
+        "Deixar o dispositivo na mochila ou local combinado."
+      ]
+    },
+    {
+      "id": "end_screen_time_routine",
+      "title": "Encerrar o uso de tela no horário combinado",
+      "description": "Finalizar o uso e guardar o dispositivo conforme a rotina definida pela família.",
+      "helpSteps": [
+        "Salvar ou encerrar o que estava fazendo.",
+        "Fechar o uso no horário combinado.",
+        "Guardar o dispositivo no local definido."
+      ]
+    }
+  ],
+  "routines": [
+    {
+      "id": "after_school",
+      "title": "Cheguei em casa",
+      "description": "Uma rotina passo a passo para guardar as coisas da escola e fazer a transição ao chegar."
+    },
+    {
+      "id": "after_meal",
+      "title": "Depois da refeição",
+      "description": "Uma rotina curta para levar louça, descartar resíduos e deixar o próprio lugar organizado."
+    },
+    {
+      "id": "school_morning",
+      "title": "Manhã de escola",
+      "description": "Uma sequência previsível para se preparar para ir à escola."
+    },
+    {
+      "id": "bedtime",
+      "title": "Hora de dormir",
+      "description": "Uma rotina tranquila para encerrar o dia e se preparar para dormir."
+    },
+    {
+      "id": "homework_start",
+      "title": "Hora da tarefa",
+      "description": "Uma sequência simples para começar, fazer, revisar e guardar os materiais."
+    },
+    {
+      "id": "quick_room_reset",
+      "title": "Organização rápida do quarto",
+      "description": "Uma rotina curta para devolver algumas coisas importantes ao lugar."
+    },
+    {
+      "id": "sports_return",
+      "title": "Voltei do esporte",
+      "description": "Uma rotina para guardar os itens do esporte e se organizar depois da atividade."
+    },
+    {
+      "id": "prepare_to_leave",
+      "title": "Preparar para sair",
+      "description": "Uma conferência curta para se vestir, separar o necessário e sair preparado."
+    },
+    {
+      "id": "pet_care",
+      "title": "Cuidar do pet",
+      "description": "Uma rotina simples para conferir a água e alimentar o animal da família."
+    },
+    {
+      "id": "study_session",
+      "title": "Sessão curta de estudo",
+      "description": "Uma rotina de estudo estruturada, com começo e fim claros."
+    },
+    {
+      "id": "weekend_reset",
+      "title": "Organização de fim de semana",
+      "description": "Uma rotina flexível para organizar alguns espaços e pertences pessoais."
+    },
+    {
+      "id": "next_day_prep",
+      "title": "Preparar o dia seguinte",
+      "description": "Uma rotina noturna previsível para deixar itens importantes prontos para o dia seguinte."
+    },
+    {
+      "id": "after_shower",
+      "title": "Depois do banho",
+      "description": "Uma rotina curta para toalha, roupas e deixar o banheiro organizado."
+    },
+    {
+      "id": "after_play",
+      "title": "Depois de brincar",
+      "description": "Uma rotina de transição para guardar brinquedos e materiais quando a brincadeira termina."
+    },
+    {
+      "id": "trip_prep",
+      "title": "Preparar passeio ou viagem curta",
+      "description": "Uma lista para escolher roupa e reunir o que será necessário para sair ou viajar."
+    },
+    {
+      "id": "digital_school",
+      "title": "Preparar tecnologia para a escola",
+      "description": "Uma rotina para conferir bateria e acessórios quando a criança usa dispositivo escolar."
+    },
+    {
+      "id": "screen_end",
+      "title": "Encerrar tempo de tela",
+      "description": "Uma rotina de transição para parar no horário combinado e guardar o dispositivo."
+    },
+    {
+      "id": "before_meal",
+      "title": "Antes da refeição",
+      "description": "Uma rotina curta para lavar as mãos e ajudar a preparar o espaço da refeição."
+    },
+    {
+      "id": "weekend_morning",
+      "title": "Manhã de fim de semana",
+      "description": "Uma rotina de manhã mais leve para dias sem escola."
+    },
+    {
+      "id": "school_week_prep",
+      "title": "Preparar a semana escolar",
+      "description": "Uma rotina de planejamento para materiais, roupa, agenda e dispositivos quando aplicável."
+    },
+    {
+      "id": "return_from_outing",
+      "title": "Voltei de um passeio",
+      "description": "Uma rotina para guardar sapatos, agasalho e pertences ao voltar."
+    },
+    {
+      "id": "clothing_care",
+      "title": "Cuidar das minhas roupas",
+      "description": "Uma rotina para roupa usada, separação para lavar e guardar roupas limpas."
+    },
+    {
+      "id": "lunchbox_reset",
+      "title": "Organizar a lancheira",
+      "description": "Uma rotina para esvaziar, guardar e preparar os itens da lancheira."
+    },
+    {
+      "id": "creative_cleanup",
+      "title": "Organizar depois de criar ou brincar",
+      "description": "Uma rotina para guardar materiais de arte, estudo, jogos ou brincadeiras."
+    },
+    {
+      "id": "overnight_prep",
+      "title": "Preparar para dormir fora",
+      "description": "Uma lista para separar roupas, higiene e pertences importantes."
+    },
+    {
+      "id": "shared_space_reset",
+      "title": "Organizar um espaço compartilhado",
+      "description": "Uma rotina curta para ajudar a deixar um espaço comum da família organizado."
+    }
+  ]
+}

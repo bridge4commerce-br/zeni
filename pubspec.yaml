@@ -46,6 +46,9 @@ flutter:
   assets:
     - assets/icons/
     - assets/logo/
+    - assets/smart_content/global/
+    - assets/smart_content/locales/
+    - assets/smart_content/config/
 
   fonts:
     - family: OpenDyslexic

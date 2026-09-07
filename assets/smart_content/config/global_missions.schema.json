@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zeni Smart Content Global Missions",
+  "type": "object",
+  "required": [
+    "version",
+    "missions"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "domain",
+          "priority",
+          "ageMin",
+          "ageMax",
+          "support",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "self_care",
+              "belongings",
+              "meals",
+              "study",
+              "home_participation",
+              "transitions",
+              "life_skills",
+              "digital"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "P0",
+              "P1",
+              "P2"
+            ]
+          },
+          "ageMin": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 18
+          },
+          "ageMax": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 18
+          },
+          "suggestedStars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "eligibleAsExtra": {
+            "type": "boolean"
+          },
+          "requiresApprovalByDefault": {
+            "type": "boolean"
+          },
+          "culturalRelevance": {
+            "type": "string",
+            "enum": [
+              "global",
+              "contextual"
+            ]
+          },
+          "status": {
+            "const": "approved"
+          }
+        }
+      }
+    }
+  }
+}
