@@ -45,7 +45,8 @@ flutter:
 
   assets:
     - assets/icons/
-    - assets/logo/
+    - assets/branding/
+    - assets/mascot/webp/
     - assets/smart_content/global/
     - assets/smart_content/locales/
     - assets/smart_content/config/
