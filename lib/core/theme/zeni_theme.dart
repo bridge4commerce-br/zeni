@@ -57,6 +57,7 @@ class ZeniTheme {
   }) {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: ZeniTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       textTheme: ZeniTypography.textTheme(textColor),
@@ -71,6 +72,10 @@ class ZeniTheme {
         color: colorScheme.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: ZeniRadius.card),
+      ),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+        space: 1,
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colorScheme.surface,
@@ -151,6 +156,8 @@ class ZeniTheme {
           backgroundColor: ZeniColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
+          shadowColor: ZeniColors.primary.withValues(alpha: 0.28),
+          surfaceTintColor: Colors.transparent,
           minimumSize: const Size.fromHeight(52),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           shape: RoundedRectangleBorder(borderRadius: ZeniRadius.button),
@@ -162,6 +169,7 @@ class ZeniTheme {
           minimumSize: const Size.fromHeight(52),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           side: const BorderSide(color: ZeniColors.primary),
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: ZeniRadius.button),
         ),
       ),

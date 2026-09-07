@@ -7,6 +7,7 @@ class ZeniAnimation {
   static const Duration fast = Duration(milliseconds: 160);
   static const Duration normal = Duration(milliseconds: 260);
   static const Duration slow = Duration(milliseconds: 420);
+  static const Duration celebration = Duration(milliseconds: 560);
 
   static const Curve standardCurve = Curves.easeOutCubic;
   static const Curve entranceCurve = Curves.easeOutBack;

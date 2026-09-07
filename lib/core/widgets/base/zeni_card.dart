@@ -26,6 +26,11 @@ class ZeniCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: ZeniRadius.card,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(
+            alpha: 0.52,
+          ),
+        ),
         boxShadow: ZeniShadows.card,
       ),
       child: child,
@@ -35,6 +40,8 @@ class ZeniCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
+      borderRadius: ZeniRadius.card,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(borderRadius: ZeniRadius.card, onTap: onTap, child: card),
     );
   }
