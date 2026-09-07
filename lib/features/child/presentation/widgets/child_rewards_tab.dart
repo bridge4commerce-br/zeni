@@ -19,6 +19,7 @@ class ChildRewardsTab extends StatelessWidget {
     required this.onListenToReward,
     required this.onListenToRewardDetails,
     required this.canListenToReward,
+    this.onRefresh,
   });
 
   final int childBalance;
@@ -30,6 +31,7 @@ class ChildRewardsTab extends StatelessWidget {
   final void Function(Reward reward, RewardRequest? request)
   onListenToRewardDetails;
   final bool canListenToReward;
+  final Future<void> Function()? onRefresh;
 
   RewardRequest? _pendingRequestForReward(String rewardId) {
     for (final request in pendingRewardRequests) {
@@ -46,7 +48,8 @@ class ChildRewardsTab extends StatelessWidget {
     final sortedRewards = [...rewards]
       ..sort((a, b) => a.cost.compareTo(b.cost));
 
-    return SingleChildScrollView(
+    final content = SingleChildScrollView(
+      physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(ZeniSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,6 +130,12 @@ class ChildRewardsTab extends StatelessWidget {
         ],
       ),
     );
+
+    if (onRefresh == null) {
+      return content;
+    }
+
+    return RefreshIndicator(onRefresh: onRefresh!, child: content);
   }
 }
 

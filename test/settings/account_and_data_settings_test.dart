@@ -11,6 +11,7 @@ import 'package:zeni/features/auth/data/repositories/zeni_auth_repository.dart';
 import 'package:zeni/features/auth/presentation/providers/zeni_account_providers.dart';
 import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.dart';
 import 'package:zeni/features/settings/data/models/app_settings.dart';
+import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import '../support/settings_test_harness.dart';
 import '../support/widget_test_fakes.dart';
 
@@ -402,7 +403,9 @@ void main() {
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 
-  testWidgets('remote deletion UI does not execute real deletion', (tester) async {
+  testWidgets('remote deletion UI does not execute real deletion', (
+    tester,
+  ) async {
     seedMockAppState();
     await ZeniSupabaseBootstrap.initialize(
       config: const ZeniSupabaseConfig(
@@ -580,5 +583,39 @@ void main() {
 
     final after = await container.read(zeniAppStateControllerProvider.future);
     expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
+
+  testWidgets('account section opens cloud data sheet for manual sync', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        remoteFamilySummary: const RemoteFamilySummary(
+          familyId: 'family-1',
+          familyName: 'Minha família',
+          role: 'owner',
+        ),
+        onSyncCloudData: () async => const ZeniCloudSyncResult(
+          status: ZeniCloudSyncStatus.success,
+          message: 'Dados sincronizados neste aparelho.',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.scrollUntilVisible(find.text('Dados na nuvem'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dados na nuvem'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sincronizar agora'), findsWidgets);
+
+    await tester.tap(find.text('Sincronizar agora').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dados sincronizados neste aparelho.'), findsOneWidget);
   });
 }

@@ -22,6 +22,7 @@ class ChildMissionsTab extends StatelessWidget {
     required this.onListenToMission,
     required this.onListenToMissionDetails,
     required this.canListenToMission,
+    this.onRefresh,
   });
 
   final List<Mission> missions;
@@ -36,6 +37,7 @@ class ChildMissionsTab extends StatelessWidget {
   onListenToMissionDetails;
   final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
   final bool canListenToMission;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,8 @@ class ChildMissionsTab extends StatelessWidget {
         .where((group) => missions.any((mission) => mission.timeGroup == group))
         .toList();
 
-    return SingleChildScrollView(
+    final content = SingleChildScrollView(
+      physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(ZeniSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,5 +142,11 @@ class ChildMissionsTab extends StatelessWidget {
         ],
       ),
     );
+
+    if (onRefresh == null) {
+      return content;
+    }
+
+    return RefreshIndicator(onRefresh: onRefresh!, child: content);
   }
 }

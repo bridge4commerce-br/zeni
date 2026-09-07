@@ -28,6 +28,7 @@ class ParentMissionsTab extends StatefulWidget {
     required this.onEditMission,
     required this.onArchiveMission,
     required this.onRestoreMission,
+    this.onRefresh,
   });
 
   final List<ChildProfile> activeChildren;
@@ -43,6 +44,7 @@ class ParentMissionsTab extends StatefulWidget {
   final ValueChanged<Mission> onEditMission;
   final ValueChanged<Mission> onArchiveMission;
   final ValueChanged<Mission> onRestoreMission;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<ParentMissionsTab> createState() => _ParentMissionsTabState();
@@ -72,7 +74,10 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
     final missions = _filteredActiveMissions();
     final archivedMissions = _filteredArchivedMissions();
 
-    return SingleChildScrollView(
+    final content = SingleChildScrollView(
+      physics: widget.onRefresh == null
+          ? null
+          : const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(ZeniSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,6 +242,12 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
         ],
       ),
     );
+
+    if (widget.onRefresh == null) {
+      return content;
+    }
+
+    return RefreshIndicator(onRefresh: widget.onRefresh!, child: content);
   }
 
   List<MissionLog> _filteredAwaitingLogs() {

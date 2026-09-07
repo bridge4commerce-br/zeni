@@ -2,7 +2,7 @@ name: zeni
 description: "Zeni ajuda famílias a criarem hábitos com missões, mimos e estrelas."
 publish_to: 'none'
 
-version: 1.0.10+10
+version: 1.0.12+12
 
 environment:
   sdk: ^3.10.8

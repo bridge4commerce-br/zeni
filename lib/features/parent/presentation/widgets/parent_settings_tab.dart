@@ -640,6 +640,23 @@ class _ParentSettingsGroup extends StatelessWidget {
             _SectionTitle(title: 'Conta e dados'),
             if (authState.isAuthenticated) ...[
               ZeniOptionRow(
+                title: 'Dados na nuvem',
+                subtitle:
+                    'Envia alterações deste aparelho e busca atualizações salvas na nuvem.',
+                leading: const Icon(
+                  Icons.cloud_sync_rounded,
+                  color: ZeniColors.primaryDark,
+                ),
+                trailing: Text(
+                  'Abrir',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: ZeniColors.primaryDark,
+                  ),
+                ),
+                onTap: () => _openCloudDataSheet(context),
+              ),
+              const SizedBox(height: ZeniSpacing.sm),
+              ZeniOptionRow(
                 title: 'Sair da conta',
                 subtitle:
                     'Sair da conta remove apenas sua sessão neste aparelho. A família e os dados locais continuam salvos aqui.',
@@ -743,6 +760,16 @@ class _ParentSettingsGroup extends StatelessWidget {
           onSubmit: onUpdateParentDisplayName,
         ),
       ),
+    );
+  }
+
+  Future<void> _openCloudDataSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CloudDataSheet(onSyncCloudData: onSyncCloudData),
     );
   }
 }
@@ -1270,6 +1297,73 @@ class _CloudSyncSection extends StatefulWidget {
 
   @override
   State<_CloudSyncSection> createState() => _CloudSyncSectionState();
+}
+
+class _CloudDataSheet extends StatefulWidget {
+  const _CloudDataSheet({required this.onSyncCloudData});
+
+  final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+
+  @override
+  State<_CloudDataSheet> createState() => _CloudDataSheetState();
+}
+
+class _CloudDataSheetState extends State<_CloudDataSheet> {
+  bool _isSyncing = false;
+  String? _message;
+  bool _isError = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: 'Dados na nuvem',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Envia alterações deste aparelho e busca atualizações salvas na nuvem.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+          ),
+          if (_message != null) ...[
+            const SizedBox(height: ZeniSpacing.md),
+            Text(
+              _message!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: _isError
+                    ? Theme.of(context).colorScheme.error
+                    : ZeniColors.primaryDark,
+              ),
+            ),
+          ],
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniPrimaryButton(
+            label: _isSyncing ? 'Sincronizando...' : 'Sincronizar agora',
+            onPressed: _isSyncing ? null : _syncNow,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _syncNow() async {
+    setState(() {
+      _isSyncing = true;
+      _message = null;
+      _isError = false;
+    });
+
+    final result = await widget.onSyncCloudData();
+    if (!mounted) return;
+
+    setState(() {
+      _isSyncing = false;
+      _isError = !result.isSuccess;
+      _message = result.message;
+    });
+  }
 }
 
 class _CloudSyncSectionState extends State<_CloudSyncSection> {

@@ -5,7 +5,9 @@ import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
+import '../../../family/data/repositories/remote_children_repository.dart';
 import '../../../family/presentation/providers/remote_children_providers.dart';
+import '../../../rewards/data/repositories/remote_rewards_repository.dart';
 import '../../../rewards/presentation/providers/remote_rewards_providers.dart';
 import '../../../tasks/data/repositories/remote_missions_repository.dart';
 import '../../../tasks/presentation/providers/remote_missions_providers.dart';
@@ -107,6 +109,7 @@ class DeviceBootstrapController {
   final Ref _ref;
 
   Future<DeviceBootstrapResult> bootstrapFromRemoteFamily() async {
+    _debugLog('Bootstrap from remote family started');
     if (!ZeniSupabaseBootstrap.state.isAvailable) {
       return const DeviceBootstrapResult.failure(
         'Restauração na nuvem indisponível neste build.',
@@ -147,11 +150,17 @@ class DeviceBootstrapController {
           .read(remoteRewardsRepositoryProvider)
           .getRemoteRewards(familyId: remoteFamily.familyId);
 
+      _debugLog(
+        'Remote catalog fetched: children=${remoteChildren.length}, '
+        'missions=${remoteMissions.length}, rewards=${remoteRewards.length}',
+      );
+
       final hasRemoteCatalogData =
           remoteChildren.isNotEmpty ||
           remoteMissions.isNotEmpty ||
           remoteRewards.isNotEmpty;
       if (!hasRemoteCatalogData) {
+        _debugLog('Bootstrap aborted: remote catalog is empty');
         return const DeviceBootstrapResult.failure(
           'Nenhum dado remoto foi encontrado para restaurar.',
         );
@@ -166,6 +175,12 @@ class DeviceBootstrapController {
             remoteRewards: remoteRewards,
             localInviteCode: localState.family.inviteCode,
           );
+      _debugBootstrapMappings(
+        remoteChildren: remoteChildren,
+        remoteMissions: remoteMissions,
+        remoteRewards: remoteRewards,
+        payload: payload,
+      );
 
       final applyResult = await _ref
           .read(zeniAppStateControllerProvider.notifier)
@@ -175,6 +190,11 @@ class DeviceBootstrapController {
           applyResult.message ?? 'Não foi possível restaurar a família agora.',
         );
       }
+
+      _debugLog(
+        'Bootstrap applied locally: children=${payload.children.length}, '
+        'missions=${payload.missions.length}, rewards=${payload.rewards.length}',
+      );
 
       _ref.invalidate(remoteFamilySummaryProvider);
       _ref.invalidate(remoteChildrenProvider);
@@ -199,5 +219,51 @@ class DeviceBootstrapController {
   void _debugLog(String message) {
     if (!kDebugMode) return;
     debugPrint('[DeviceBootstrap] $message');
+  }
+
+  void _debugBootstrapMappings({
+    required List<RemoteChildSummary> remoteChildren,
+    required List<RemoteMissionSummary> remoteMissions,
+    required List<RemoteRewardSummary> remoteRewards,
+    required DeviceBootstrapPayload payload,
+  }) {
+    if (!kDebugMode) return;
+
+    for (var index = 0; index < remoteChildren.length; index += 1) {
+      final remoteChild = remoteChildren[index];
+      final localChild = payload.children[index];
+      _debugLog('Child mapping: remote=${remoteChild.id} -> local=${localChild.id}');
+    }
+
+    final localChildIdByRemoteChildId = <String, String>{
+      for (var index = 0; index < remoteChildren.length; index += 1)
+        remoteChildren[index].id: payload.children[index].id,
+    };
+    final localMissionById = {
+      for (final mission in payload.missions) mission.id: mission,
+    };
+    final localRewardById = {
+      for (final reward in payload.rewards) reward.id: reward,
+    };
+
+    for (final remoteMission in remoteMissions) {
+      final localMissionId = remoteMission.localId ?? remoteMission.id;
+      final localMission = localMissionById[localMissionId];
+      _debugLog(
+        'Mission mapping: remote=${remoteMission.id} -> local=$localMissionId '
+        '(child remote=${remoteMission.childId} -> local=${localChildIdByRemoteChildId[remoteMission.childId] ?? 'missing'}) '
+        'resolvedChild=${localMission?.childId ?? 'missing'}',
+      );
+    }
+
+    for (final remoteReward in remoteRewards) {
+      final localRewardId = remoteReward.localId ?? remoteReward.id;
+      final localReward = localRewardById[localRewardId];
+      _debugLog(
+        'Reward mapping: remote=${remoteReward.id} -> local=$localRewardId '
+        '(child remote=${remoteReward.childId ?? 'global'} -> local=${remoteReward.childId == null ? 'global' : (localChildIdByRemoteChildId[remoteReward.childId!] ?? 'missing')}) '
+        'resolvedChild=${localReward?.childId ?? 'global'}',
+      );
+    }
   }
 }

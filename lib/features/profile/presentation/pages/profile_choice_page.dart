@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,9 +29,24 @@ class ProfileChoicePage extends ConsumerStatefulWidget {
 
 class _ProfileChoicePageState extends ConsumerState<ProfileChoicePage> {
   _ProfileChoiceData _buildData(ZeniAppState appState) {
+    final activeChildren = appState.children.where((child) => child.isActive).toList();
+    if (kDebugMode) {
+      final childIds = activeChildren.map((child) => child.id).join(', ');
+      debugPrint(
+        '[ProfileChoice] family=${appState.family.id} '
+        'activeChildren=${activeChildren.length} ids=[$childIds]',
+      );
+      if (activeChildren.isEmpty) {
+        debugPrint(
+          '[ProfileChoice] No active child profiles available. '
+          'children=${appState.children.length}, missions=${appState.missions.length}, rewards=${appState.rewards.length}',
+        );
+      }
+    }
+
     return _ProfileChoiceData(
       family: appState.family,
-      children: appState.children.where((child) => child.isActive).toList(),
+      children: activeChildren,
     );
   }
 

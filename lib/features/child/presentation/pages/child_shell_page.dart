@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,12 +19,14 @@ import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../../core/widgets/layout/zeni_bottom_nav_bar.dart';
 import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../../core/widgets/zeni_flying_star_overlay.dart';
+import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../balance/data/models/star_ledger_entry.dart';
 import '../../../balance/presentation/widgets/history_entry_card.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
 import '../../../sync/presentation/providers/opportunistic_sync_providers.dart';
+import '../../../sync/presentation/providers/cloud_sync_providers.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/domain/mission_undo_policy.dart';
@@ -163,6 +166,10 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     final now = DateTime.now();
     final child = appState.childById(widget.childId);
     if (child == null) {
+      _debugLog(
+        'Child not found for childId=${widget.childId}. '
+        'availableChildren=${appState.children.map((item) => item.id).join(',')}',
+      );
       return null;
     }
 
@@ -199,6 +206,18 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             .toList()
           ..sort((a, b) => b.requestedAt.compareTo(a.requestedAt));
 
+    _debugLog(
+      'Resolved child=${child.id} missions=${missions.length} rewards=${rewards.length} '
+      'logsToday=${logs.length} pendingRewards=${pendingRewardRequests.length}',
+    );
+    if (missions.isEmpty || rewards.isEmpty) {
+      _debugLog(
+        'Visible lists detail for child=${child.id}: '
+        'allMissionChildIds=${appState.missions.map((item) => item.childId).join(',')}; '
+        'allRewardChildIds=${appState.rewards.map((item) => item.childId ?? 'global').join(',')}',
+      );
+    }
+
     return _ChildModeData(
       child: child,
       missions: missions,
@@ -207,6 +226,11 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
       pendingRewardRequests: pendingRewardRequests,
       ledgerEntries: ledger,
     );
+  }
+
+  void _debugLog(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ChildShell] $message');
   }
 
   Future<void> _completeMission(
@@ -322,6 +346,28 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
       title: 'Envio cancelado',
       message: '${mission.title} voltou para suas missões pendentes.',
     );
+  }
+
+  Future<void> _refreshPrimaryLists() async {
+    final authState = ref.read(authStateProvider);
+    if (authState.isAuthenticated) {
+      final result = await ref
+          .read(zeniCloudSyncControllerProvider)
+          .syncNowManually();
+      if (!mounted || result.isSuccess || result.message == null) {
+        return;
+      }
+
+      ZeniInfoPopup.show(
+        context,
+        title: 'Sincronização',
+        message: result.message!,
+      );
+      return;
+    }
+
+    ref.invalidate(zeniAppStateControllerProvider);
+    await ref.read(zeniAppStateControllerProvider.future);
   }
 
   Future<void> _redeemReward(Reward reward) async {
@@ -454,6 +500,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onListenToMission: _listenToMission,
             onListenToMissionDetails: _listenToMissionDetails,
             canListenToMission: canUseReadAloud,
+            onRefresh: _refreshPrimaryLists,
           ),
           ChildRewardsTab(
             childBalance: data.child.starBalance,
@@ -464,6 +511,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onListenToReward: _listenToReward,
             onListenToRewardDetails: _listenToRewardDetails,
             canListenToReward: canUseReadAloud,
+            onRefresh: _refreshPrimaryLists,
           ),
           _ChildBalancePage(data: data),
         ];

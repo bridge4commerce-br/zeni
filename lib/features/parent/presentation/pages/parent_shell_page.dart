@@ -43,6 +43,7 @@ import '../../../rewards/presentation/providers/remote_reward_requests_providers
 import '../../../rewards/presentation/widgets/reward_detail_form.dart';
 import '../../../settings/data/models/app_settings.dart';
 import '../../../sync/data/models/historical_restore_result.dart';
+import '../../../sync/domain/pending_sync_notification.dart';
 import '../../../sync/presentation/providers/cloud_consistency_providers.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
 import '../../../sync/presentation/providers/device_bootstrap_providers.dart';
@@ -931,6 +932,65 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     context.go('/');
   }
 
+  Future<void> _refreshPrimaryLists() async {
+    final authState = ref.read(authStateProvider);
+    if (authState.isAuthenticated) {
+      final result = await _syncCloudDataAndNotifyIfNeeded();
+      if (!mounted || result.isSuccess || result.message == null) {
+        return;
+      }
+
+      await ZeniInfoPopup.show(
+        context,
+        title: 'Sincronização',
+        message: result.message!,
+      );
+      return;
+    }
+
+    ref.invalidate(zeniAppStateControllerProvider);
+    await ref.read(zeniAppStateControllerProvider.future);
+  }
+
+  Future<ZeniCloudSyncResult> _syncCloudDataAndNotifyIfNeeded() async {
+    final beforeState = await ref.read(zeniAppStateControllerProvider.future);
+    final result = await ref
+        .read(zeniCloudSyncControllerProvider)
+        .syncNowManually();
+    if (!result.isSuccess || !mounted) {
+      return result;
+    }
+
+    final afterState = await ref.read(zeniAppStateControllerProvider.future);
+    await _showNewPendingNoticesIfNeeded(
+      beforeState: beforeState,
+      afterState: afterState,
+    );
+    return result;
+  }
+
+  Future<void> _showNewPendingNoticesIfNeeded({
+    required ZeniAppState beforeState,
+    required ZeniAppState afterState,
+  }) async {
+    if (!afterState.appSettings.notificationsEnabled) {
+      return;
+    }
+
+    final plan = buildPendingSyncNotificationPlan(
+      previousState: beforeState,
+      currentState: afterState,
+    );
+    for (final notice in plan.notices) {
+      if (!mounted) return;
+      await ZeniInfoPopup.show(
+        context,
+        title: notice.title,
+        message: notice.message,
+      );
+    }
+  }
+
   Future<void> _openManageAccountAndDataSheet() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -1048,6 +1108,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onRejectMission: _rejectMission,
             onApproveRewardRequest: _approveRewardRequest,
             onRejectRewardRequest: _rejectRewardRequest,
+            onRefresh: _refreshPrimaryLists,
           ),
           ParentMissionsTab(
             activeChildren: data.activeChildren,
@@ -1063,6 +1124,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onEditMission: _openEditMissionSheet,
             onArchiveMission: _archiveMission,
             onRestoreMission: _restoreMission,
+            onRefresh: _refreshPrimaryLists,
           ),
           ParentRewardsTab(
             activeChildren: data.activeChildren,
@@ -1078,6 +1140,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onEditReward: _openEditRewardSheet,
             onArchiveReward: _archiveReward,
             onRestoreReward: _restoreReward,
+            onRefresh: _refreshPrimaryLists,
           ),
           ParentFamilyTab(
             family: data.family,
@@ -1162,9 +1225,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                   .updateRemoteFamilyName(familyId: familyId, name: name);
             },
             onSyncCloudData: () {
-              return ref
-                  .read(zeniCloudSyncControllerProvider)
-                  .syncCloudDataNow();
+              return _syncCloudDataAndNotifyIfNeeded();
             },
             onDeviceBootstrap: () {
               return ref
@@ -1305,6 +1366,7 @@ class _ParentDashboardPage extends StatelessWidget {
     required this.onRejectMission,
     required this.onApproveRewardRequest,
     required this.onRejectRewardRequest,
+    required this.onRefresh,
   });
 
   final _ParentModeData data;
@@ -1316,97 +1378,102 @@ class _ParentDashboardPage extends StatelessWidget {
   final Future<void> Function(MissionLog log) onRejectMission;
   final Future<void> Function(RewardRequest request) onApproveRewardRequest;
   final Future<void> Function(RewardRequest request) onRejectRewardRequest;
+  final Future<void> Function() onRefresh;
   static const MonthlyStarProjectionCalculator _projectionCalculator =
       MonthlyStarProjectionCalculator();
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Painel do responsável',
-            style: Theme.of(context).textTheme.displayLarge,
-          ),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Acompanhe missões, aprovações, mimos e evolução da família.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          if (data.pendingCount > 0) ...[
-            const SizedBox(height: ZeniSpacing.xl),
-            _PendingTodaySection(
-              data: data,
-              onApproveMission: onApproveMission,
-              onRejectMission: onRejectMission,
-              onApproveRewardRequest: onApproveRewardRequest,
-              onRejectRewardRequest: onRejectRewardRequest,
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(ZeniSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Painel do responsável',
+              style: Theme.of(context).textTheme.displayLarge,
             ),
-          ],
-          const SizedBox(height: ZeniSpacing.xl),
-          Row(
-            children: [
-              Expanded(
-                child: ParentMetricCard(
-                  emoji: '👧',
-                  value: '${data.activeChildren.length}',
-                  label: 'crianças',
-                  onTap: onOpenFamily,
-                ),
-              ),
-              const SizedBox(width: ZeniSpacing.md),
-              Expanded(
-                child: ParentMetricCard(
-                  emoji: '⏳',
-                  value: '${data.awaitingLogs.length}',
-                  label: 'aprovações',
-                  onTap: onOpenMissionApprovals,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ZeniSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: ParentMetricCard(
-                  emoji: '✅',
-                  value: '${data.activeMissions.length}',
-                  label: 'missões ativas',
-                  onTap: onOpenMissions,
-                ),
-              ),
-              const SizedBox(width: ZeniSpacing.md),
-              Expanded(
-                child: ParentMetricCard(
-                  emoji: '🎁',
-                  value: '${data.pendingRequests.length}',
-                  label: 'mimos pedidos',
-                  onTap: onOpenRewardRequests,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          Text('Crianças', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: ZeniSpacing.md),
-          for (final child in data.activeChildren) ...[
-            ParentChildSummaryCard(child: child, onTap: onOpenFamily),
             const SizedBox(height: ZeniSpacing.sm),
-            MonthlyStarProjectionCard(
-              child: child,
-              projection: _projectionCalculator.calculateForChild(
-                child: child,
-                activeMissions: data.activeMissions,
+            Text(
+              'Acompanhe missões, aprovações, mimos e evolução da família.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+            ),
+            if (data.pendingCount > 0) ...[
+              const SizedBox(height: ZeniSpacing.xl),
+              _PendingTodaySection(
+                data: data,
+                onApproveMission: onApproveMission,
+                onRejectMission: onRejectMission,
+                onApproveRewardRequest: onApproveRewardRequest,
+                onRejectRewardRequest: onRejectRewardRequest,
               ),
+            ],
+            const SizedBox(height: ZeniSpacing.xl),
+            Row(
+              children: [
+                Expanded(
+                  child: ParentMetricCard(
+                    emoji: '👧',
+                    value: '${data.activeChildren.length}',
+                    label: 'crianças',
+                    onTap: onOpenFamily,
+                  ),
+                ),
+                const SizedBox(width: ZeniSpacing.md),
+                Expanded(
+                  child: ParentMetricCard(
+                    emoji: '⏳',
+                    value: '${data.awaitingLogs.length}',
+                    label: 'aprovações',
+                    onTap: onOpenMissionApprovals,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: ZeniSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: ParentMetricCard(
+                    emoji: '✅',
+                    value: '${data.activeMissions.length}',
+                    label: 'missões ativas',
+                    onTap: onOpenMissions,
+                  ),
+                ),
+                const SizedBox(width: ZeniSpacing.md),
+                Expanded(
+                  child: ParentMetricCard(
+                    emoji: '🎁',
+                    value: '${data.pendingRequests.length}',
+                    label: 'mimos pedidos',
+                    onTap: onOpenRewardRequests,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: ZeniSpacing.xl),
+            Text('Crianças', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: ZeniSpacing.md),
+            for (final child in data.activeChildren) ...[
+              ParentChildSummaryCard(child: child, onTap: onOpenFamily),
+              const SizedBox(height: ZeniSpacing.sm),
+              MonthlyStarProjectionCard(
+                child: child,
+                projection: _projectionCalculator.calculateForChild(
+                  child: child,
+                  activeMissions: data.activeMissions,
+                ),
+              ),
+              const SizedBox(height: ZeniSpacing.md),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1687,9 +1754,7 @@ class _ClearLocalDeviceDataSheetState
 }
 
 class _ManageAccountAndDataSheet extends StatelessWidget {
-  const _ManageAccountAndDataSheet({
-    required this.onClearLocalDeviceData,
-  });
+  const _ManageAccountAndDataSheet({required this.onClearLocalDeviceData});
 
   final Future<void> Function() onClearLocalDeviceData;
 

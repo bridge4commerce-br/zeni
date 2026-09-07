@@ -961,6 +961,285 @@ void main() {
     },
   );
 
+  testWidgets(
+    'clean device restore shows restored child once and opens correct child missions and rewards',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await enableSupabaseForTests();
+      addTearDown(ZeniSupabaseBootstrap.resetForTests);
+
+      final fakeAuthRepository = _FakeZeniAuthRepository();
+      final fakeAccountRepository = _FakeZeniAccountRepository(
+        summary: const RemoteFamilySummary(
+          familyId: 'remote-family',
+          familyName: 'Família Remota',
+          role: 'owner',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+          accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              children: const [
+                RemoteChildSummary(
+                  id: 'remote-child-pedro',
+                  familyId: 'remote-family',
+                  localId: 'local-child-pedro',
+                  name: 'Pedro',
+                  avatarKey: '🦁',
+                ),
+                RemoteChildSummary(
+                  id: 'remote-child-luna',
+                  familyId: 'remote-family',
+                  localId: 'local-child-luna',
+                  name: 'Luna',
+                  avatarKey: '🦊',
+                ),
+              ],
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              missions: const [
+                RemoteMissionSummary(
+                  id: 'remote-mission-pedro',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-pedro',
+                  localId: 'local-mission-pedro',
+                  title: 'Escovar os dentes',
+                  stars: 8,
+                  requiresApproval: false,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+                RemoteMissionSummary(
+                  id: 'remote-mission-luna',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-luna',
+                  localId: 'local-mission-luna',
+                  title: 'Guardar os brinquedos',
+                  stars: 6,
+                  requiresApproval: true,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ],
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(
+              rewards: const [
+                RemoteRewardSummary(
+                  id: 'remote-reward-pedro',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-pedro',
+                  localId: 'local-reward-pedro',
+                  title: 'Escolher a sobremesa',
+                  cost: 20,
+                  imageKey: '🍨',
+                  isActive: true,
+                ),
+                RemoteRewardSummary(
+                  id: 'remote-reward-luna',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-luna',
+                  localId: 'local-reward-luna',
+                  title: 'Cinema em casa',
+                  cost: 25,
+                  imageKey: '🎬',
+                  isActive: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await fakeAuthRepository.dispose();
+        container.dispose();
+      });
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
+
+      await completeInstitutionalOnboarding(tester);
+      await tester.tap(find.text('Já tenho conta'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('auth-email-input')),
+        'responsavel@zeni.app',
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth-password-input')),
+        '123456',
+      );
+      await tester.ensureVisible(find.text('Entrar').last);
+      await tester.tap(find.text('Entrar').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Restaurar minha família'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pedro'), findsOneWidget);
+      expect(find.text('Luna'), findsOneWidget);
+
+      final restoredState = container
+          .read(zeniAppStateControllerProvider)
+          .asData!
+          .value;
+      expect(
+        restoredState.children.map((child) => child.id).toSet(),
+        {'local-child-pedro', 'local-child-luna'},
+      );
+      expect(
+        restoredState.missions
+            .where((mission) => mission.childId == 'local-child-pedro')
+            .map((mission) => mission.title),
+        ['Escovar os dentes'],
+      );
+      expect(
+        restoredState.rewards
+            .where((reward) => reward.childId == 'local-child-pedro')
+            .map((reward) => reward.title),
+        ['Escolher a sobremesa'],
+      );
+
+      await tester.tap(find.text('Pedro'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Olá, Pedro!'), findsOneWidget);
+      await tester.tap(find.text('Missões'));
+      await tester.pumpAndSettle();
+      expect(find.text('Escovar os dentes'), findsOneWidget);
+      expect(find.text('Guardar os brinquedos'), findsNothing);
+
+      await tester.tap(find.text('Mimos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Escolher a sobremesa'), findsOneWidget);
+      expect(find.text('Cinema em casa'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'clean device restore lets responsible see restored children missions and rewards',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await enableSupabaseForTests();
+      addTearDown(ZeniSupabaseBootstrap.resetForTests);
+
+      final fakeAuthRepository = _FakeZeniAuthRepository();
+      final fakeAccountRepository = _FakeZeniAccountRepository(
+        summary: const RemoteFamilySummary(
+          familyId: 'remote-family',
+          familyName: 'Família Remota',
+          role: 'owner',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuthRepository),
+          accountRepositoryProvider.overrideWithValue(fakeAccountRepository),
+          remoteChildrenRepositoryProvider.overrideWithValue(
+            _FakeRemoteChildrenRepository(
+              children: const [
+                RemoteChildSummary(
+                  id: 'remote-child-pedro',
+                  familyId: 'remote-family',
+                  localId: 'local-child-pedro',
+                  name: 'Pedro',
+                  avatarKey: '🦁',
+                ),
+              ],
+            ),
+          ),
+          remoteMissionsRepositoryProvider.overrideWithValue(
+            _FakeRemoteMissionsRepository(
+              missions: const [
+                RemoteMissionSummary(
+                  id: 'remote-mission-pedro',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-pedro',
+                  localId: 'local-mission-pedro',
+                  title: 'Escovar os dentes',
+                  stars: 8,
+                  requiresApproval: false,
+                  recurrenceType: 'daily',
+                  recurrenceDays: <int>[],
+                  isActive: true,
+                ),
+              ],
+            ),
+          ),
+          remoteRewardsRepositoryProvider.overrideWithValue(
+            _FakeRemoteRewardsRepository(
+              rewards: const [
+                RemoteRewardSummary(
+                  id: 'remote-reward-pedro',
+                  familyId: 'remote-family',
+                  childId: 'remote-child-pedro',
+                  localId: 'local-reward-pedro',
+                  title: 'Escolher a sobremesa',
+                  cost: 20,
+                  imageKey: '🍨',
+                  isActive: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await fakeAuthRepository.dispose();
+        container.dispose();
+      });
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const ZeniApp()),
+      );
+      await tester.pumpAndSettle();
+
+      await completeInstitutionalOnboarding(tester);
+      await tester.tap(find.text('Já tenho conta'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('auth-email-input')),
+        'responsavel@zeni.app',
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth-password-input')),
+        '123456',
+      );
+      await tester.ensureVisible(find.text('Entrar').last);
+      await tester.tap(find.text('Entrar').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Restaurar minha família'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Entrar como responsável'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Painel do responsável'), findsOneWidget);
+      expect(find.text('Pedro'), findsOneWidget);
+
+      await tester.tap(find.text('Missões'));
+      await tester.pumpAndSettle();
+      expect(find.text('Escovar os dentes'), findsOneWidget);
+
+      await tester.tap(find.text('Mimos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Escolher a sobremesa'), findsOneWidget);
+
+      await tester.tap(find.text('Família'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pedro'), findsOneWidget);
+    },
+  );
+
   testWidgets('tapping child opens child mode shell', (tester) async {
     seedMockAppState();
 

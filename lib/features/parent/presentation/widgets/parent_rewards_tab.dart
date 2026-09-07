@@ -29,6 +29,7 @@ class ParentRewardsTab extends StatefulWidget {
     required this.onEditReward,
     required this.onArchiveReward,
     required this.onRestoreReward,
+    this.onRefresh,
   });
 
   final List<ChildProfile> activeChildren;
@@ -44,6 +45,7 @@ class ParentRewardsTab extends StatefulWidget {
   final ValueChanged<Reward> onEditReward;
   final ValueChanged<Reward> onArchiveReward;
   final ValueChanged<Reward> onRestoreReward;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<ParentRewardsTab> createState() => _ParentRewardsTabState();
@@ -75,7 +77,10 @@ class _ParentRewardsTabState extends State<ParentRewardsTab> {
     final rewards = _filteredActiveRewards();
     final archivedRewards = _filteredArchivedRewards();
 
-    return SingleChildScrollView(
+    final content = SingleChildScrollView(
+      physics: widget.onRefresh == null
+          ? null
+          : const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(ZeniSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,6 +245,12 @@ class _ParentRewardsTabState extends State<ParentRewardsTab> {
         ],
       ),
     );
+
+    if (widget.onRefresh == null) {
+      return content;
+    }
+
+    return RefreshIndicator(onRefresh: widget.onRefresh!, child: content);
   }
 
   List<RewardRequest> _filteredPendingRequests() {

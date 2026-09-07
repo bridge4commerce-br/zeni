@@ -404,6 +404,59 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     return const DeviceBootstrapApplyResult.success();
   }
 
+  Future<void> applyRemoteCatalogSnapshot(
+    DeviceBootstrapPayload payload,
+  ) async {
+    final current = _requireState();
+    final parentMembers = current.familyMembers
+        .where((member) => member.role == ZeniUserRole.parent)
+        .toList();
+    final normalizedParentMembers = parentMembers.isEmpty
+        ? <FamilyMember>[
+            FamilyMember(
+              id: 'local-parent',
+              familyId: current.family.id,
+              name: 'Responsável',
+              role: ZeniUserRole.parent,
+              isOwner: true,
+              createdAt: payload.family.createdAt,
+            ),
+          ]
+        : [
+            for (final member in parentMembers)
+              member.copyWith(
+                familyId: current.family.id,
+                childProfileId: null,
+                isOwner: true,
+              ),
+          ];
+
+    final childMembers = [
+      for (final child in payload.children)
+        FamilyMember(
+          id: 'member-${child.id}',
+          familyId: current.family.id,
+          name: child.name,
+          role: ZeniUserRole.child,
+          childProfileId: child.id,
+          isOwner: false,
+          createdAt: child.createdAt,
+        ),
+    ];
+
+    final updated = current.copyWith(
+      family: current.family.copyWith(name: payload.family.name),
+      children: payload.children,
+      familyMembers: [...normalizedParentMembers, ...childMembers],
+      missions: payload.missions,
+      rewards: payload.rewards,
+      appSettings: _normalizeAppSettings(
+        current.appSettings.copyWith(hasCompletedOnboarding: true),
+      ),
+    );
+    await _save(updated);
+  }
+
   Future<ChildProfile> completeInitialOnboardingSetup({
     required String childName,
     required String childEmoji,
