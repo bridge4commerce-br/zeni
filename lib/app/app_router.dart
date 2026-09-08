@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/child/presentation/pages/child_shell_page.dart';
 import '../features/onboarding/presentation/pages/app_entry_page.dart';
+import '../features/onboarding/presentation/pages/family_account_page.dart';
 import '../features/onboarding/presentation/pages/initial_family_setup_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_flow_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_preview_page.dart';
@@ -15,6 +16,10 @@ GoRouter createZeniRouter() {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingFlowPage(),
+      ),
+      GoRoute(
+        path: '/family-account',
+        builder: (context, state) => const FamilyAccountPage(),
       ),
       GoRoute(
         path: '/initial-setup',

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
+import '../../../../core/theme/zeni_radius.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/widgets/base/zeni_brand_logo.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
@@ -12,7 +14,6 @@ import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
-import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
 import '../../../sync/presentation/providers/first_access_restore_providers.dart';
 
@@ -24,99 +25,128 @@ class InitialStartChoicePage extends ConsumerStatefulWidget {
       _InitialStartChoicePageState();
 }
 
-class _InitialStartChoicePageState
-    extends ConsumerState<InitialStartChoicePage> {
+class _InitialStartChoicePageState extends ConsumerState<InitialStartChoicePage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
   bool _isReadyToRestore = false;
   bool _isRestoring = false;
   String? _restoreMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _entranceController.value = 1;
+    } else if (!_entranceController.isCompleted &&
+        !_entranceController.isAnimating) {
+      _entranceController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final progress = disableAnimations ? 1.0 : _entranceController.value;
 
     return ZeniScaffold(
-      appBar: const ZeniTopBar(
-        title: 'Zeni',
-        subtitle: 'Escolha como deseja começar',
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(ZeniSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Como você quer começar?', style: textTheme.displayLarge),
-            const SizedBox(height: ZeniSpacing.sm),
-            Text(
-              _isReadyToRestore
-                  ? 'Sua conta já foi conectada. Agora vamos preparar este aparelho com segurança.'
-                  : 'Você pode montar uma nova família agora ou entrar na sua conta para restaurar o que já estava salvo.',
-              style: textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            if (!_isReadyToRestore) ...[
-              _ChoiceCard(
-                title: 'Começar nova família',
-                subtitle:
-                    'Cadastre uma criança, crie missões e escolha os primeiros mimos.',
-                icon: Icons.family_restroom_rounded,
-                onTap: () {
-                  context.go('/initial-setup');
-                },
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              _ChoiceCard(
-                title: 'Já tenho conta',
-                subtitle:
-                    'Use sua conta para recuperar uma família já sincronizada neste aparelho.',
-                icon: Icons.cloud_sync_rounded,
-                onTap: _startRemoteRestore,
-              ),
-            ] else ...[
-              const _ConnectedAccountCard(),
-              if (_restoreMessage != null) ...[
-                const SizedBox(height: ZeniSpacing.lg),
-                ZeniCard(
-                  padding: const EdgeInsets.all(ZeniSpacing.md),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        _isRestoring
-                            ? Icons.sync_rounded
-                            : Icons.info_outline_rounded,
-                        color: ZeniColors.primaryDark,
-                      ),
-                      const SizedBox(width: ZeniSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          _restoreMessage!,
-                          style: textTheme.bodyMedium,
+      child: AnimatedBuilder(
+        animation: _entranceController,
+        builder: (context, _) => SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            ZeniSpacing.xl,
+            ZeniSpacing.lg,
+            ZeniSpacing.xl,
+            ZeniSpacing.xl,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: _isReadyToRestore
+                  ? _RestoreChoiceContent(
+                      isRestoring: _isRestoring,
+                      restoreMessage: _restoreMessage,
+                      onRestore: _isRestoring ? null : _runRemoteRestore,
+                      onStartNewFamily: _isRestoring
+                          ? null
+                          : () => context.go('/initial-setup'),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const ZeniBrandLogo(width: 76),
+                        const SizedBox(height: ZeniSpacing.xl),
+                        Text(
+                          'Como você quer começar?',
+                          style: textTheme.displayLarge,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniPrimaryButton(
-                label: _isRestoring
-                    ? 'Restaurando...'
-                    : 'Restaurar minha família',
-                icon: Icons.cloud_download_rounded,
-                onPressed: _isRestoring ? null : _runRemoteRestore,
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
-                label: 'Começar nova família neste aparelho',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: _isRestoring
-                    ? null
-                    : () {
-                        context.go('/initial-setup');
-                      },
-              ),
-            ],
-          ],
+                        const SizedBox(height: ZeniSpacing.sm),
+                        Text(
+                          'Escolha uma opção para continuar.',
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.68),
+                          ),
+                        ),
+                        const SizedBox(height: ZeniSpacing.xl),
+                        _EntranceCard(
+                          progress: progress,
+                          begin: 0,
+                          child: _StartOptionCard(
+                            key: const Key('start-path-new-family'),
+                            title: 'Criar uma nova família',
+                            description: 'Configure sua família e comece.',
+                            icon: Icons.family_restroom_rounded,
+                            tone: _StartOptionTone.primary,
+                            onTap: () => context.push('/family-account'),
+                          ),
+                        ),
+                        const SizedBox(height: ZeniSpacing.sm),
+                        _EntranceCard(
+                          progress: progress,
+                          begin: 0.16,
+                          child: _StartOptionCard(
+                            key: const Key('start-path-existing-family'),
+                            title: 'Já tenho uma família',
+                            description: 'Entre para recuperar seus dados.',
+                            icon: Icons.cloud_sync_rounded,
+                            tone: _StartOptionTone.secondary,
+                            onTap: _startRemoteRestore,
+                          ),
+                        ),
+                        const SizedBox(height: ZeniSpacing.sm),
+                        _EntranceCard(
+                          progress: progress,
+                          begin: 0.32,
+                          child: const _StartOptionCard(
+                            key: Key('start-path-child'),
+                            title: 'Sou criança',
+                            description: 'Entre com acesso do responsável.',
+                            icon: Icons.auto_awesome_rounded,
+                            tone: _StartOptionTone.child,
+                            available: false,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
         ),
       ),
     );
@@ -134,21 +164,18 @@ class _InitialStartChoicePageState
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: AuthAccountSheet(
-            isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
-            bootstrapState: ZeniSupabaseBootstrap.state,
-          ),
-        );
-      },
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: AuthAccountSheet(
+          isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+          bootstrapState: ZeniSupabaseBootstrap.state,
+        ),
+      ),
     );
 
     if (!mounted || didAuthenticate != true) return;
-
     setState(() {
       _isReadyToRestore = true;
       _isRestoring = false;
@@ -161,57 +188,116 @@ class _InitialStartChoicePageState
       _isRestoring = true;
       _restoreMessage = 'Restaurando...';
     });
-
     final result = await ref
         .read(firstAccessRestoreControllerProvider)
         .restoreFamilyOnEmptyDevice();
     if (!mounted) return;
-
     setState(() {
       _isRestoring = false;
       _restoreMessage = result.message;
     });
-
     if (result.status == FirstAccessRestoreResultStatus.success) {
       await ZeniSuccessPopup.show(
         context,
         title: 'Família restaurada',
         message: result.message,
       );
-      return;
-    }
-
-    if (result.status == FirstAccessRestoreResultStatus.partialSuccess) {
+    } else if (result.status == FirstAccessRestoreResultStatus.partialSuccess) {
       await ZeniInfoPopup.show(
         context,
         title: 'Família restaurada',
         message: result.message,
       );
-      return;
+    } else {
+      await ZeniErrorPopup.show(
+        context,
+        title: 'Não foi possível restaurar agora',
+        message: result.message,
+      );
     }
+  }
+}
 
-    await ZeniErrorPopup.show(
-      context,
-      title: 'Não foi possível restaurar agora',
-      message: result.message,
+class _RestoreChoiceContent extends StatelessWidget {
+  const _RestoreChoiceContent({
+    required this.isRestoring,
+    required this.restoreMessage,
+    required this.onRestore,
+    required this.onStartNewFamily,
+  });
+  final bool isRestoring;
+  final String? restoreMessage;
+  final VoidCallback? onRestore;
+  final VoidCallback? onStartNewFamily;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ZeniBrandLogo(width: 86),
+        const SizedBox(height: ZeniSpacing.xxxl),
+        Text('Sua família está por aqui', style: textTheme.displayLarge),
+        const SizedBox(height: ZeniSpacing.sm),
+        Text(
+          'Sua conta já foi conectada. Agora vamos preparar este aparelho com segurança.',
+          style: textTheme.bodyLarge?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.68),
+          ),
+        ),
+        const SizedBox(height: ZeniSpacing.xxl),
+        const _ConnectedAccountCard(),
+        if (restoreMessage != null) ...[
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniCard(
+            padding: const EdgeInsets.all(ZeniSpacing.md),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isRestoring ? Icons.sync_rounded : Icons.info_outline_rounded,
+                  color: ZeniColors.primaryDark,
+                ),
+                const SizedBox(width: ZeniSpacing.sm),
+                Expanded(
+                  child: Text(restoreMessage!, style: textTheme.bodyMedium),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: ZeniSpacing.lg),
+        ZeniPrimaryButton(
+          label: isRestoring ? 'Restaurando...' : 'Restaurar minha família',
+          icon: Icons.cloud_download_rounded,
+          onPressed: onRestore,
+        ),
+        const SizedBox(height: ZeniSpacing.md),
+        ZeniSecondaryButton(
+          label: 'Começar nova família neste aparelho',
+          icon: Icons.arrow_forward_rounded,
+          onPressed: onStartNewFamily,
+        ),
+      ],
     );
   }
 }
 
 class _ConnectedAccountCard extends StatelessWidget {
   const _ConnectedAccountCard();
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
     return ZeniCard(
-      padding: const EdgeInsets.all(ZeniSpacing.md),
+      padding: const EdgeInsets.all(ZeniSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.cloud_done_rounded, color: ZeniColors.primaryDark),
-          const SizedBox(width: ZeniSpacing.sm),
+          const SizedBox(width: ZeniSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,55 +317,169 @@ class _ConnectedAccountCard extends StatelessWidget {
   }
 }
 
-class _ChoiceCard extends StatelessWidget {
-  const _ChoiceCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
+enum _StartOptionTone { primary, secondary, child }
 
+class _StartOptionCard extends StatelessWidget {
+  const _StartOptionCard({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.tone,
+    this.onTap,
+    this.available = true,
+  });
   final String title;
-  final String subtitle;
+  final String description;
   final IconData icon;
-  final VoidCallback onTap;
+  final _StartOptionTone tone;
+  final VoidCallback? onTap;
+  final bool available;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
+    final palette = _StartOptionPalette.of(context, tone);
     return ZeniCard(
+      padding: EdgeInsets.zero,
       onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0x1A16A34A),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: ZeniColors.primaryDark),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 124),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: palette.background,
+            borderRadius: ZeniRadius.card,
           ),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(ZeniSpacing.lg),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: textTheme.titleLarge),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  subtitle,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: ZeniColors.mutedText,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: palette.iconBackground,
+                          borderRadius: BorderRadius.circular(ZeniRadius.md),
+                        ),
+                        child: Icon(icon, color: palette.iconColor),
+                      ),
+                      const SizedBox(height: ZeniSpacing.md),
+                      Text(title, style: textTheme.titleLarge),
+                      const SizedBox(height: ZeniSpacing.xs),
+                      Text(
+                        description,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: ZeniSpacing.sm),
+                SizedBox(
+                  width: 68,
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: available
+                        ? Icon(
+                            Icons.arrow_forward_rounded,
+                            color: palette.iconColor,
+                          )
+                        : _UnavailableBadge(color: palette.iconColor),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: ZeniSpacing.sm),
-          const Icon(Icons.chevron_right_rounded, color: ZeniColors.primary),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UnavailableBadge extends StatelessWidget {
+  const _UnavailableBadge({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: ZeniSpacing.sm,
+      vertical: ZeniSpacing.xs,
+    ),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(ZeniRadius.pill),
+    ),
+    child: Text(
+      'Em breve',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: color,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  );
+}
+
+class _StartOptionPalette {
+  const _StartOptionPalette({
+    required this.background,
+    required this.iconBackground,
+    required this.iconColor,
+  });
+  final Color background;
+  final Color iconBackground;
+  final Color iconColor;
+  factory _StartOptionPalette.of(BuildContext context, _StartOptionTone tone) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return switch (tone) {
+      _StartOptionTone.primary => _StartOptionPalette(
+        background: ZeniColors.primary.withValues(alpha: dark ? 0.2 : 0.12),
+        iconBackground: ZeniColors.primary.withValues(
+          alpha: dark ? 0.28 : 0.18,
+        ),
+        iconColor: dark ? ZeniColors.primaryLight : ZeniColors.primaryDark,
+      ),
+      _StartOptionTone.secondary => _StartOptionPalette(
+        background: Theme.of(context).colorScheme.surface,
+        iconBackground: ZeniColors.sky.withValues(alpha: dark ? 0.22 : 0.14),
+        iconColor: dark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+      ),
+      _StartOptionTone.child => _StartOptionPalette(
+        background: ZeniColors.purple.withValues(alpha: dark ? 0.18 : 0.1),
+        iconBackground: ZeniColors.purple.withValues(alpha: dark ? 0.28 : 0.16),
+        iconColor: dark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED),
+      ),
+    };
+  }
+}
+
+class _EntranceCard extends StatelessWidget {
+  const _EntranceCard({
+    required this.progress,
+    required this.begin,
+    required this.child,
+  });
+  final double progress;
+  final double begin;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    final localProgress = ((progress - begin) / (1 - begin)).clamp(0.0, 1.0);
+    final curvedProgress = Curves.easeOutCubic.transform(localProgress);
+    return Opacity(
+      opacity: curvedProgress,
+      child: Transform.translate(
+        offset: Offset(0, 16 * (1 - curvedProgress)),
+        child: child,
       ),
     );
   }

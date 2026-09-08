@@ -11,6 +11,7 @@ import 'package:zeni/core/domain/zeni_enums.dart';
 import 'package:zeni/core/state/zeni_app_state.dart';
 import 'package:zeni/core/state/zeni_app_state_controller.dart';
 import 'package:zeni/core/supabase/zeni_supabase.dart';
+import 'package:zeni/core/theme/zeni_theme.dart';
 import 'package:zeni/core/widgets/inputs/zeni_switch.dart';
 import 'package:zeni/core/widgets/base/zeni_brand_logo.dart';
 import 'package:zeni/core/widgets/zeni_mascot.dart';
@@ -24,6 +25,8 @@ import 'package:zeni/core/widgets/zeni_flying_star_overlay.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
 import 'package:zeni/features/family/data/repositories/remote_children_repository.dart';
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
+import 'package:zeni/features/onboarding/presentation/pages/initial_start_choice_page.dart';
+import 'package:zeni/features/onboarding/presentation/pages/family_account_page.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
 import 'package:zeni/features/rewards/data/models/reward.dart';
 import 'package:zeni/features/rewards/data/models/reward_request.dart';
@@ -217,11 +220,17 @@ void main() {
 
   Future<void> openNewFamilySetup(WidgetTester tester) async {
     await tester.scrollUntilVisible(
-      find.text('Começar nova família').first,
+      find.text('Criar uma nova família').first,
       300,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Começar nova família').first);
+    await tester.tap(find.text('Criar uma nova família').first);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('family-account-local-only')),
+      300,
+    );
+    await tester.tap(find.byKey(const Key('family-account-local-only')));
     await tester.pumpAndSettle();
   }
 
@@ -486,8 +495,43 @@ void main() {
       await completeInstitutionalOnboarding(tester);
 
       expect(find.text('Como você quer começar?'), findsOneWidget);
-      expect(find.text('Começar nova família'), findsWidgets);
-      expect(find.text('Já tenho conta'), findsOneWidget);
+      expect(find.text('Criar uma nova família'), findsOneWidget);
+      expect(find.text('Já tenho uma família'), findsOneWidget);
+      expect(find.text('Sou criança'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'initial start choice supports dark reduced motion on a narrow screen',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: ZeniTheme.dark,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: const TextScaler.linear(1.25),
+              ),
+              child: child!,
+            ),
+            home: const InitialStartChoicePage(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Como você quer começar?'), findsOneWidget);
+      expect(find.byKey(const Key('start-path-new-family')), findsOneWidget);
+      expect(
+        find.byKey(const Key('start-path-existing-family')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('start-path-child')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -504,6 +548,76 @@ void main() {
 
     expect(find.text('Primeira criança'), findsWidgets);
     expect(find.text('Nome da criança'), findsOneWidget);
+  });
+
+  testWidgets('family account step returns to choice and keeps local setup', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    await completeInstitutionalOnboarding(tester);
+    await tester.tap(find.text('Criar uma nova família'));
+    await tester.pumpAndSettle();
+    expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Criar conta grátis'), 300);
+    await tester.tap(find.text('Criar conta grátis'));
+    await tester.pumpAndSettle();
+    expect(find.text('Continuar com Google'), findsOneWidget);
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Já tenho conta'), 300);
+    await tester.tap(find.text('Já tenho conta'));
+    await tester.pumpAndSettle();
+    expect(find.text('Continuar com e-mail'), findsOneWidget);
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('family-account-back')),
+      -300,
+    );
+    await tester.tap(find.byKey(const Key('family-account-back')));
+    await tester.pumpAndSettle();
+    expect(find.text('Como você quer começar?'), findsOneWidget);
+
+    await tester.tap(find.text('Criar uma nova família'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('family-account-local-only')),
+      300,
+    );
+    await tester.tap(find.byKey(const Key('family-account-local-only')));
+    await tester.pumpAndSettle();
+    expect(find.text('Primeira criança'), findsWidgets);
+  });
+
+  testWidgets('family account page mounts in dark mode with larger text', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: ZeniTheme.dark,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.25)),
+            child: child!,
+          ),
+          home: const FamilyAccountPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('skipping PIN advances the family setup to the mission step', (
@@ -746,7 +860,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho conta'));
+      await tester.tap(find.text('Já tenho uma família'));
       await tester.pumpAndSettle();
 
       final state = container
@@ -844,11 +958,13 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho conta'));
+      await tester.tap(find.text('Já tenho uma família'));
       await tester.pumpAndSettle();
 
       expect(find.text('Conta da família'), findsOneWidget);
 
+      await tester.tap(find.byKey(const Key('auth-email-button')));
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('auth-email-input')),
         'responsavel@zeni.app',
@@ -870,7 +986,7 @@ void main() {
       );
       expect(find.text('Restaurar minha família'), findsOneWidget);
       expect(find.text('Começar nova família neste aparelho'), findsOneWidget);
-      expect(find.text('Já tenho conta'), findsNothing);
+      expect(find.text('Já tenho uma família'), findsNothing);
       expect(
         find.text('Restaurar dados da nuvem neste aparelho'),
         findsNothing,
@@ -943,9 +1059,11 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho conta'));
+      await tester.tap(find.text('Já tenho uma família'));
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byKey(const Key('auth-email-button')));
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('auth-email-input')),
         'responsavel@zeni.app',
@@ -1077,7 +1195,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho conta'));
+      await tester.tap(find.text('Já tenho uma família'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('auth-email-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('auth-email-input')),
@@ -1212,7 +1332,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho conta'));
+      await tester.tap(find.text('Já tenho uma família'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('auth-email-button')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('auth-email-input')),
