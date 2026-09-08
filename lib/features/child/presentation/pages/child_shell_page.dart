@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,11 +50,19 @@ class ChildShellPage extends ConsumerStatefulWidget {
 
 class _ChildShellPageState extends ConsumerState<ChildShellPage> {
   int _currentIndex = 0;
+  bool _isMascotCelebrating = false;
+  Timer? _mascotCelebrationTimer;
   final _balancePillKey = GlobalKey();
   final Map<String, GlobalKey> _missionAnchorKeys = <String, GlobalKey>{};
 
   ZeniAppState? get _currentAppState =>
       ref.read(zeniAppStateControllerProvider).asData?.value;
+
+  @override
+  void dispose() {
+    _mascotCelebrationTimer?.cancel();
+    super.dispose();
+  }
 
   bool _isSameDay(DateTime value, DateTime other) {
     return value.year == other.year &&
@@ -279,6 +289,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
 
     if (shouldAwardNow) {
       ref.read(zeniHapticsProvider).celebrate();
+      _showMascotCelebration();
       _animateEarnedStar(sourceKey);
       ZeniSuccessPopup.show(
         context,
@@ -293,6 +304,14 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         message: 'O responsável precisa aprovar para liberar as estrelas.',
       );
     }
+  }
+
+  void _showMascotCelebration() {
+    _mascotCelebrationTimer?.cancel();
+    setState(() => _isMascotCelebrating = true);
+    _mascotCelebrationTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _isMascotCelebrating = false);
+    });
   }
 
   void _animateEarnedStar(GlobalKey? sourceKey) {
@@ -483,6 +502,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onListenToMission: _listenToMission,
             onListenToMissionDetails: _listenToMissionDetails,
             canListenToMission: canUseReadAloud,
+            isCelebrating: _isMascotCelebrating,
             onOpenRewards: () {
               ref.read(zeniHapticsProvider).selection();
               setState(() {

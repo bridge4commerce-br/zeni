@@ -1258,8 +1258,8 @@ void main() {
     await tester.tap(find.text('Luna'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Olá, Luna!'), findsOneWidget);
-    expect(find.text('Seu dia hoje'), findsOneWidget);
+    expect(find.text('Oi, Luna! 👋'), findsOneWidget);
+    expect(find.text('Seu dia'), findsOneWidget);
     expect(find.text('Arrumar a cama'), findsOneWidget);
   });
 
