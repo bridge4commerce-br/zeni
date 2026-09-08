@@ -522,7 +522,10 @@ void main() {
       expect(resetState.appSettings.hasCompletedOnboarding, isFalse);
       expect(resetState.appSettings.hasParentPin, isFalse);
       expect(resetState.appSettings.parentBiometricsEnabled, isFalse);
-      expect(find.text('Bem-vindo ao Zeni'), findsOneWidget);
+      expect(
+        find.text('Pequenas atitudes. Grandes conquistas.'),
+        findsOneWidget,
+      );
     },
   );
 

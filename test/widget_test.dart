@@ -12,6 +12,8 @@ import 'package:zeni/core/state/zeni_app_state.dart';
 import 'package:zeni/core/state/zeni_app_state_controller.dart';
 import 'package:zeni/core/supabase/zeni_supabase.dart';
 import 'package:zeni/core/widgets/inputs/zeni_switch.dart';
+import 'package:zeni/core/widgets/base/zeni_brand_logo.dart';
+import 'package:zeni/core/widgets/zeni_mascot.dart';
 import 'package:zeni/features/auth/data/repositories/zeni_auth_repository.dart';
 import 'package:zeni/features/auth/data/repositories/zeni_account_repository.dart';
 import 'package:zeni/features/auth/local/parent_biometric_auth.dart';
@@ -207,9 +209,9 @@ void main() {
   }
 
   Future<void> completeInstitutionalOnboarding(WidgetTester tester) async {
-    await tester.scrollUntilVisible(find.text('Continuar'), 300);
+    await tester.scrollUntilVisible(find.text('Começar'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continuar'));
+    await tester.tap(find.text('Começar'));
     await tester.pumpAndSettle();
   }
 
@@ -432,8 +434,14 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bem-vindo ao Zeni'), findsOneWidget);
-    expect(find.text('Continuar'), findsOneWidget);
+    expect(find.text('Pequenas atitudes. Grandes conquistas.'), findsOneWidget);
+    expect(find.text('Começar'), findsOneWidget);
+    expect(find.text('Bem-vindo ao Zeni'), findsNothing);
+    expect(find.textContaining('Esta etapa apresenta o app'), findsNothing);
+    expect(find.byType(ZeniBrandLogo), findsOneWidget);
+    expect(find.byType(ZeniMascot), findsOneWidget);
+    expect(find.byKey(const Key('onboarding-star-left')), findsOneWidget);
+    expect(find.byKey(const Key('onboarding-star-right')), findsOneWidget);
     expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
   });
 
@@ -1092,10 +1100,10 @@ void main() {
           .read(zeniAppStateControllerProvider)
           .asData!
           .value;
-      expect(
-        restoredState.children.map((child) => child.id).toSet(),
-        {'local-child-pedro', 'local-child-luna'},
-      );
+      expect(restoredState.children.map((child) => child.id).toSet(), {
+        'local-child-pedro',
+        'local-child-luna',
+      });
       expect(
         restoredState.missions
             .where((mission) => mission.childId == 'local-child-pedro')
