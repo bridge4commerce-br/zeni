@@ -646,6 +646,22 @@ void main() {
     await tester.tap(find.byKey(const Key('family-account-back')));
     await tester.pumpAndSettle();
     expect(find.text('Como você quer começar?'), findsOneWidget);
+    for (final key in const [
+      Key('start-path-new-family'),
+      Key('start-path-existing-family'),
+      Key('start-path-child'),
+    ]) {
+      expect(find.byKey(key), findsOneWidget);
+      expect(tester.getRect(find.byKey(key)).height, greaterThan(0));
+    }
+    expect(
+      find.byKey(const Key('start-path-new-family')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('start-path-existing-family')).hitTestable(),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Criar uma nova família'));
     await tester.pumpAndSettle();
@@ -657,6 +673,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Quem vai usar o Zeni?'), findsOneWidget);
   });
+
+  testWidgets(
+    'start choice keeps its three paths visible at all window classes',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+
+      for (final size in const [
+        Size(390, 844),
+        Size(1024, 1366),
+        Size(1366, 1024),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(home: InitialStartChoicePage()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Como você quer começar?'), findsOneWidget);
+        expect(find.byKey(const Key('start-path-new-family')), findsOneWidget);
+        expect(
+          find.byKey(const Key('start-path-existing-family')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('start-path-child')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets('family account page mounts in dark mode with larger text', (
     tester,
@@ -1411,7 +1459,7 @@ void main() {
       await tester.tap(find.text('Pedro'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Olá, Pedro!'), findsOneWidget);
+      expect(find.text('Oi, Pedro! 👋'), findsOneWidget);
       await tester.tap(find.text('Missões'));
       await tester.pumpAndSettle();
       expect(find.text('Escovar os dentes'), findsOneWidget);
@@ -1734,6 +1782,10 @@ void main() {
     await tester.tap(find.text('Luna'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Você tem mimo aguardando aprovação 🎁'),
+      300,
+    );
     await tester.tap(find.text('Você tem mimo aguardando aprovação 🎁'));
     await tester.pumpAndSettle();
 

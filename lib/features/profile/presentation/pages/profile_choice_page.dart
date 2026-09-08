@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
@@ -124,62 +125,52 @@ class _ProfileChoiceContent extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        ZeniSpacing.xl,
-        ZeniSpacing.lg,
-        ZeniSpacing.xl,
-        ZeniSpacing.xl,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const ZeniBrandLogo(width: 88),
-              const SizedBox(height: ZeniSpacing.lg),
-              Text(
-                'Quem vai usar o Zeni agora?',
-                style: textTheme.displayLarge,
+      padding: const EdgeInsets.fromLTRB(0, ZeniSpacing.lg, 0, ZeniSpacing.xl),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.focus,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ZeniBrandLogo(width: 88),
+            const SizedBox(height: ZeniSpacing.lg),
+            Text('Quem vai usar o Zeni agora?', style: textTheme.displayLarge),
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              'Escolha um perfil para continuar.',
+              style: textTheme.bodyLarge?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.68),
               ),
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                'Escolha um perfil para continuar.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(
+            ),
+            const SizedBox(height: ZeniSpacing.lg),
+            _ParentAccessButton(onTap: onOpenParent),
+            const SizedBox(height: ZeniSpacing.xl),
+            Text('Crianças', style: textTheme.titleLarge),
+            const SizedBox(height: ZeniSpacing.md),
+            _ChildProfilesGrid(children: data.children),
+            const SizedBox(height: ZeniSpacing.lg),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  ZeniInfoPopup.show(
                     context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.68),
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-              _ParentAccessButton(onTap: onOpenParent),
-              const SizedBox(height: ZeniSpacing.xl),
-              Text('Crianças', style: textTheme.titleLarge),
-              const SizedBox(height: ZeniSpacing.md),
-              _ChildProfilesGrid(children: data.children),
-              const SizedBox(height: ZeniSpacing.lg),
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {
-                    ZeniInfoPopup.show(
-                      context,
-                      title: 'Código da família',
-                      message: 'Este recurso estará disponível em breve.',
-                    );
-                  },
-                  icon: const Icon(Icons.qr_code_rounded),
-                  label: const Text('Entrar com código da família'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: ZeniColors.primaryDark,
-                    minimumSize: const Size(48, 48),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: ZeniSpacing.md,
-                    ),
+                    title: 'Código da família',
+                    message: 'Este recurso estará disponível em breve.',
+                  );
+                },
+                icon: const Icon(Icons.qr_code_rounded),
+                label: const Text('Entrar com código da família'),
+                style: TextButton.styleFrom(
+                  foregroundColor: ZeniColors.primaryDark,
+                  minimumSize: const Size(48, 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ZeniSpacing.md,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -192,25 +183,13 @@ class _ChildProfilesGrid extends StatelessWidget {
   final List<ChildProfile> children;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      const gap = ZeniSpacing.sm;
-      final useTwoColumns = constraints.maxWidth >= 440;
-      final itemWidth = useTwoColumns
-          ? (constraints.maxWidth - gap) / 2
-          : constraints.maxWidth;
-      return Wrap(
-        spacing: gap,
-        runSpacing: gap,
-        children: [
-          for (final child in children)
-            SizedBox(
-              width: itemWidth,
-              child: _ChildProfileCard(child: child),
-            ),
-        ],
-      );
-    },
+  Widget build(BuildContext context) => Column(
+    children: [
+      for (final child in children) ...[
+        _ChildProfileCard(child: child),
+        if (child != children.last) const SizedBox(height: ZeniSpacing.sm),
+      ],
+    ],
   );
 }
 

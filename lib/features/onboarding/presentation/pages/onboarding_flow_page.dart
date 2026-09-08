@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_radius.dart';
@@ -125,49 +126,52 @@ class _OnboardingV2Content extends StatelessWidget {
     final content = Curves.easeOutCubic.transform(_interval(0.45, 1));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.sizeOf(context).height - 80,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _OnboardingHero(
-              progress: progress,
-              ambientProgress: starAmbientProgress,
-              reduceMotion: reduceMotion,
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            Opacity(
-              opacity: content,
-              child: Column(
-                children: [
-                  Text(
-                    'Pequenas atitudes. Grandes conquistas.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displayLarge,
-                  ),
-                  const SizedBox(height: ZeniSpacing.md),
-                  Text(
-                    'Missões simples, estrelas e mimos para ajudar sua família a construir autonomia no dia a dia.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: ZeniSpacing.xl),
-                  const _ConceptRow(),
-                  const SizedBox(height: ZeniSpacing.xxl),
-                  ZeniPrimaryButton(
-                    label: isSaving ? 'Começando...' : 'Começar',
-                    icon: Icons.arrow_forward_rounded,
-                    onPressed: onStart,
-                  ),
-                ],
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.focus,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.sizeOf(context).height - 80,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _OnboardingHero(
+                progress: progress,
+                ambientProgress: starAmbientProgress,
+                reduceMotion: reduceMotion,
               ),
-            ),
-          ],
+              const SizedBox(height: ZeniSpacing.xl),
+              Opacity(
+                opacity: content,
+                child: Column(
+                  children: [
+                    Text(
+                      'Pequenas atitudes. Grandes conquistas.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.displayLarge,
+                    ),
+                    const SizedBox(height: ZeniSpacing.md),
+                    Text(
+                      'Missões simples, estrelas e mimos para ajudar sua família a construir autonomia no dia a dia.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: ZeniSpacing.xl),
+                    const _ConceptRow(),
+                    const SizedBox(height: ZeniSpacing.xxl),
+                    ZeniPrimaryButton(
+                      label: isSaving ? 'Começando...' : 'Começar',
+                      icon: Icons.arrow_forward_rounded,
+                      onPressed: onStart,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

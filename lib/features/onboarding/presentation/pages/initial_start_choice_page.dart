@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_radius.dart';
@@ -25,128 +26,77 @@ class InitialStartChoicePage extends ConsumerStatefulWidget {
       _InitialStartChoicePageState();
 }
 
-class _InitialStartChoicePageState extends ConsumerState<InitialStartChoicePage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _entranceController;
+class _InitialStartChoicePageState
+    extends ConsumerState<InitialStartChoicePage> {
   bool _isReadyToRestore = false;
   bool _isRestoring = false;
   String? _restoreMessage;
 
   @override
-  void initState() {
-    super.initState();
-    _entranceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _entranceController.value = 1;
-    } else if (!_entranceController.isCompleted &&
-        !_entranceController.isAnimating) {
-      _entranceController.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _entranceController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
-    final progress = disableAnimations ? 1.0 : _entranceController.value;
 
     return ZeniScaffold(
-      child: AnimatedBuilder(
-        animation: _entranceController,
-        builder: (context, _) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            ZeniSpacing.xl,
-            ZeniSpacing.lg,
-            ZeniSpacing.xl,
-            ZeniSpacing.xl,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: _isReadyToRestore
-                  ? _RestoreChoiceContent(
-                      isRestoring: _isRestoring,
-                      restoreMessage: _restoreMessage,
-                      onRestore: _isRestoring ? null : _runRemoteRestore,
-                      onStartNewFamily: _isRestoring
-                          ? null
-                          : () => context.go('/initial-setup'),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const ZeniBrandLogo(width: 76),
-                        const SizedBox(height: ZeniSpacing.xl),
-                        Text(
-                          'Como você quer começar?',
-                          style: textTheme.displayLarge,
-                        ),
-                        const SizedBox(height: ZeniSpacing.sm),
-                        Text(
-                          'Escolha uma opção para continuar.',
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.68),
-                          ),
-                        ),
-                        const SizedBox(height: ZeniSpacing.xl),
-                        _EntranceCard(
-                          progress: progress,
-                          begin: 0,
-                          child: _StartOptionCard(
-                            key: const Key('start-path-new-family'),
-                            title: 'Criar uma nova família',
-                            description: 'Configure sua família e comece.',
-                            icon: Icons.family_restroom_rounded,
-                            tone: _StartOptionTone.primary,
-                            onTap: () => context.push('/family-account'),
-                          ),
-                        ),
-                        const SizedBox(height: ZeniSpacing.sm),
-                        _EntranceCard(
-                          progress: progress,
-                          begin: 0.16,
-                          child: _StartOptionCard(
-                            key: const Key('start-path-existing-family'),
-                            title: 'Já tenho uma família',
-                            description: 'Entre para recuperar seus dados.',
-                            icon: Icons.cloud_sync_rounded,
-                            tone: _StartOptionTone.secondary,
-                            onTap: _startRemoteRestore,
-                          ),
-                        ),
-                        const SizedBox(height: ZeniSpacing.sm),
-                        _EntranceCard(
-                          progress: progress,
-                          begin: 0.32,
-                          child: const _StartOptionCard(
-                            key: Key('start-path-child'),
-                            title: 'Sou criança',
-                            description: 'Entre com acesso do responsável.',
-                            icon: Icons.auto_awesome_rounded,
-                            tone: _StartOptionTone.child,
-                            available: false,
-                          ),
-                        ),
-                      ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.lg),
+        child: ZeniPageFrame(
+          width: ZeniPageWidth.focus,
+          child: _isReadyToRestore
+              ? _RestoreChoiceContent(
+                  isRestoring: _isRestoring,
+                  restoreMessage: _restoreMessage,
+                  onRestore: _isRestoring ? null : _runRemoteRestore,
+                  onStartNewFamily: _isRestoring
+                      ? null
+                      : () => context.go('/initial-setup'),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ZeniBrandLogo(width: 76),
+                    const SizedBox(height: ZeniSpacing.xl),
+                    Text(
+                      'Como você quer começar?',
+                      style: textTheme.displayLarge,
                     ),
-            ),
-          ),
+                    const SizedBox(height: ZeniSpacing.sm),
+                    Text(
+                      'Escolha uma opção para continuar.',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.68),
+                      ),
+                    ),
+                    const SizedBox(height: ZeniSpacing.xl),
+                    _StartOptionCard(
+                      key: const Key('start-path-new-family'),
+                      title: 'Criar uma nova família',
+                      description: 'Configure sua família e comece.',
+                      icon: Icons.family_restroom_rounded,
+                      tone: _StartOptionTone.primary,
+                      onTap: () => context.push('/family-account'),
+                    ),
+                    const SizedBox(height: ZeniSpacing.sm),
+                    _StartOptionCard(
+                      key: const Key('start-path-existing-family'),
+                      title: 'Já tenho uma família',
+                      description: 'Entre para recuperar seus dados.',
+                      icon: Icons.cloud_sync_rounded,
+                      tone: _StartOptionTone.secondary,
+                      onTap: _startRemoteRestore,
+                    ),
+                    const SizedBox(height: ZeniSpacing.sm),
+                    const _StartOptionCard(
+                      key: Key('start-path-child'),
+                      title: 'Sou criança',
+                      description: 'Entre com acesso do responsável.',
+                      icon: Icons.auto_awesome_rounded,
+                      tone: _StartOptionTone.child,
+                      available: false,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -459,28 +409,5 @@ class _StartOptionPalette {
         iconColor: dark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED),
       ),
     };
-  }
-}
-
-class _EntranceCard extends StatelessWidget {
-  const _EntranceCard({
-    required this.progress,
-    required this.begin,
-    required this.child,
-  });
-  final double progress;
-  final double begin;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) {
-    final localProgress = ((progress - begin) / (1 - begin)).clamp(0.0, 1.0);
-    final curvedProgress = Curves.easeOutCubic.transform(localProgress);
-    return Opacity(
-      opacity: curvedProgress,
-      child: Transform.translate(
-        offset: Offset(0, 16 * (1 - curvedProgress)),
-        child: child,
-      ),
-    );
   }
 }

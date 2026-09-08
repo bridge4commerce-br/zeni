@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
@@ -79,63 +80,59 @@ class _InitialFamilySetupPageState
     return ZeniScaffold(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
-          ZeniSpacing.xl,
+          0,
           ZeniSpacing.md,
-          ZeniSpacing.xl,
+          0,
           ZeniSpacing.xl,
         ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton(
-                  tooltip: 'Voltar',
-                  onPressed: _isSaving ? null : () => context.go('/'),
-                  icon: const Icon(Icons.arrow_back_rounded),
+        child: ZeniPageFrame(
+          width: ZeniPageWidth.focus,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton(
+                tooltip: 'Voltar',
+                onPressed: _isSaving ? null : () => context.go('/'),
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+              const SizedBox(height: ZeniSpacing.sm),
+              Text('Quem vai usar o Zeni?', style: textTheme.displayLarge),
+              const SizedBox(height: ZeniSpacing.sm),
+              Text(
+                'Adicione as crianças da família. Você pode incluir outras agora ou depois.',
+                style: textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.68),
                 ),
-                const SizedBox(height: ZeniSpacing.sm),
-                Text('Quem vai usar o Zeni?', style: textTheme.displayLarge),
-                const SizedBox(height: ZeniSpacing.sm),
-                Text(
-                  'Adicione as crianças da família. Você pode incluir outras agora ou depois.',
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.68),
+              ),
+              const SizedBox(height: ZeniSpacing.xl),
+              if (_children.isEmpty)
+                _AddChildInvite(onTap: _isSaving ? null : _addChild)
+              else ...[
+                for (final child in _children) ...[
+                  _ChildDraftCard(
+                    child: child,
+                    onEdit: _isSaving ? null : () => _addChild(existing: child),
+                    onRemove: _isSaving
+                        ? null
+                        : () => setState(() => _children.remove(child)),
                   ),
-                ),
-                const SizedBox(height: ZeniSpacing.xl),
-                if (_children.isEmpty)
-                  _AddChildInvite(onTap: _isSaving ? null : _addChild)
-                else ...[
-                  for (final child in _children) ...[
-                    _ChildDraftCard(
-                      child: child,
-                      onEdit: _isSaving
-                          ? null
-                          : () => _addChild(existing: child),
-                      onRemove: _isSaving
-                          ? null
-                          : () => setState(() => _children.remove(child)),
-                    ),
-                    const SizedBox(height: ZeniSpacing.sm),
-                  ],
-                  OutlinedButton.icon(
-                    onPressed: _isSaving ? null : _addChild,
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Adicionar outra criança'),
-                  ),
+                  const SizedBox(height: ZeniSpacing.sm),
                 ],
-                const SizedBox(height: ZeniSpacing.xl),
-                ZeniPrimaryButton(
-                  label: _isSaving ? 'Salvando...' : 'Continuar',
-                  icon: Icons.arrow_forward_rounded,
-                  onPressed: _children.isEmpty || _isSaving ? null : _finish,
+                OutlinedButton.icon(
+                  onPressed: _isSaving ? null : _addChild,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Adicionar outra criança'),
                 ),
               ],
-            ),
+              const SizedBox(height: ZeniSpacing.xl),
+              ZeniPrimaryButton(
+                label: _isSaving ? 'Salvando...' : 'Continuar',
+                icon: Icons.arrow_forward_rounded,
+                onPressed: _children.isEmpty || _isSaving ? null : _finish,
+              ),
+            ],
           ),
         ),
       ),
