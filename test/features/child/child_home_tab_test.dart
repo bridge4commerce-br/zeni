@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zeni/core/domain/zeni_enums.dart';
+import 'package:zeni/core/theme/zeni_theme.dart';
 import 'package:zeni/core/widgets/zeni_mascot.dart';
 import 'package:zeni/features/child/presentation/widgets/child_home_tab.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
@@ -19,7 +20,11 @@ void main() {
     createdAt: now,
   );
 
-  Mission mission(String id, String title) => Mission(
+  Mission mission(
+    String id,
+    String title, {
+    MissionTimeGroup timeGroup = MissionTimeGroup.morning,
+  }) => Mission(
     id: id,
     familyId: 'family-1',
     childId: child.id,
@@ -27,7 +32,7 @@ void main() {
     description: '',
     stars: 5,
     recurrence: MissionRecurrence.daily,
-    timeGroup: MissionTimeGroup.morning,
+    timeGroup: timeGroup,
     approvalMode: MissionApprovalMode.automatic,
     status: MissionStatus.active,
     createdAt: now,
@@ -37,8 +42,15 @@ void main() {
   Widget home({
     List<Mission> missions = const [],
     List<MissionLog> logs = const [],
+    ThemeData? theme,
+    TextScaler textScaler = TextScaler.noScaling,
   }) {
     return MaterialApp(
+      theme: theme,
+      builder: (context, widget) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: widget!,
+      ),
       home: ChildHomeTab(
         child: child,
         missions: missions,
@@ -59,6 +71,28 @@ void main() {
     );
   }
 
+  Future<void> pumpHomeAt(
+    WidgetTester tester, {
+    required Size size,
+    List<Mission> missions = const [],
+    List<MissionLog> logs = const [],
+    ThemeData? theme,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      home(
+        missions: missions,
+        logs: logs,
+        theme: theme,
+        textScaler: textScaler,
+      ),
+    );
+  }
+
   testWidgets('shows the first pending mission as the current mission', (
     tester,
   ) async {
@@ -71,13 +105,81 @@ void main() {
       ),
     );
 
-    expect(find.text('Missão de agora'), findsOneWidget);
+    expect(find.text('Agora'), findsOneWidget);
     expect(find.text('Arrumar a cama'), findsOneWidget);
     expect(find.text('Depois'), findsOneWidget);
+    expect(find.text('Vamos nessa! ⭐'), findsOneWidget);
+    expect(find.text('Falta só essa! 💚'), findsNothing);
     expect(
       find.byWidgetPredicate(
         (widget) =>
             widget is ZeniMascot && widget.state == ZeniMascotState.encourage,
+      ),
+      findsOneWidget,
+    );
+  });
+
+  test('orders current-period missions before past and future periods', () {
+    final ordered = orderChildHomePendingMissions(
+      localNow: DateTime(2026, 9, 7, 13, 35),
+      missions: [
+        mission('bed', 'Cama', timeGroup: MissionTimeGroup.morning),
+        mission('lunch', 'Almoço', timeGroup: MissionTimeGroup.afternoon),
+        mission('homework', 'Lição', timeGroup: MissionTimeGroup.afternoon),
+        mission('bag', 'Mochila', timeGroup: MissionTimeGroup.evening),
+      ],
+    );
+
+    expect(ordered.map((item) => item.id), ['lunch', 'homework', 'bed', 'bag']);
+  });
+
+  test('keeps anytime missions predictably after the current period', () {
+    final ordered = orderChildHomePendingMissions(
+      localNow: DateTime(2026, 9, 7, 13),
+      missions: [
+        mission('any', 'Qualquer horário', timeGroup: MissionTimeGroup.anytime),
+        mission('morning', 'Manhã', timeGroup: MissionTimeGroup.morning),
+        mission('afternoon', 'Tarde', timeGroup: MissionTimeGroup.afternoon),
+        mission('evening', 'Noite', timeGroup: MissionTimeGroup.evening),
+      ],
+    );
+
+    expect(ordered.map((item) => item.id), [
+      'afternoon',
+      'any',
+      'morning',
+      'evening',
+    ]);
+  });
+
+  testWidgets('uses the singular encouragement for one pending mission', (
+    tester,
+  ) async {
+    await tester.pumpWidget(home(missions: [mission('one', 'Arrumar a cama')]));
+
+    expect(find.text('Falta só essa! 💚'), findsOneWidget);
+    expect(find.text('Vamos nessa! ⭐'), findsNothing);
+  });
+
+  testWidgets('preserves achievement feedback when all missions are complete', (
+    tester,
+  ) async {
+    final item = mission('one', 'Arrumar a cama');
+    final log = MissionLog(
+      id: 'log-1',
+      missionId: item.id,
+      childId: child.id,
+      scheduledDate: now,
+      status: MissionLogStatus.approved,
+      starsAwarded: item.stars,
+    );
+    await tester.pumpWidget(home(missions: [item], logs: [log]));
+
+    expect(find.text('Seu dia está completo! 🎉'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is ZeniMascot && widget.state == ZeniMascotState.achievement,
       ),
       findsOneWidget,
     );
@@ -98,6 +200,9 @@ void main() {
     await tester.pumpWidget(home(missions: [item], logs: [log]));
 
     expect(find.text('1 aguardando aprovação'), findsOneWidget);
+    expect(find.text('Aguardando aprovação'), findsOneWidget);
+    expect(find.text('Arrumar a cama'), findsOneWidget);
+    expect(find.text('Aguardando o responsável'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>
@@ -114,6 +219,7 @@ void main() {
     await tester.pumpWidget(home());
 
     expect(find.text('Sem missões por enquanto'), findsOneWidget);
+    expect(find.text('Hoje está tranquilo por aqui.'), findsOneWidget);
     expect(find.textContaining('0 de 0'), findsNothing);
     expect(
       find.byWidgetPredicate(
@@ -122,5 +228,90 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('empty day mounts in dark mode with larger text', (tester) async {
+    await pumpHomeAt(
+      tester,
+      size: const Size(390, 844),
+      theme: ZeniTheme.dark,
+      textScaler: const TextScaler.linear(1.25),
+    );
+
+    expect(find.text('Sem missões por enquanto'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('compact keeps the summary vertical and missions below it', (
+    tester,
+  ) async {
+    final missions = [
+      mission('one', 'Arrumar a cama'),
+      mission('two', 'Guardar os livros'),
+    ];
+
+    await pumpHomeAt(tester, size: const Size(390, 844), missions: missions);
+
+    expect(find.byKey(const Key('child-home-summary-row')), findsNothing);
+    expect(find.text('Agora'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'expanded home keeps summary side by side and missions vertical',
+    (tester) async {
+      final missions = [
+        mission('one', 'Arrumar a cama'),
+        mission('two', 'Guardar os livros'),
+      ];
+
+      await pumpHomeAt(
+        tester,
+        size: const Size(1024, 1366),
+        missions: missions,
+      );
+
+      final companion = tester.getRect(
+        find.byKey(const Key('child-home-companion')),
+      );
+      final progress = tester.getRect(
+        find.byKey(const Key('child-home-day-progress')),
+      );
+      final currentMission = tester.getRect(
+        find.byKey(const Key('child-home-current-mission')),
+      );
+      expect(find.byKey(const Key('child-home-summary-row')), findsOneWidget);
+      expect(progress.left, greaterThan(companion.left));
+      expect((progress.top - companion.top).abs(), lessThan(1));
+      expect(currentMission.top, greaterThan(companion.bottom));
+      expect(find.text('Depois'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('large home keeps summary side by side and approval accessible', (
+    tester,
+  ) async {
+    final item = mission('one', 'Arrumar a cama');
+    final log = MissionLog(
+      id: 'log-1',
+      missionId: item.id,
+      childId: child.id,
+      scheduledDate: now,
+      status: MissionLogStatus.awaitingApproval,
+      starsAwarded: 0,
+    );
+    await pumpHomeAt(
+      tester,
+      size: const Size(1366, 1024),
+      missions: [item],
+      logs: [log],
+      textScaler: const TextScaler.linear(1.2),
+    );
+
+    expect(find.byKey(const Key('child-home-summary-row')), findsOneWidget);
+    expect(find.text('Aguardando aprovação'), findsOneWidget);
+    expect(find.text('Aguardando o responsável'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

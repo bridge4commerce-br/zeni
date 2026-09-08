@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
 import '../../../../core/feedback/zeni_haptics.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/providers/zeni_repository_providers.dart';
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
@@ -25,6 +27,7 @@ import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../balance/data/models/star_ledger_entry.dart';
 import '../../../balance/presentation/widgets/history_entry_card.dart';
 import '../../../family/data/models/child_profile.dart';
+import '../../../family/presentation/avatar_catalog.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
 import '../../../sync/presentation/providers/opportunistic_sync_providers.dart';
@@ -537,26 +540,13 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         ];
 
         return ZeniScaffold(
-          appBar: ZeniTopBar(
-            title: 'Olá, ${data.child.name}!',
-            subtitle: 'Vamos conquistar estrelas hoje?',
-            actions: [
-              IconButton(
-                tooltip: 'Trocar perfil',
-                icon: const Icon(Icons.swap_horiz_rounded),
-                onPressed: () {
-                  ref.read(zeniHapticsProvider).selection();
-                  context.go('/');
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: ZeniSpacing.md),
-                child: KeyedSubtree(
-                  key: _balancePillKey,
-                  child: ZeniBalancePill(stars: data.child.starBalance),
-                ),
-              ),
-            ],
+          appBar: _ChildIdentityHeader(
+            child: data.child,
+            balancePillKey: _balancePillKey,
+            onSwitchProfile: () {
+              ref.read(zeniHapticsProvider).selection();
+              context.go('/');
+            },
           ),
           bottomNavigationBar: ZeniBottomNavBar(
             currentIndex: _currentIndex,
@@ -668,6 +658,91 @@ class _ChildBalancePage extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ChildIdentityHeader extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _ChildIdentityHeader({
+    required this.child,
+    required this.balancePillKey,
+    required this.onSwitchProfile,
+  });
+
+  final ChildProfile child;
+  final GlobalKey balancePillKey;
+  final VoidCallback onSwitchProfile;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(68);
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = ZeniChildAvatarCatalog.byId(child.avatarId);
+    final windowClass = ZeniResponsive.windowClass(context);
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final availableWidth = math.max(
+      0,
+      viewportWidth - (ZeniResponsive.horizontalPadding(context) * 2),
+    );
+    final frameWidth = math.min(
+      availableWidth,
+      ZeniResponsive.mainMaxWidth(context),
+    );
+    final frameInset = (viewportWidth - frameWidth) / 2;
+    final avatarSize = switch (windowClass) {
+      ZeniWindowClass.compact => 42.0,
+      ZeniWindowClass.medium => 46.0,
+      ZeniWindowClass.expanded => 52.0,
+      ZeniWindowClass.large => 56.0,
+    };
+    return AppBar(
+      toolbarHeight: preferredSize.height,
+      titleSpacing: frameInset,
+      actionsPadding: EdgeInsets.only(
+        right: math.max(0, frameInset - ZeniSpacing.md),
+      ),
+      title: Row(
+        children: [
+          Container(
+            key: const Key('child-shell-avatar'),
+            width: avatarSize,
+            height: avatarSize,
+            decoration: BoxDecoration(
+              color: ZeniColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(avatar.assetPath, fit: BoxFit.contain),
+          ),
+          const SizedBox(width: ZeniSpacing.sm),
+          Expanded(
+            child: Text(
+              child.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: windowClass == ZeniWindowClass.compact
+                  ? Theme.of(context).textTheme.titleLarge
+                  : Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Trocar perfil',
+          icon: const Icon(Icons.swap_horiz_rounded),
+          onPressed: onSwitchProfile,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: ZeniSpacing.md),
+          child: KeyedSubtree(
+            key: balancePillKey,
+            child: ZeniBalancePill(stars: child.starBalance),
+          ),
+        ),
+      ],
     );
   }
 }
