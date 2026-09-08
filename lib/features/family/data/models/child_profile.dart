@@ -8,6 +8,7 @@ class ChildProfile {
     required this.streakCount,
     required this.createdAt,
     this.avatarUrl,
+    this.avatarId,
     this.birthDate,
     this.ttsEnabled = false,
     this.isActive = true,
@@ -18,6 +19,7 @@ class ChildProfile {
   final String name;
   final String emoji;
   final String? avatarUrl;
+  final String? avatarId;
   final DateTime? birthDate;
   final int starBalance;
   final int streakCount;
@@ -31,6 +33,7 @@ class ChildProfile {
     String? name,
     String? emoji,
     String? avatarUrl,
+    String? avatarId,
     DateTime? birthDate,
     int? starBalance,
     int? streakCount,
@@ -44,6 +47,7 @@ class ChildProfile {
       name: name ?? this.name,
       emoji: emoji ?? this.emoji,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarId: avatarId ?? this.avatarId,
       birthDate: birthDate ?? this.birthDate,
       starBalance: starBalance ?? this.starBalance,
       streakCount: streakCount ?? this.streakCount,
@@ -60,6 +64,7 @@ class ChildProfile {
       'name': name,
       'emoji': emoji,
       'avatarUrl': avatarUrl,
+      'avatarId': avatarId,
       'birthDate': birthDate?.toIso8601String(),
       'starBalance': starBalance,
       'streakCount': streakCount,
@@ -76,6 +81,7 @@ class ChildProfile {
       name: json['name'] as String,
       emoji: json['emoji'] as String,
       avatarUrl: json['avatarUrl'] as String?,
+      avatarId: json['avatarId'] as String?,
       birthDate: json['birthDate'] == null
           ? null
           : DateTime.parse(json['birthDate'] as String),

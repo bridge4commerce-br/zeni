@@ -23,6 +23,7 @@ import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.da
 import 'package:zeni/features/child/presentation/pages/child_shell_page.dart';
 import 'package:zeni/core/widgets/zeni_flying_star_overlay.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
+import 'package:zeni/features/family/presentation/avatar_catalog.dart';
 import 'package:zeni/features/family/data/repositories/remote_children_repository.dart';
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
 import 'package:zeni/features/onboarding/presentation/pages/initial_start_choice_page.dart';
@@ -241,34 +242,13 @@ void main() {
     bool createMission = true,
     bool createReward = true,
   }) async {
+    await tester.tap(find.text('Adicionar criança'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, childName);
     await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Continuar').first);
+    await tester.tap(find.text('Adicionar').last);
     await tester.pumpAndSettle();
-
-    if (skipPin) {
-      await tester.tap(find.text('Pular por enquanto'));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-    } else {
-      await tester.tap(find.text('Continuar sem PIN').first);
-      await tester.pumpAndSettle();
-    }
-
-    if (!createMission) {
-      await tester.tap(find.byType(Switch).first);
-      await tester.pumpAndSettle();
-    }
-
-    await tester.tap(find.text('Continuar').first);
-    await tester.pumpAndSettle();
-
-    if (!createReward) {
-      await tester.tap(find.byType(Switch).first);
-      await tester.pumpAndSettle();
-    }
-
-    await tester.tap(find.text('Concluir configuração').first);
+    await tester.tap(find.text('Continuar').last);
     await tester.pumpAndSettle(const Duration(seconds: 5));
   }
 
@@ -546,8 +526,8 @@ void main() {
     await completeInstitutionalOnboarding(tester);
     await openNewFamilySetup(tester);
 
-    expect(find.text('Primeira criança'), findsWidgets);
-    expect(find.text('Nome da criança'), findsOneWidget);
+    expect(find.text('Quem vai usar o Zeni?'), findsOneWidget);
+    expect(find.text('Adicionar criança'), findsOneWidget);
   });
 
   testWidgets('family account step returns to choice and keeps local setup', (
@@ -592,7 +572,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('family-account-local-only')));
     await tester.pumpAndSettle();
-    expect(find.text('Primeira criança'), findsWidgets);
+    expect(find.text('Quem vai usar o Zeni?'), findsOneWidget);
   });
 
   testWidgets('family account page mounts in dark mode with larger text', (
@@ -620,7 +600,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('skipping PIN advances the family setup to the mission step', (
+  testWidgets('initial children setup requires at least one child', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -630,67 +610,179 @@ void main() {
 
     await completeInstitutionalOnboarding(tester);
     await openNewFamilySetup(tester);
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Luna');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continuar').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Proteção do responsável'), findsOneWidget);
-
-    await tester.tap(find.text('Pular por enquanto'));
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-
-    expect(find.text('Primeira missão'), findsWidgets);
-    expect(find.text('Concluir configuração'), findsNothing);
+    expect(find.text('Continuar'), findsOneWidget);
+    expect(
+      tester.widget<ElevatedButton>(find.byType(ElevatedButton).last).onPressed,
+      isNull,
+    );
   });
 
-  testWidgets(
-    'child mission and reward are created only in the new family path',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+  testWidgets('initial child setup does not create a mission or reward', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(container: container, child: const ZeniApp()),
-      );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
+    await completeInitialFamilySetup(tester, childName: 'Luna');
+
+    final state = container.read(zeniAppStateControllerProvider).asData!.value;
+    expect(state.children, hasLength(1));
+    expect(state.children.single.avatarId, ZeniChildAvatarCatalog.fallbackId);
+    expect(state.children.single.emoji, '⭐');
+    expect(state.missions, isEmpty);
+    expect(state.rewards, isEmpty);
+  });
+
+  testWidgets('initial child avatar picker uses the official Zeni avatars', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
+    await tester.tap(find.text('Adicionar criança'));
+    await tester.pumpAndSettle();
+
+    for (final avatar in ZeniChildAvatarCatalog.all) {
+      expect(find.byKey(Key('avatar-picker-${avatar.id}')), findsOneWidget);
+    }
+    expect(find.text('🦊'), findsNothing);
+    expect(find.text('🐼'), findsNothing);
+    expect(find.text('🦁'), findsNothing);
+    expect(find.text('🐨'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('avatar-picker-zeni_avatar_blue')));
+    await tester.enterText(find.byType(TextField).first, 'Luna');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Adicionar').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar').last);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+
+    final state = container.read(zeniAppStateControllerProvider).asData!.value;
+    expect(state.children.single.avatarId, 'zeni_avatar_blue');
+  });
+
+  testWidgets('initial setup keeps different Zeni avatars for two children', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
+
+    Future<void> addChild(String name, String avatarId) async {
+      await tester.tap(find.text('Adicionar criança').first);
       await tester.pumpAndSettle();
-
-      await completeInstitutionalOnboarding(tester);
-      await openNewFamilySetup(tester);
-      await completeInitialFamilySetup(tester, childName: 'Luna');
-
-      await tester.tap(find.text('Luna'));
+      await tester.tap(find.byKey(Key('avatar-picker-$avatarId')));
+      await tester.enterText(find.byType(TextField).first, name);
       await tester.pumpAndSettle();
-
-      expect(find.text('Arrumar a cama'), findsOneWidget);
-
-      await tester.tap(find.text('Mimos'));
+      await tester.tap(find.text('Adicionar').last);
       await tester.pumpAndSettle();
+    }
 
-      expect(find.text('Escolher o filme'), findsOneWidget);
+    await addChild('Luna', 'zeni_avatar_blue');
+    await tester.tap(find.text('Adicionar outra criança'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('avatar-picker-zeni_avatar_coral')));
+    await tester.enterText(find.byType(TextField).first, 'Theo');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Adicionar').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar').last);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      await tester.tap(find.byTooltip('Trocar perfil'));
-      await tester.pumpAndSettle();
+    final children = container
+        .read(zeniAppStateControllerProvider)
+        .asData!
+        .value
+        .children;
+    expect(
+      children.map((child) => child.avatarId),
+      containsAll(<String>['zeni_avatar_blue', 'zeni_avatar_coral']),
+    );
+  });
 
-      await tester.scrollUntilVisible(
-        find.text('Entrar como responsável'),
-        300,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Entrar como responsável'));
-      await tester.pumpAndSettle();
+  testWidgets('editing an initial child preserves and can replace its avatar', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
 
-      await tester.tap(find.text('Missões'));
-      await tester.pumpAndSettle();
-      expect(find.text('Arrumar a cama'), findsOneWidget);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+    await completeInstitutionalOnboarding(tester);
+    await openNewFamilySetup(tester);
+    await tester.tap(find.text('Adicionar criança'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('avatar-picker-zeni_avatar_blue')));
+    await tester.enterText(find.byType(TextField).first, 'Luna');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Adicionar').last);
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Mimos'));
-      await tester.pumpAndSettle();
-      expect(find.text('Escolher o filme'), findsOneWidget);
-    },
-  );
+    await tester.tap(find.byTooltip('Editar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('avatar-picker-zeni_avatar_violet')));
+    await tester.tap(find.text('Adicionar').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar').last);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+
+    final child = container
+        .read(zeniAppStateControllerProvider)
+        .asData!
+        .value
+        .children
+        .single;
+    expect(child.name, 'Luna');
+    expect(child.avatarId, 'zeni_avatar_violet');
+  });
+
+  test('legacy child profiles without avatarId remain valid', () {
+    final child = ChildProfile.fromJson({
+      'id': 'child-1',
+      'familyId': 'family-1',
+      'name': 'Luna',
+      'emoji': '🦊',
+      'avatarUrl': null,
+      'birthDate': null,
+      'starBalance': 0,
+      'streakCount': 0,
+      'ttsEnabled': false,
+      'isActive': true,
+      'createdAt': DateTime(2026).toIso8601String(),
+    });
+
+    expect(child.avatarId, isNull);
+    expect(
+      ZeniChildAvatarCatalog.byId(child.avatarId).id,
+      ZeniChildAvatarCatalog.fallbackId,
+    );
+  });
 
   testWidgets(
     'reopening after new family setup keeps child mission and reward persisted',
@@ -714,15 +806,11 @@ void main() {
       expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
       expect(find.text('Luna'), findsOneWidget);
 
-      await tester.tap(find.text('Luna'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Arrumar a cama'), findsOneWidget);
-
-      await tester.tap(find.text('Mimos'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Escolher o filme'), findsOneWidget);
+      final state = ProviderScope.containerOf(
+        tester.element(find.text('Luna')),
+      ).read(zeniAppStateControllerProvider).asData!.value;
+      expect(state.missions, isEmpty);
+      expect(state.rewards, isEmpty);
     },
   );
 

@@ -467,6 +467,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     String? missionTitle,
     required bool createSuggestedReward,
     String? rewardTitle,
+    String? childAvatarId,
   }) async {
     final current = _requireState();
     final now = DateTime.now();
@@ -477,7 +478,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       name: childName,
       emoji: childEmoji,
       createdAt: now,
-    );
+    ).copyWith(avatarId: childAvatarId);
     final member = _buildChildFamilyMember(
       familyId: current.family.id,
       childId: childId,

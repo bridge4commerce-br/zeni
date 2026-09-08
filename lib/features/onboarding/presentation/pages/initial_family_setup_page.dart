@@ -5,19 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_avatar.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
-import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
-import '../../../../core/widgets/feedback/zeni_info_popup.dart';
-import '../../../../core/widgets/feedback/zeni_success_popup.dart';
-import '../../../../core/widgets/inputs/zeni_option_row.dart';
-import '../../../../core/widgets/inputs/zeni_switch.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
-import '../../../../core/widgets/layout/zeni_top_bar.dart';
-import '../../../auth/presentation/widgets/parent_pin_dialog.dart';
+import '../../../family/presentation/avatar_catalog.dart';
 
 class InitialFamilySetupPage extends ConsumerStatefulWidget {
   const InitialFamilySetupPage({super.key});
@@ -29,377 +22,354 @@ class InitialFamilySetupPage extends ConsumerStatefulWidget {
 
 class _InitialFamilySetupPageState
     extends ConsumerState<InitialFamilySetupPage> {
-  static const _childEmojiOptions = ['🦊', '🐼', '🦁', '🐨'];
-  static const _suggestedMissionTitle = 'Arrumar a cama';
-  static const _suggestedRewardTitle = 'Escolher o filme';
-
-  final _childNameController = TextEditingController();
-  final _missionTitleController = TextEditingController(
-    text: _suggestedMissionTitle,
-  );
-  final _rewardTitleController = TextEditingController(
-    text: _suggestedRewardTitle,
-  );
-
-  int _step = 0;
-  String _selectedEmoji = _childEmojiOptions.first;
-  String? _parentPin;
-  bool _didSkipPin = false;
-  bool _createSuggestedMission = true;
-  bool _createSuggestedReward = true;
+  final List<_DraftChild> _children = [];
   bool _isSaving = false;
 
-  @override
-  void dispose() {
-    _childNameController.dispose();
-    _missionTitleController.dispose();
-    _rewardTitleController.dispose();
-    super.dispose();
-  }
-
-  bool get _canFinish => _childNameController.text.trim().isNotEmpty;
-
-  Future<void> _showPinSkippedFeedback() {
-    return ZeniInfoPopup.show(
-      context,
-      title: 'Tudo bem pular',
-      message: 'Você pode criar o PIN depois na aba de ajustes.',
-    );
-  }
-
-  void _goToStep(int step) {
-    setState(() {
-      _step = step;
-    });
-  }
-
-  Future<void> _configurePin() async {
-    final pin = await showDialog<String>(
+  Future<void> _addChild({_DraftChild? existing}) async {
+    final child = await showModalBottomSheet<_DraftChild>(
       context: context,
-      builder: (context) {
-        return ParentPinDialog.create(hasExistingPin: _parentPin != null);
-      },
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _AddChildSheet(initial: existing),
     );
-    if (!mounted || pin == null) return;
-
+    if (!mounted || child == null) return;
     setState(() {
-      _parentPin = pin;
-      _didSkipPin = false;
+      if (existing == null) {
+        _children.add(child);
+      } else {
+        _children[_children.indexOf(existing)] = child;
+      }
     });
-
-    await ZeniSuccessPopup.show(
-      context,
-      title: 'PIN configurado',
-      message: 'O modo responsável poderá usar esse PIN na entrada.',
-    );
-
-    if (!mounted) return;
-    _goToStep(2);
   }
 
-  Future<void> _finishSetup() async {
-    if (!_canFinish || _isSaving) return;
-
-    setState(() {
-      _isSaving = true;
-    });
-
+  Future<void> _finish() async {
+    if (_children.isEmpty || _isSaving) return;
+    setState(() => _isSaving = true);
     try {
-      final child = await ref
-          .read(zeniAppStateControllerProvider.notifier)
-          .completeInitialOnboardingSetup(
-            childName: _childNameController.text.trim(),
-            childEmoji: _selectedEmoji,
-            hasCompletedOnboarding: true,
-            parentPin: _parentPin,
-            clearParentPin: _didSkipPin,
-            createSuggestedMission: _createSuggestedMission,
-            missionTitle: _missionTitleController.text,
-            createSuggestedReward: _createSuggestedReward,
-            rewardTitle: _rewardTitleController.text,
-          );
-
-      if (!mounted) return;
-
-      await ZeniSuccessPopup.show(
-        context,
-        title: 'Tudo pronto!',
-        message:
-            '${child.name} já pode começar. As configurações iniciais foram salvas no app.',
-      );
-      if (!mounted) return;
-
-      context.go('/');
-    } catch (_) {
-      if (!mounted) return;
-      await ZeniErrorPopup.show(
-        context,
-        title: 'Não foi possível concluir',
-        message: 'Tente novamente para finalizar a configuração inicial.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+      final controller = ref.read(zeniAppStateControllerProvider.notifier);
+      for (final child in _children) {
+        await controller.completeInitialOnboardingSetup(
+          childName: child.name,
+          // Kept only while legacy profiles still require the emoji field.
+          childEmoji: '⭐',
+          childAvatarId: child.avatarId,
+          hasCompletedOnboarding: true,
+          clearParentPin: false,
+          createSuggestedMission: false,
+          createSuggestedReward: false,
+        );
       }
+      if (mounted) context.go('/');
+    } catch (_) {
+      if (mounted) {
+        await ZeniErrorPopup.show(
+          context,
+          title: 'Não foi possível concluir',
+          message: 'Tente novamente para salvar as crianças da família.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
     return ZeniScaffold(
-      appBar: const ZeniTopBar(
-        title: 'Zeni',
-        subtitle: 'Configuração inicial da família',
-      ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(ZeniSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_step == 0) ...[
-              Text('Primeira criança', style: textTheme.displayLarge),
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                'Vamos cadastrar a primeira criança para deixar o app pronto para uso.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: ZeniColors.mutedText,
+        padding: const EdgeInsets.fromLTRB(
+          ZeniSpacing.xl,
+          ZeniSpacing.md,
+          ZeniSpacing.xl,
+          ZeniSpacing.xl,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton(
+                  tooltip: 'Voltar',
+                  onPressed: _isSaving ? null : () => context.go('/'),
+                  icon: const Icon(Icons.arrow_back_rounded),
                 ),
-              ),
-              const SizedBox(height: ZeniSpacing.xl),
-              ZeniCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: ZeniAvatar(
-                        label: _childNameController.text.trim().isEmpty
-                            ? 'Primeira criança'
-                            : _childNameController.text.trim(),
-                        emoji: _selectedEmoji,
-                        size: 84,
-                      ),
+                const SizedBox(height: ZeniSpacing.sm),
+                Text('Quem vai usar o Zeni?', style: textTheme.displayLarge),
+                const SizedBox(height: ZeniSpacing.sm),
+                Text(
+                  'Adicione as crianças da família. Você pode incluir outras agora ou depois.',
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.68),
+                  ),
+                ),
+                const SizedBox(height: ZeniSpacing.xl),
+                if (_children.isEmpty)
+                  _AddChildInvite(onTap: _isSaving ? null : _addChild)
+                else ...[
+                  for (final child in _children) ...[
+                    _ChildDraftCard(
+                      child: child,
+                      onEdit: _isSaving
+                          ? null
+                          : () => _addChild(existing: child),
+                      onRemove: _isSaving
+                          ? null
+                          : () => setState(() => _children.remove(child)),
                     ),
-                    const SizedBox(height: ZeniSpacing.md),
-                    Wrap(
-                      spacing: ZeniSpacing.sm,
-                      runSpacing: ZeniSpacing.sm,
-                      children: [
-                        for (final emoji in _childEmojiOptions)
-                          ChoiceChip(
-                            label: Text(
-                              emoji,
-                              style: const TextStyle(fontSize: 22),
-                            ),
-                            selected: _selectedEmoji == emoji,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedEmoji = emoji;
-                              });
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: ZeniSpacing.lg),
-                    ZeniTextInput(
-                      controller: _childNameController,
-                      label: 'Nome da criança',
-                      hint: 'Ex.: Luna',
-                      prefixIcon: Icons.child_care_rounded,
-                      onChanged: (_) => setState(() {}),
-                    ),
+                    const SizedBox(height: ZeniSpacing.sm),
                   ],
+                  OutlinedButton.icon(
+                    onPressed: _isSaving ? null : _addChild,
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Adicionar outra criança'),
+                  ),
+                ],
+                const SizedBox(height: ZeniSpacing.xl),
+                ZeniPrimaryButton(
+                  label: _isSaving ? 'Salvando...' : 'Continuar',
+                  icon: Icons.arrow_forward_rounded,
+                  onPressed: _children.isEmpty || _isSaving ? null : _finish,
                 ),
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniPrimaryButton(
-                label: 'Continuar',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: _canFinish && !_isSaving ? () => _goToStep(1) : null,
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
-                label: 'Voltar',
-                icon: Icons.arrow_back_rounded,
-                onPressed: _isSaving ? null : () => context.go('/'),
-              ),
-            ] else if (_step == 1) ...[
-              Text('Proteção do responsável', style: textTheme.displayLarge),
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                'Você pode proteger o modo responsável agora ou continuar sem PIN por enquanto.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: ZeniColors.mutedText,
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.xl),
-              ZeniCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ZeniOptionRow(
-                      title: _parentPin == null
-                          ? _didSkipPin
-                                ? 'PIN será configurado depois'
-                                : 'Configurar PIN agora'
-                          : 'PIN configurado',
-                      subtitle: _parentPin == null
-                          ? _didSkipPin
-                                ? 'Você escolheu concluir sem PIN neste momento.'
-                                : 'Você pode proteger o modo responsável agora ou depois.'
-                          : 'Toque para alterar o PIN de 4 dígitos.',
-                      leading: const Icon(
-                        Icons.pin_rounded,
-                        color: ZeniColors.primaryDark,
-                      ),
-                      onTap: _configurePin,
-                    ),
-                    if (_parentPin == null) ...[
-                      const SizedBox(height: ZeniSpacing.md),
-                      ZeniSecondaryButton(
-                        label: _didSkipPin
-                            ? 'PIN pulado'
-                            : 'Pular por enquanto',
-                        icon: Icons.schedule_rounded,
-                        onPressed: () async {
-                          setState(() {
-                            _parentPin = null;
-                            _didSkipPin = true;
-                          });
-
-                          await _showPinSkippedFeedback();
-                          if (!mounted) return;
-                          _goToStep(2);
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniPrimaryButton(
-                label: _parentPin == null ? 'Continuar sem PIN' : 'Continuar',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: _isSaving ? null : () => _goToStep(2),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
-                label: 'Voltar',
-                icon: Icons.arrow_back_rounded,
-                onPressed: _isSaving ? null : () => _goToStep(0),
-              ),
-            ] else if (_step == 2) ...[
-              Text('Primeira missão', style: textTheme.displayLarge),
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                'Comece com uma missão simples para a rotina de hoje.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: ZeniColors.mutedText,
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.xl),
-              ZeniCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ZeniSwitch(
-                      title: 'Usar missão sugerida',
-                      subtitle:
-                          'Criar uma missão inicial simples para começar.',
-                      icon: Icons.check_circle_outline_rounded,
-                      value: _createSuggestedMission,
-                      onChanged: (value) {
-                        setState(() {
-                          _createSuggestedMission = value;
-                        });
-                      },
-                    ),
-                    if (_createSuggestedMission) ...[
-                      const SizedBox(height: ZeniSpacing.md),
-                      ZeniTextInput(
-                        controller: _missionTitleController,
-                        label: 'Nome da missão',
-                        hint: _suggestedMissionTitle,
-                        prefixIcon: Icons.task_alt_rounded,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniPrimaryButton(
-                label: 'Continuar',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: _isSaving ? null : () => _goToStep(3),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
-                label: 'Voltar',
-                icon: Icons.arrow_back_rounded,
-                onPressed: _isSaving ? null : () => _goToStep(1),
-              ),
-            ] else ...[
-              Text('Primeiro mimo', style: textTheme.displayLarge),
-              const SizedBox(height: ZeniSpacing.sm),
-              Text(
-                'Defina um primeiro mimo ou deixe para configurar depois.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: ZeniColors.mutedText,
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.xl),
-              ZeniCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Primeiro mimo',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: ZeniSpacing.md),
-                    ZeniSwitch(
-                      title: 'Usar mimo sugerido',
-                      subtitle:
-                          'Você também pode deixar para configurar depois.',
-                      icon: Icons.card_giftcard_rounded,
-                      value: _createSuggestedReward,
-                      onChanged: (value) {
-                        setState(() {
-                          _createSuggestedReward = value;
-                        });
-                      },
-                    ),
-                    if (_createSuggestedReward) ...[
-                      const SizedBox(height: ZeniSpacing.md),
-                      ZeniTextInput(
-                        controller: _rewardTitleController,
-                        label: 'Nome do mimo',
-                        hint: _suggestedRewardTitle,
-                        prefixIcon: Icons.redeem_rounded,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-              ZeniPrimaryButton(
-                label: _isSaving ? 'Finalizando...' : 'Concluir configuração',
-                icon: Icons.check_circle_rounded,
-                onPressed: _canFinish && !_isSaving ? _finishSetup : null,
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
-                label: 'Voltar',
-                icon: Icons.arrow_back_rounded,
-                onPressed: _isSaving ? null : () => _goToStep(2),
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+class _AddChildInvite extends StatelessWidget {
+  const _AddChildInvite({required this.onTap});
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: ZeniCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(ZeniSpacing.lg),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: ZeniColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.add_rounded, color: ZeniColors.primaryDark),
+          ),
+          const SizedBox(width: ZeniSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Adicionar criança',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: ZeniSpacing.xs),
+                Text(
+                  'Nome e avatar levam menos de um minuto.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: ZeniSpacing.sm),
+          const Icon(
+            Icons.arrow_forward_rounded,
+            color: ZeniColors.primaryDark,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _ChildDraftCard extends StatelessWidget {
+  const _ChildDraftCard({
+    required this.child,
+    required this.onEdit,
+    required this.onRemove,
+  });
+  final _DraftChild child;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRemove;
+  @override
+  Widget build(BuildContext context) {
+    final avatar = ZeniChildAvatarCatalog.byId(child.avatarId);
+    return ZeniCard(
+      padding: const EdgeInsets.all(ZeniSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: ZeniColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(avatar.assetPath, fit: BoxFit.contain),
+          ),
+          const SizedBox(width: ZeniSpacing.md),
+          Expanded(
+            child: Text(
+              child.name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Editar',
+          ),
+          IconButton(
+            onPressed: onRemove,
+            icon: const Icon(Icons.delete_outline_rounded),
+            tooltip: 'Remover',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddChildSheet extends StatefulWidget {
+  const _AddChildSheet({this.initial});
+  final _DraftChild? initial;
+  @override
+  State<_AddChildSheet> createState() => _AddChildSheetState();
+}
+
+class _AddChildSheetState extends State<_AddChildSheet> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.initial?.name ?? '',
+  );
+  late String _avatarId =
+      widget.initial?.avatarId ?? ZeniChildAvatarCatalog.fallbackId;
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      ZeniSpacing.xl,
+      ZeniSpacing.xl,
+      ZeniSpacing.xl,
+      MediaQuery.viewInsetsOf(context).bottom + ZeniSpacing.xl,
+    ),
+    child: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Adicionar criança',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          _AvatarPicker(
+            avatars: ZeniChildAvatarCatalog.all,
+            selectedAvatarId: _avatarId,
+            onSelected: (avatarId) => setState(() => _avatarId = avatarId),
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniTextInput(
+            controller: _name,
+            label: 'Nome',
+            hint: 'Ex.: Luna',
+            prefixIcon: Icons.child_care_rounded,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          ZeniPrimaryButton(
+            label: 'Adicionar',
+            onPressed: _name.text.trim().isEmpty
+                ? null
+                : () => Navigator.of(context).pop(
+                    _DraftChild(name: _name.text.trim(), avatarId: _avatarId),
+                  ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _AvatarPicker extends StatelessWidget {
+  const _AvatarPicker({
+    required this.avatars,
+    required this.selectedAvatarId,
+    required this.onSelected,
+  });
+  final List<ZeniChildAvatar> avatars;
+  final String selectedAvatarId;
+  final ValueChanged<String> onSelected;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const spacing = ZeniSpacing.sm;
+      final itemWidth = (constraints.maxWidth - spacing) / 2;
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: [
+          for (final avatar in avatars)
+            Semantics(
+              button: true,
+              selected: avatar.id == selectedAvatarId,
+              child: SizedBox(
+                width: itemWidth,
+                height: 88,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: Key('avatar-picker-${avatar.id}'),
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => onSelected(avatar.id),
+                    child: AnimatedContainer(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 160),
+                      decoration: BoxDecoration(
+                        color: ZeniColors.primary.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: avatar.id == selectedAvatarId
+                              ? ZeniColors.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                          width: avatar.id == selectedAvatarId ? 2 : 1,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(ZeniSpacing.sm),
+                        child: Image.asset(
+                          avatar.assetPath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
+}
+
+class _DraftChild {
+  const _DraftChild({required this.name, required this.avatarId});
+  final String name;
+  final String avatarId;
 }
