@@ -28,6 +28,7 @@ import 'package:zeni/features/family/data/repositories/remote_children_repositor
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
 import 'package:zeni/features/onboarding/presentation/pages/initial_start_choice_page.dart';
 import 'package:zeni/features/onboarding/presentation/pages/family_account_page.dart';
+import 'package:zeni/features/profile/presentation/pages/profile_choice_page.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
 import 'package:zeni/features/rewards/data/models/reward.dart';
 import 'package:zeni/features/rewards/data/models/reward_request.dart';
@@ -408,12 +409,94 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('ZeniKids'), findsOneWidget);
-    expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+    expect(find.byType(ZeniBrandLogo), findsOneWidget);
+    expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
     expect(find.text('Luna'), findsOneWidget);
     expect(find.text('Theo'), findsOneWidget);
     expect(find.text('Entrar como responsável'), findsOneWidget);
+    expect(find.byKey(const Key('profile-child-child-1')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('profile-child-child-1')),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
+    final avatar = tester.widget<Image>(
+      find.descendant(
+        of: find.byKey(const Key('profile-child-child-1')),
+        matching: find.byType(Image),
+      ),
+    );
+    expect(
+      avatar.image,
+      const AssetImage('assets/avatars/zeni_avatar_green.png'),
+    );
   });
+
+  testWidgets('profile choice supports dark mode and larger text', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    seedMockAppState();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: ZeniTheme.dark,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.25)),
+            child: child!,
+          ),
+          home: const ProfileChoicePage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
+    expect(find.byKey(const Key('profile-child-child-1')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'profile choice keeps parent access near the top for seven children',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final seeded = ZeniAppState.seeded();
+      final children = List<ChildProfile>.generate(
+        7,
+        (index) => seeded.children[index % seeded.children.length].copyWith(
+          id: 'profile-child-$index',
+          name: 'Criança ${index + 1}',
+        ),
+      );
+      seedMockAppStateWith(seeded.copyWith(children: children));
+
+      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+      await tester.pumpAndSettle();
+
+      final parentAccess = find.text('Entrar como responsável');
+      expect(parentAccess, findsOneWidget);
+      expect(tester.getTopLeft(parentAccess).dy, lessThan(640));
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('profile-child-profile-child-6')),
+        280,
+      );
+      expect(find.text('Criança 7'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Entrar com código da família'),
+        280,
+      );
+      expect(find.text('Entrar com código da família'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('first opening shows onboarding when app is empty', (
     tester,
@@ -431,7 +514,7 @@ void main() {
     expect(find.byType(ZeniMascot), findsOneWidget);
     expect(find.byKey(const Key('onboarding-star-left')), findsOneWidget);
     expect(find.byKey(const Key('onboarding-star-right')), findsOneWidget);
-    expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
+    expect(find.text('Quem vai usar o Zeni agora?'), findsNothing);
   });
 
   testWidgets('finishing institutional onboarding persists the flag only', (
@@ -803,7 +886,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bem-vindo ao Zeni'), findsNothing);
-      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
       expect(find.text('Luna'), findsOneWidget);
 
       final state = ProviderScope.containerOf(
@@ -917,7 +1000,7 @@ void main() {
       await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
       expect(find.text('Bem-vindo ao Zeni'), findsNothing);
     },
   );
@@ -930,7 +1013,7 @@ void main() {
       await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
       expect(find.text('Bem-vindo ao Zeni'), findsNothing);
     },
   );
@@ -1079,12 +1162,12 @@ void main() {
         find.text('Restaurar dados da nuvem neste aparelho'),
         findsNothing,
       );
-      expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsNothing);
 
       await tester.tap(find.text('Restaurar minha família'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
       expect(find.text('Luna'), findsOneWidget);
       expect(find.text('Entrar como responsável'), findsOneWidget);
 
@@ -1100,7 +1183,7 @@ void main() {
       expect(state.missionLogs, isEmpty);
       expect(state.rewardRequests, isEmpty);
       expect(state.starLedgerEntries, isEmpty);
-      expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
       expect(state.appSettings.hasCompletedOnboarding, isTrue);
     },
   );
@@ -1171,7 +1254,7 @@ void main() {
         find.text('Nenhum dado remoto foi encontrado para restaurar.'),
         findsWidgets,
       );
-      expect(find.text('Quem está usando o ZeniKids?'), findsNothing);
+      expect(find.text('Quem vai usar o Zeni agora?'), findsNothing);
     },
   );
 
@@ -2122,7 +2205,7 @@ void main() {
     await tester.tap(find.text('Entrar'));
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    expect(find.text('Quem está usando o ZeniKids?'), findsOneWidget);
+    expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
     expect(find.text('Painel do responsável'), findsNothing);
 
     await tester.tap(find.text('Entrar como responsável'));
