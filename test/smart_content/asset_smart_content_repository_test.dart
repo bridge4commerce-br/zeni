@@ -1,10 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zeni/core/domain/zeni_enums.dart';
+import 'package:zeni/core/widgets/feedback/zeni_feedback_popup.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
-import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
+import 'package:zeni/features/smart_content/data/models/smart_mission_template.dart';
+import 'package:zeni/features/smart_content/data/models/smart_routine_template.dart';
 import 'package:zeni/features/smart_content/data/repositories/asset_smart_content_repository.dart';
+import 'package:zeni/features/smart_content/data/repositories/smart_content_repository.dart';
+import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
+
+class _SmartContentTestRepository implements SmartContentRepository {
+  const _SmartContentTestRepository();
+
+  static const _mission = SmartMissionTemplate(
+    id: 'test-mission',
+    domain: 'self_care',
+    priority: 'high',
+    estimatedDuration: '5 min',
+    suggestedStars: 2,
+    eligibleAsExtra: false,
+    requiresApprovalByDefault: false,
+    support: SmartMissionSupport(
+      oneStepAtATime: '',
+      visual: '',
+      tts: '',
+      timer: '',
+      transition: '',
+      sensoryLoad: '',
+      cognitiveLoad: '',
+      canSplit: false,
+    ),
+    masteryPath: '',
+    culturalRelevance: '',
+    culturalTags: [],
+    status: 'active',
+    familyFit: '',
+    contexts: [],
+    skills: [],
+    effort: 'low',
+    rewardMode: '',
+    adultSupport: '',
+    safetyLevel: '',
+    applicability: '',
+    localePriority: {},
+    title: 'Missão de teste',
+    description: 'Uma missão para validar o feedback.',
+    helpSteps: [],
+  );
+
+  @override
+  Future<List<SmartMissionTemplate>> getMissions(String localeTag) =>
+      SynchronousFuture(const [_mission]);
+
+  @override
+  Future<List<SmartRoutineTemplate>> getRoutines(String localeTag) =>
+      SynchronousFuture(const []);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -132,5 +185,54 @@ void main() {
     expect(find.text('Sugestões para sua família'), findsWidgets);
     expect(find.text('Brush your teeth'), findsNothing);
     expect(find.text('I\'m home'), findsNothing);
+  });
+
+  testWidgets('batch mission creation shows the Zeni success feedback', (
+    tester,
+  ) async {
+    final child = ChildProfile(
+      id: 'child-1',
+      familyId: 'family-1',
+      name: 'Luna',
+      emoji: '⭐',
+      starBalance: 0,
+      streakCount: 0,
+      createdAt: DateTime(2026, 9, 9),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('pt', 'BR'),
+        supportedLocales: const [Locale('pt', 'BR'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: SmartSuggestionsPage(
+          children: [child],
+          activeMissions: const [],
+          repository: const _SmartContentTestRepository(),
+          onConfirmBatch: (_, _) async =>
+              const SmartBatchCreationResult(created: 1, skipped: 0),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Checkbox), findsWidgets);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    final reviewButton = find.text('Revisar 1 missões');
+    await tester.ensureVisible(reviewButton);
+    await tester.tap(reviewButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final confirmButton = find.text('Adicionar 1 missões');
+    await tester.ensureVisible(confirmButton);
+    await tester.tap(confirmButton);
+    await tester.pump();
+
+    expect(find.byType(ZeniFeedbackPopup), findsOneWidget);
+    expect(find.text('Missões adicionadas!'), findsOneWidget);
+    expect(find.text('1 missões adicionadas.'), findsOneWidget);
   });
 }

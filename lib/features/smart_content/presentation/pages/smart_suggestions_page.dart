@@ -8,6 +8,7 @@ import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
+import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
@@ -15,6 +16,7 @@ import '../../data/models/smart_mission_template.dart';
 import '../../data/models/smart_routine_template.dart';
 import '../../data/models/smart_suggestion.dart';
 import '../../data/repositories/asset_smart_content_repository.dart';
+import '../../data/repositories/smart_content_repository.dart';
 import '../../domain/family_smart_preferences.dart';
 import '../../domain/smart_suggestion_enums.dart';
 import '../../domain/smart_suggestion_service.dart';
@@ -79,6 +81,7 @@ class SmartSuggestionsPage extends StatefulWidget {
     required this.children,
     required this.activeMissions,
     required this.onConfirmBatch,
+    this.repository,
   });
   final List<ChildProfile> children;
   final List<Mission> activeMissions;
@@ -87,12 +90,14 @@ class SmartSuggestionsPage extends StatefulWidget {
     List<ChildProfile>,
   )
   onConfirmBatch;
+  final SmartContentRepository? repository;
   @override
   State<SmartSuggestionsPage> createState() => _SmartSuggestionsPageState();
 }
 
 class _SmartSuggestionsPageState extends State<SmartSuggestionsPage> {
-  final _repository = AssetSmartContentRepository();
+  late final SmartContentRepository _repository =
+      widget.repository ?? AssetSmartContentRepository();
   final _selectedChildren = <String>{};
   final _selectedMissions = <String>{};
   final _recipientSectionKey = GlobalKey();
@@ -590,14 +595,13 @@ class _ReviewPageState extends State<_ReviewPage> {
     setState(() => _saving = true);
     final result = await widget.confirm(_drafts, widget.children);
     if (!mounted) return;
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
+    ZeniSuccessPopup.show(
+      context,
+      title: 'Missões adicionadas!',
+      message:
           '${result.created} missões adicionadas${result.skipped > 0 ? ' · ${result.skipped} já existiam' : ''}.',
-        ),
-      ),
     );
+    Navigator.pop(context);
   }
 }
 
