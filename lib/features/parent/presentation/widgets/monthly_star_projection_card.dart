@@ -12,10 +12,12 @@ class MonthlyStarProjectionCard extends StatelessWidget {
     super.key,
     required this.child,
     required this.projection,
+    this.childSelector,
   });
 
   final ChildProfile child;
   final MonthlyStarProjectionResult projection;
+  final Widget? childSelector;
 
   @override
   Widget build(BuildContext context) {
@@ -25,13 +27,17 @@ class MonthlyStarProjectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (childSelector != null) ...[
+            childSelector!,
+            const SizedBox(height: ZeniSpacing.md),
+          ],
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Projeção do mês', style: textTheme.titleLarge),
+                    Text('Potencial do mês', style: textTheme.titleLarge),
                     const SizedBox(height: ZeniSpacing.xs),
                     Text(
                       '${child.name} ainda pode ganhar até ${projection.maxPossibleStars} estrelas neste mês.',
@@ -52,15 +58,14 @@ class MonthlyStarProjectionCard extends StatelessWidget {
           ),
           const SizedBox(height: ZeniSpacing.sm),
           _ProjectionMetaRow(
-            label: 'Ocorrências possíveis',
+            label: 'Missões previstas',
             value: '${projection.totalRemainingOccurrences}',
           ),
-          const SizedBox(height: ZeniSpacing.lg),
-          for (final scenario in projection.scenarios) ...[
-            _ProjectionScenarioRow(result: scenario),
-            if (scenario != projection.scenarios.last)
-              const SizedBox(height: ZeniSpacing.sm),
-          ],
+          const SizedBox(height: ZeniSpacing.sm),
+          _ProjectionMetaRow(
+            label: 'Estrelas possíveis',
+            value: '${projection.maxPossibleStars}',
+          ),
         ],
       ),
     );
@@ -87,58 +92,6 @@ class _ProjectionMetaRow extends StatelessWidget {
         ),
         Text(value, style: Theme.of(context).textTheme.titleMedium),
       ],
-    );
-  }
-}
-
-class _ProjectionScenarioRow extends StatelessWidget {
-  const _ProjectionScenarioRow({required this.result});
-
-  final MonthlyProjectionScenarioResult result;
-
-  @override
-  Widget build(BuildContext context) {
-    final tone = switch (result.scenario) {
-      MonthlyProjectionScenario.conservative => ZeniColors.warning,
-      MonthlyProjectionScenario.realistic => ZeniColors.primaryDark,
-      MonthlyProjectionScenario.maximum => ZeniColors.info,
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(ZeniSpacing.md),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: tone.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  result.scenario.label,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  '+${result.projectedEarnedStars} estrelas',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: tone),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${result.projectedBalance}',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(color: tone),
-          ),
-        ],
-      ),
     );
   }
 }

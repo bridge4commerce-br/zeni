@@ -8,10 +8,16 @@ import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../family/data/models/child_profile.dart';
 
 class ParentChildSummaryCard extends StatelessWidget {
-  const ParentChildSummaryCard({super.key, required this.child, this.onTap});
+  const ParentChildSummaryCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.isSelected = false,
+  });
 
   final ChildProfile child;
   final VoidCallback? onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +31,26 @@ class ParentChildSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(child.name, style: Theme.of(context).textTheme.titleLarge),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        child.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(width: ZeniSpacing.xs),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: ZeniColors.primary,
+                        semanticLabel: 'Selecionada para projeção',
+                      ),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: ZeniSpacing.xs),
                 Text(
                   '${child.streakCount} dias de sequência',

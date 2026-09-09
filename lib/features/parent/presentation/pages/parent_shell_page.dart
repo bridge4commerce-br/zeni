@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/accessibility/zeni_accessibility_controller.dart';
 import '../../../../core/domain/zeni_enums.dart';
 import '../../../../core/feedback/zeni_haptics.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/providers/zeni_repository_providers.dart';
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
@@ -1386,95 +1387,277 @@ class _ParentDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(ZeniSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Painel do responsável',
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            Text(
-              'Acompanhe missões, aprovações, mimos e evolução da família.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-            ),
-            if (data.pendingCount > 0) ...[
-              const SizedBox(height: ZeniSpacing.xl),
-              _PendingTodaySection(
-                data: data,
-                onApproveMission: onApproveMission,
-                onRejectMission: onRejectMission,
-                onApproveRewardRequest: onApproveRewardRequest,
-                onRejectRewardRequest: onRejectRewardRequest,
+      child: ZeniPageFrame(
+        key: const Key('parent-dashboard-frame'),
+        width: ZeniPageWidth.dashboard,
+        child: LayoutBuilder(
+          builder: (context, _) {
+            final layout = _ParentDashboardLayout.fromContext(context);
+            final metrics = [
+              ParentMetricCard(
+                emoji: '👧',
+                value: '${data.activeChildren.length}',
+                label: 'crianças',
+                onTap: onOpenFamily,
               ),
-            ],
-            const SizedBox(height: ZeniSpacing.xl),
-            Row(
-              children: [
-                Expanded(
-                  child: ParentMetricCard(
-                    emoji: '👧',
-                    value: '${data.activeChildren.length}',
-                    label: 'crianças',
-                    onTap: onOpenFamily,
-                  ),
-                ),
-                const SizedBox(width: ZeniSpacing.md),
-                Expanded(
-                  child: ParentMetricCard(
-                    emoji: '⏳',
-                    value: '${data.awaitingLogs.length}',
-                    label: 'aprovações',
-                    onTap: onOpenMissionApprovals,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: ParentMetricCard(
-                    emoji: '✅',
-                    value: '${data.activeMissions.length}',
-                    label: 'missões ativas',
-                    onTap: onOpenMissions,
-                  ),
-                ),
-                const SizedBox(width: ZeniSpacing.md),
-                Expanded(
-                  child: ParentMetricCard(
-                    emoji: '🎁',
-                    value: '${data.pendingRequests.length}',
-                    label: 'mimos pedidos',
-                    onTap: onOpenRewardRequests,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            Text('Crianças', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: ZeniSpacing.md),
-            for (final child in data.activeChildren) ...[
-              ParentChildSummaryCard(child: child, onTap: onOpenFamily),
-              const SizedBox(height: ZeniSpacing.sm),
-              MonthlyStarProjectionCard(
-                child: child,
-                projection: _projectionCalculator.calculateForChild(
-                  child: child,
-                  activeMissions: data.activeMissions,
+              ParentMetricCard(
+                emoji: '⏳',
+                value: '${data.awaitingLogs.length}',
+                label: 'aprovações',
+                onTap: onOpenMissionApprovals,
+              ),
+              ParentMetricCard(
+                emoji: '✅',
+                value: '${data.activeMissions.length}',
+                label: 'missões ativas',
+                onTap: onOpenMissions,
+              ),
+              ParentMetricCard(
+                emoji: '🎁',
+                value: '${data.pendingRequests.length}',
+                label: 'mimos pedidos',
+                onTap: onOpenRewardRequests,
+              ),
+            ];
+
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.xl),
+              child: SizedBox(
+                key: const Key('parent-dashboard-content'),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Painel do responsável',
+                      style: Theme.of(context).textTheme.displayLarge,
+                    ),
+                    const SizedBox(height: ZeniSpacing.sm),
+                    Text(
+                      'Acompanhe missões, aprovações, mimos e evolução da família.',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: ZeniColors.mutedText,
+                      ),
+                    ),
+                    if (data.pendingCount > 0) ...[
+                      const SizedBox(height: ZeniSpacing.xl),
+                      _PendingTodaySection(
+                        data: data,
+                        onApproveMission: onApproveMission,
+                        onRejectMission: onRejectMission,
+                        onApproveRewardRequest: onApproveRewardRequest,
+                        onRejectRewardRequest: onRejectRewardRequest,
+                      ),
+                    ],
+                    const SizedBox(height: ZeniSpacing.xl),
+                    _ParentMetricGrid(
+                      columns: layout.metricColumns,
+                      children: metrics,
+                    ),
+                    const SizedBox(height: ZeniSpacing.xl),
+                    Text(
+                      'Crianças',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: ZeniSpacing.md),
+                    _ParentChildrenDashboard(
+                      isSideBySide: layout.isWide,
+                      children: data.activeChildren,
+                      projectionFor: (child) =>
+                          _projectionCalculator.calculateForChild(
+                            child: child,
+                            activeMissions: data.activeMissions,
+                          ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: ZeniSpacing.md),
-            ],
-          ],
+            );
+          },
         ),
       ),
+    );
+  }
+}
+
+class _ParentDashboardLayout {
+  const _ParentDashboardLayout({
+    required this.metricColumns,
+    required this.isWide,
+  });
+
+  final int metricColumns;
+  final bool isWide;
+
+  factory _ParentDashboardLayout.fromContext(BuildContext context) {
+    final windowClass = ZeniResponsive.windowClass(context);
+    return _ParentDashboardLayout(
+      metricColumns: windowClass == ZeniWindowClass.large ? 4 : 2,
+      isWide: switch (windowClass) {
+        ZeniWindowClass.expanded || ZeniWindowClass.large => true,
+        ZeniWindowClass.compact || ZeniWindowClass.medium => false,
+      },
+    );
+  }
+}
+
+class _ParentMetricGrid extends StatelessWidget {
+  const _ParentMetricGrid({required this.columns, required this.children});
+
+  final int columns;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth =
+            (constraints.maxWidth - (columns - 1) * ZeniSpacing.md) / columns;
+        return Wrap(
+          spacing: ZeniSpacing.md,
+          runSpacing: ZeniSpacing.md,
+          children: [
+            for (final child in children)
+              SizedBox(width: itemWidth, child: child),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ParentChildrenDashboard extends StatefulWidget {
+  const _ParentChildrenDashboard({
+    required this.isSideBySide,
+    required this.children,
+    required this.projectionFor,
+  });
+
+  final bool isSideBySide;
+  final List<ChildProfile> children;
+  final MonthlyStarProjectionResult Function(ChildProfile child) projectionFor;
+
+  @override
+  State<_ParentChildrenDashboard> createState() =>
+      _ParentChildrenDashboardState();
+}
+
+class _ParentChildrenDashboardState extends State<_ParentChildrenDashboard> {
+  String? _selectedChildId;
+
+  @override
+  void didUpdateWidget(covariant _ParentChildrenDashboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.children.any((child) => child.id == _selectedChildId)) {
+      _selectedChildId = null;
+    }
+  }
+
+  ChildProfile? get _selectedChild {
+    if (widget.children.isEmpty) return null;
+    return widget.children.firstWhere(
+      (child) => child.id == _selectedChildId,
+      orElse: () => widget.children.first,
+    );
+  }
+
+  void _selectChild(String childId) {
+    if (_selectedChildId == childId) return;
+    setState(() {
+      _selectedChildId = childId;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedChild = _selectedChild;
+    if (selectedChild == null) return const SizedBox.shrink();
+
+    final projectionPanel = MonthlyStarProjectionCard(
+      key: const Key('parent-dashboard-monthly-projection'),
+      child: selectedChild,
+      projection: widget.projectionFor(selectedChild),
+      childSelector: widget.children.length < 2
+          ? null
+          : _ProjectionChildSelector(
+              selectedChildId: selectedChild.id,
+              children: widget.children,
+              onChanged: _selectChild,
+            ),
+    );
+    final childrenList = Column(
+      key: const Key('parent-dashboard-children-column'),
+      children: [
+        for (final child in widget.children) ...[
+          ParentChildSummaryCard(
+            child: child,
+            isSelected: child.id == selectedChild.id,
+            onTap: () => _selectChild(child.id),
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+        ],
+      ],
+    );
+
+    if (!widget.isSideBySide) {
+      return Column(
+        children: [
+          childrenList,
+          const SizedBox(height: ZeniSpacing.sm),
+          projectionPanel,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: childrenList),
+        const SizedBox(width: ZeniSpacing.md),
+        Expanded(
+          child: Column(
+            key: const Key('parent-dashboard-projections-column'),
+            children: [projectionPanel],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectionChildSelector extends StatelessWidget {
+  const _ProjectionChildSelector({
+    required this.selectedChildId,
+    required this.children,
+    required this.onChanged,
+  });
+
+  final String selectedChildId;
+  final List<ChildProfile> children;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text('Criança', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(width: ZeniSpacing.md),
+        Expanded(
+          child: DropdownButton<String>(
+            key: const Key('parent-dashboard-projection-selector'),
+            value: selectedChildId,
+            isExpanded: true,
+            onChanged: (childId) {
+              if (childId != null) onChanged(childId);
+            },
+            items: [
+              for (final child in children)
+                DropdownMenuItem(value: child.id, child: Text(child.name)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

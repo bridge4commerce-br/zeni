@@ -29,7 +29,10 @@ import 'package:zeni/features/family/presentation/providers/remote_children_prov
 import 'package:zeni/features/onboarding/presentation/pages/initial_start_choice_page.dart';
 import 'package:zeni/features/onboarding/presentation/pages/family_account_page.dart';
 import 'package:zeni/features/profile/presentation/pages/profile_choice_page.dart';
+import 'package:zeni/features/parent/presentation/widgets/parent_metric_card.dart';
+import 'package:zeni/features/parent/presentation/widgets/parent_child_summary_card.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
+import 'package:zeni/features/parent/presentation/widgets/monthly_star_projection_card.dart';
 import 'package:zeni/features/rewards/data/models/reward.dart';
 import 'package:zeni/features/rewards/data/models/reward_request.dart';
 import 'package:zeni/features/rewards/data/repositories/remote_rewards_repository.dart';
@@ -85,6 +88,27 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'zeni_app_state_v1': jsonEncode(state.toJson()),
     });
+  }
+
+  Future<void> openParentDashboardAt(
+    WidgetTester tester,
+    Size size, {
+    double textScale = 1,
+    ZeniAppState? state,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    seedMockAppStateWith(state ?? ZeniAppState.seeded());
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Entrar como responsável'), 300);
+    await tester.tap(find.text('Entrar como responsável'));
+    await tester.pumpAndSettle();
   }
 
   Widget buildStaticSettingsHarness({
@@ -2103,6 +2127,183 @@ void main() {
     expect(find.text('Você tem 1 pendência'), findsOneWidget);
     expect(find.text('Luna enviou uma missão'), findsOneWidget);
   });
+
+  testWidgets('parent dashboard preserves the compact composition', (
+    tester,
+  ) async {
+    await openParentDashboardAt(tester, const Size(390, 844));
+
+    expect(find.text('Painel do responsável'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('parent-dashboard-content'))).width,
+      342,
+    );
+    final metrics = find.byType(ParentMetricCard);
+    expect(
+      tester.getTopLeft(metrics.at(0)).dy,
+      tester.getTopLeft(metrics.at(1)).dy,
+    );
+    expect(
+      tester.getTopLeft(metrics.at(2)).dy,
+      greaterThan(tester.getTopLeft(metrics.at(0)).dy),
+    );
+    expect(
+      find.byKey(const Key('parent-dashboard-children-column')),
+      findsOneWidget,
+    );
+    expect(find.byType(MonthlyStarProjectionCard), findsOneWidget);
+    expect(
+      find.byKey(const Key('parent-dashboard-projection-selector')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'parent dashboard uses one selectable projection in independent columns expanded',
+    (tester) async {
+      await openParentDashboardAt(
+        tester,
+        const Size(1024, 1366),
+        textScale: 1.3,
+      );
+
+      expect(find.text('Painel do responsável'), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const Key('parent-dashboard-content'))).width,
+        928,
+      );
+      final metrics = find.byType(ParentMetricCard);
+      expect(
+        tester.getTopLeft(metrics.at(0)).dy,
+        tester.getTopLeft(metrics.at(1)).dy,
+      );
+      expect(
+        tester.getTopLeft(metrics.at(2)).dy,
+        greaterThan(tester.getTopLeft(metrics.at(0)).dy),
+      );
+      expect(
+        find.byKey(const Key('parent-dashboard-children-column')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('parent-dashboard-projections-column')),
+        findsOneWidget,
+      );
+      final summaries = find.byType(ParentChildSummaryCard);
+      final projections = find.byType(MonthlyStarProjectionCard);
+      expect(summaries, findsNWidgets(2));
+      expect(projections, findsOneWidget);
+      expect(
+        tester.getTopLeft(summaries.at(1)).dy,
+        lessThan(tester.getBottomLeft(projections.at(0)).dy),
+      );
+
+      await tester.tap(find.text('Theo').first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Theo ainda pode ganhar'), findsOneWidget);
+    },
+  );
+
+  testWidgets('parent dashboard uses four metric columns at large width', (
+    tester,
+  ) async {
+    await openParentDashboardAt(tester, const Size(1366, 1024));
+
+    expect(
+      tester.getSize(find.byKey(const Key('parent-dashboard-content'))).width,
+      1200,
+    );
+    final metrics = find.byType(ParentMetricCard);
+    expect(
+      tester.getTopLeft(metrics.at(0)).dy,
+      tester.getTopLeft(metrics.at(3)).dy,
+    );
+    expect(
+      find.byKey(const Key('parent-dashboard-children-column')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('parent-dashboard-projections-column')),
+      findsOneWidget,
+    );
+    final summaries = find.byType(ParentChildSummaryCard);
+    final projections = find.byType(MonthlyStarProjectionCard);
+    expect(projections, findsOneWidget);
+    expect(
+      tester.getTopLeft(summaries.at(1)).dy,
+      lessThan(tester.getBottomLeft(projections.at(0)).dy),
+    );
+
+    await tester.tap(
+      find.byKey(const Key('parent-dashboard-projection-selector')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Theo').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Theo ainda pode ganhar'), findsOneWidget);
+
+    await tester.tap(find.text('Missões').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Aprovações pendentes'), findsOneWidget);
+  });
+
+  testWidgets('parent dashboard hides the selector for one child', (
+    tester,
+  ) async {
+    final seeded = ZeniAppState.seeded();
+    final luna = seeded.children.first;
+    await openParentDashboardAt(
+      tester,
+      const Size(390, 844),
+      state: seeded.copyWith(
+        children: [luna],
+        missions: [
+          for (final mission in seeded.missions)
+            if (mission.childId == luna.id) mission,
+        ],
+      ),
+    );
+
+    expect(find.byType(MonthlyStarProjectionCard), findsOneWidget);
+    expect(
+      find.byKey(const Key('parent-dashboard-projection-selector')),
+      findsNothing,
+    );
+    expect(find.textContaining('Luna ainda pode ganhar'), findsOneWidget);
+  });
+
+  testWidgets('parent dashboard shows only factual monthly potential data', (
+    tester,
+  ) async {
+    await openParentDashboardAt(tester, const Size(390, 844));
+
+    expect(find.text('Potencial do mês'), findsOneWidget);
+    expect(find.text('Dias restantes'), findsOneWidget);
+    expect(find.text('Missões previstas'), findsOneWidget);
+    expect(find.text('Estrelas possíveis'), findsOneWidget);
+    expect(find.text('Conservador'), findsNothing);
+    expect(find.text('Realista'), findsNothing);
+    expect(find.text('Máximo'), findsNothing);
+    expect(find.text('Projeção do mês'), findsNothing);
+  });
+
+  testWidgets(
+    'parent dashboard does not render a projection without children',
+    (tester) async {
+      final seeded = ZeniAppState.seeded();
+      await openParentDashboardAt(
+        tester,
+        const Size(390, 844),
+        state: seeded.copyWith(children: const [], missions: const []),
+      );
+
+      expect(find.byType(MonthlyStarProjectionCard), findsNothing);
+      expect(
+        find.byKey(const Key('parent-dashboard-projection-selector')),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('parent home shows reward pending badge and today section', (
     tester,
