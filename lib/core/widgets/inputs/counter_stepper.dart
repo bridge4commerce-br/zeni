@@ -155,7 +155,7 @@ class _StepperValue extends StatelessWidget {
         softWrap: false,
         style: Theme.of(
           context,
-        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

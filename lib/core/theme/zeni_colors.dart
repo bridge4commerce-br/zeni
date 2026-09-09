@@ -29,3 +29,126 @@ class ZeniColors {
 
   static const Color orange = Color(0xFFF97316);
 }
+
+@immutable
+class ZeniSemanticColors extends ThemeExtension<ZeniSemanticColors> {
+  const ZeniSemanticColors({
+    required this.brand,
+    required this.actionPrimary,
+    required this.actionPrimaryPressed,
+    required this.onActionPrimary,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.canvas,
+    required this.surface,
+    required this.surfaceSubtle,
+    required this.borderSubtle,
+    required this.accentStar,
+    required this.focus,
+  });
+
+  final Color brand;
+  final Color actionPrimary;
+  final Color actionPrimaryPressed;
+  final Color onActionPrimary;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color canvas;
+  final Color surface;
+  final Color surfaceSubtle;
+  final Color borderSubtle;
+  final Color accentStar;
+  final Color focus;
+
+  static const light = ZeniSemanticColors(
+    brand: Color(0xFF22C55E),
+    actionPrimary: Color(0xFF15803D),
+    actionPrimaryPressed: Color(0xFF166534),
+    onActionPrimary: Color(0xFFFFFFFF),
+    textPrimary: Color(0xFF17211B),
+    textSecondary: Color(0xFF526057),
+    canvas: Color(0xFFF8FAF7),
+    surface: Color(0xFFFFFFFF),
+    surfaceSubtle: Color(0xFFF0FDF4),
+    borderSubtle: Color(0xFFDDE5DF),
+    accentStar: Color(0xFFFFD166),
+    focus: Color(0xFF1D4ED8),
+  );
+
+  static const dark = ZeniSemanticColors(
+    brand: Color(0xFF4ADE80),
+    actionPrimary: Color(0xFF4ADE80),
+    actionPrimaryPressed: Color(0xFF22C55E),
+    onActionPrimary: Color(0xFF102218),
+    textPrimary: Color(0xFFF8FAFC),
+    textSecondary: Color(0xFFC4D1C8),
+    canvas: Color(0xFF102218),
+    surface: Color(0xFF173322),
+    surfaceSubtle: Color(0xFF1D4029),
+    borderSubtle: Color(0xFF375844),
+    accentStar: Color(0xFFFFD166),
+    focus: Color(0xFF93C5FD),
+  );
+
+  @override
+  ZeniSemanticColors copyWith({
+    Color? brand,
+    Color? actionPrimary,
+    Color? actionPrimaryPressed,
+    Color? onActionPrimary,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? canvas,
+    Color? surface,
+    Color? surfaceSubtle,
+    Color? borderSubtle,
+    Color? accentStar,
+    Color? focus,
+  }) {
+    return ZeniSemanticColors(
+      brand: brand ?? this.brand,
+      actionPrimary: actionPrimary ?? this.actionPrimary,
+      actionPrimaryPressed: actionPrimaryPressed ?? this.actionPrimaryPressed,
+      onActionPrimary: onActionPrimary ?? this.onActionPrimary,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      canvas: canvas ?? this.canvas,
+      surface: surface ?? this.surface,
+      surfaceSubtle: surfaceSubtle ?? this.surfaceSubtle,
+      borderSubtle: borderSubtle ?? this.borderSubtle,
+      accentStar: accentStar ?? this.accentStar,
+      focus: focus ?? this.focus,
+    );
+  }
+
+  @override
+  ZeniSemanticColors lerp(covariant ZeniSemanticColors? other, double t) {
+    if (other == null) return this;
+    return ZeniSemanticColors(
+      brand: Color.lerp(brand, other.brand, t)!,
+      actionPrimary: Color.lerp(actionPrimary, other.actionPrimary, t)!,
+      actionPrimaryPressed: Color.lerp(
+        actionPrimaryPressed,
+        other.actionPrimaryPressed,
+        t,
+      )!,
+      onActionPrimary: Color.lerp(onActionPrimary, other.onActionPrimary, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      canvas: Color.lerp(canvas, other.canvas, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceSubtle: Color.lerp(surfaceSubtle, other.surfaceSubtle, t)!,
+      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
+      accentStar: Color.lerp(accentStar, other.accentStar, t)!,
+      focus: Color.lerp(focus, other.focus, t)!,
+    );
+  }
+}
+
+extension ZeniSemanticColorsContext on BuildContext {
+  ZeniSemanticColors get zeniColors =>
+      Theme.of(this).extension<ZeniSemanticColors>() ??
+      (Theme.of(this).brightness == Brightness.dark
+          ? ZeniSemanticColors.dark
+          : ZeniSemanticColors.light);
+}

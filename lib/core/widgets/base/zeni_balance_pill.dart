@@ -42,7 +42,7 @@ class ZeniBalancePill extends StatelessWidget {
             Text(
               '$stars',
               style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

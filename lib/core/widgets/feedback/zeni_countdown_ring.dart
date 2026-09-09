@@ -46,7 +46,7 @@ class ZeniCountdownRing extends StatelessWidget {
                 '$secondsRemaining',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: color,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

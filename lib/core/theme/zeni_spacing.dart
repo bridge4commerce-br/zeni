@@ -8,4 +8,13 @@ class ZeniSpacing {
   static const double xl = 24;
   static const double xxl = 32;
   static const double xxxl = 48;
+
+  static const double spaceInlineTight = xs;
+  static const double spaceInline = sm;
+  static const double spaceControl = md;
+  static const double spaceCard = lg;
+  static const double spaceGroup = xl;
+  static const double spaceSection = xxl;
+  static const double spaceHero = xxxl;
+  static const double spaceCanvas = 64;
 }

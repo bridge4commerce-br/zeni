@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/accessibility/zeni_accessibility_controller.dart';
 import '../core/accessibility/zeni_accessibility_settings.dart';
 import '../core/theme/zeni_theme.dart';
+import '../core/theme/zeni_typography.dart';
 import '../features/sync/presentation/providers/opportunistic_sync_providers.dart';
 import 'app_router.dart';
 
@@ -81,8 +82,11 @@ class _ZeniAppState extends ConsumerState<ZeniApp> with WidgetsBindingObserver {
     if (fontFamily == null) return theme;
 
     return theme.copyWith(
-      textTheme: theme.textTheme.apply(fontFamily: fontFamily),
-      primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: fontFamily),
+      textTheme: ZeniTypography.applyFontFamily(theme.textTheme, fontFamily),
+      primaryTextTheme: ZeniTypography.applyFontFamily(
+        theme.primaryTextTheme,
+        fontFamily,
+      ),
     );
   }
 }

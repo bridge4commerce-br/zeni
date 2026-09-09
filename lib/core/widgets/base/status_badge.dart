@@ -53,7 +53,7 @@ class StatusBadge extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: _color,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

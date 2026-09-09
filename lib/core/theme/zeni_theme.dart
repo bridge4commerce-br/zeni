@@ -19,6 +19,7 @@ class ZeniTheme {
 
     return _baseTheme(
       colorScheme: colorScheme,
+      semanticColors: ZeniSemanticColors.light,
       scaffoldBackgroundColor: ZeniColors.background,
       textColor: ZeniColors.text,
       appBarBackgroundColor: ZeniColors.background,
@@ -39,6 +40,7 @@ class ZeniTheme {
 
     return _baseTheme(
       colorScheme: colorScheme,
+      semanticColors: ZeniSemanticColors.dark,
       scaffoldBackgroundColor: ZeniColors.darkBackground,
       textColor: ZeniColors.darkText,
       appBarBackgroundColor: ZeniColors.darkBackground,
@@ -49,6 +51,7 @@ class ZeniTheme {
 
   static ThemeData _baseTheme({
     required ColorScheme colorScheme,
+    required ZeniSemanticColors semanticColors,
     required Color scaffoldBackgroundColor,
     required Color textColor,
     required Color appBarBackgroundColor,
@@ -59,6 +62,7 @@ class ZeniTheme {
       useMaterial3: true,
       fontFamily: ZeniTypography.fontFamily,
       colorScheme: colorScheme,
+      extensions: [semanticColors],
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       textTheme: ZeniTypography.textTheme(textColor),
       appBarTheme: AppBarTheme(
@@ -91,7 +95,7 @@ class ZeniTheme {
 
           return TextStyle(
             fontSize: 12,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             color: selected ? ZeniColors.primaryDark : ZeniColors.mutedText,
           );
         }),
@@ -159,7 +163,7 @@ class ZeniTheme {
           shadowColor: ZeniColors.primary.withValues(alpha: 0.28),
           surfaceTintColor: Colors.transparent,
           minimumSize: const Size.fromHeight(52),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(borderRadius: ZeniRadius.button),
         ),
       ),
@@ -167,7 +171,7 @@ class ZeniTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: ZeniColors.primaryDark,
           minimumSize: const Size.fromHeight(52),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           side: const BorderSide(color: ZeniColors.primary),
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: ZeniRadius.button),
@@ -176,7 +180,7 @@ class ZeniTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: ZeniColors.primaryDark,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
     );

@@ -44,7 +44,7 @@ class ZeniAvatar extends StatelessWidget {
                 emoji ?? _initials(label),
                 style: TextStyle(
                   fontSize: size * 0.42,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: ZeniColors.primaryDark,
                 ),
               ),

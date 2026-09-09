@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/zeni_colors.dart';
+import '../../layout/zeni_responsive.dart';
 
 enum ZeniIconActionTone { primary, neutral, danger }
 
@@ -11,7 +12,7 @@ class ZeniIconActionButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.tone = ZeniIconActionTone.neutral,
-    this.size = 44,
+    this.size = ZeniTouchTargets.minimum,
   });
 
   final IconData icon;
