@@ -7,6 +7,7 @@ import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_icon_action_button.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../tasks/data/models/mission.dart';
+import 'parent_mission_typography.dart';
 
 class ParentMissionCard extends StatelessWidget {
   const ParentMissionCard({
@@ -35,14 +36,15 @@ class ParentMissionCard extends StatelessWidget {
               children: [
                 Text(
                   mission.title,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: ParentMissionTypography.missionTitle(context),
                 ),
                 const SizedBox(height: ZeniSpacing.xs),
                 Text(
                   '${child?.name ?? 'Criança'} · ${mission.stars} estrelas · ${mission.timeGroup.label}',
-                  style: Theme.of(
+                  style: ParentMissionTypography.metadata(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+                    color: ZeniColors.mutedText,
+                  ),
                 ),
               ],
             ),
@@ -55,8 +57,8 @@ class ParentMissionCard extends StatelessWidget {
           ),
           const SizedBox(width: ZeniSpacing.sm),
           ZeniIconActionButton(
-            icon: Icons.delete_outline_rounded,
-            tooltip: 'Excluir missão',
+            icon: Icons.archive_outlined,
+            tooltip: 'Arquivar missão',
             tone: ZeniIconActionTone.danger,
             onPressed: onDelete,
           ),

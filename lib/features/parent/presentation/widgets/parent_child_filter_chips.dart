@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../family/data/models/child_profile.dart';
+import 'parent_mission_typography.dart';
 
 class ParentChildFilterChips extends StatelessWidget {
   const ParentChildFilterChips({
@@ -22,7 +23,10 @@ class ParentChildFilterChips extends StatelessWidget {
       child: Row(
         children: [
           ChoiceChip(
-            label: const Text('Todas'),
+            label: Text(
+              'Todas',
+              style: ParentMissionTypography.filterLabel(context),
+            ),
             selected: selectedChildId == null,
             onSelected: (_) => onChanged(null),
           ),
@@ -30,7 +34,10 @@ class ParentChildFilterChips extends StatelessWidget {
           for (final child in children) ...[
             ChoiceChip(
               avatar: Text(child.emoji),
-              label: Text(child.name),
+              label: Text(
+                child.name,
+                style: ParentMissionTypography.filterLabel(context),
+              ),
               selected: selectedChildId == child.id,
               onSelected: (_) => onChanged(child.id),
             ),

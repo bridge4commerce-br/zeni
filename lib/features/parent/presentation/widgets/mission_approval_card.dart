@@ -11,6 +11,7 @@ import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
+import 'parent_mission_typography.dart';
 
 class MissionApprovalCard extends StatelessWidget {
   const MissionApprovalCard({
@@ -72,8 +73,11 @@ class MissionApprovalCard extends StatelessWidget {
                   missionTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
+                  style: ParentMissionTypography.missionTitle(
+                    context,
+                    base: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
                 const SizedBox(height: ZeniSpacing.xs),
@@ -81,9 +85,10 @@ class MissionApprovalCard extends StatelessWidget {
                   '$childName · aguardando aprovação',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
+                  style: ParentMissionTypography.metadata(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+                    color: ZeniColors.mutedText,
+                  ),
                 ),
               ],
             ),

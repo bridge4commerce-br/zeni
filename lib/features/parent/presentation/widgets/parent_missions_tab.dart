@@ -11,6 +11,7 @@ import 'mission_approval_card.dart';
 import 'parent_child_filter_chips.dart';
 import 'parent_empty_state_card.dart';
 import 'parent_mission_card.dart';
+import 'parent_mission_typography.dart';
 
 class ParentMissionsTab extends StatefulWidget {
   const ParentMissionsTab({
@@ -105,7 +106,9 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.auto_awesome_rounded),
               title: Text('Sugestões para sua família'),
-              subtitle: Text('Encontre missões e rotinas para facilitar o dia a dia.'),
+              subtitle: Text(
+                'Encontre missões e rotinas para facilitar o dia a dia.',
+              ),
               trailing: Icon(Icons.chevron_right_rounded),
             ),
           ),
@@ -115,7 +118,7 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
               Expanded(
                 child: Text(
                   'Aprovações pendentes',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: ParentMissionTypography.sectionTitle(context),
                 ),
               ),
               if (awaitingLogs.isNotEmpty)
@@ -187,7 +190,10 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
             ),
           ],
           const SizedBox(height: ZeniSpacing.xl),
-          Text('Missões ativas', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Missões ativas',
+            style: ParentMissionTypography.sectionTitle(context),
+          ),
           const SizedBox(height: ZeniSpacing.md),
           if (missions.isEmpty)
             const ParentEmptyStateCard(
@@ -220,7 +226,7 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
                   Expanded(
                     child: Text(
                       'Missões arquivadas (${archivedMissions.length})',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: ParentMissionTypography.sectionTitle(context),
                     ),
                   ),
                   Icon(
@@ -426,14 +432,18 @@ class _ArchivedMissionCard extends StatelessWidget {
               children: [
                 Text(
                   mission.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: ParentMissionTypography.missionTitle(
+                    context,
+                    base: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
                 const SizedBox(height: ZeniSpacing.xs),
                 Text(
                   '${child?.name ?? 'Criança'} · ${mission.stars} estrelas',
-                  style: Theme.of(
+                  style: ParentMissionTypography.metadata(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+                    color: ZeniColors.mutedText,
+                  ),
                 ),
                 const SizedBox(height: ZeniSpacing.sm),
                 const StatusBadge(
@@ -448,7 +458,10 @@ class _ArchivedMissionCard extends StatelessWidget {
           TextButton.icon(
             onPressed: onRestore,
             icon: const Icon(Icons.restore_rounded),
-            label: const Text('Restaurar'),
+            label: Text(
+              'Restaurar',
+              style: ParentMissionTypography.actionLabel(context),
+            ),
           ),
         ],
       ),
