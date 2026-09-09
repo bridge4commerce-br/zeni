@@ -45,10 +45,6 @@ class SmartSuggestionService {
         continue;
       }
 
-      if (age != null && !mission.supportsAge(age)) {
-        continue;
-      }
-
       if (activeTitles.contains(_normalize(mission.title))) {
         continue;
       }

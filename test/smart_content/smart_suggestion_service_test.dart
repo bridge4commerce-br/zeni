@@ -13,13 +13,13 @@ import 'package:zeni/features/tasks/data/models/mission.dart';
 void main() {
   final now = DateTime(2026, 9, 7);
 
-  ChildProfile child({DateTime? birthDate}) {
+  ChildProfile child({DateTime? birthDate, bool hasBirthDate = true}) {
     return ChildProfile(
       id: 'child-1',
       familyId: 'family-1',
       name: 'Criança',
       emoji: '⭐',
-      birthDate: birthDate ?? DateTime(2016, 6, 1),
+      birthDate: hasBirthDate ? birthDate ?? DateTime(2016, 6, 1) : null,
       starBalance: 0,
       streakCount: 0,
       createdAt: DateTime(2026, 1, 1),
@@ -180,31 +180,96 @@ void main() {
     expect(result, isEmpty);
   });
 
-  test('remove missão incompatível com a idade', () async {
-    final repository = _FakeSmartContentRepository(<SmartMissionTemplate>[
-      template(
-        id: 'older',
-        title: 'Missão para mais velhos',
-        domain: 'life_skills',
-        skills: const <String>['independence'],
-        ageMin: 13,
-        ageMax: 14,
-      ),
-    ]);
+  test(
+    'mantém todas as missões quando a data de nascimento é ausente',
+    () async {
+      final repository = _FakeSmartContentRepository(<SmartMissionTemplate>[
+        template(
+          id: 'older',
+          title: 'Missão para mais velhos',
+          domain: 'life_skills',
+          skills: const <String>['independence'],
+          ageMin: 13,
+          ageMax: 14,
+        ),
+        template(
+          id: 'younger',
+          title: 'Missão para mais novos',
+          domain: 'life_skills',
+          skills: const <String>['independence'],
+          ageMin: 5,
+          ageMax: 7,
+        ),
+      ]);
 
-    final service = SmartSuggestionService(repository);
+      final service = SmartSuggestionService(repository);
 
-    final result = await service.suggest(
-      child: child(),
-      goal: SmartSuggestionGoal.lifeSkills,
-      preferences: const FamilySmartPreferences(),
-      activeMissions: const <Mission>[],
-      history: const <SmartSuggestionHistory>[],
-      now: now,
-    );
+      final result = await service.suggest(
+        child: child(hasBirthDate: false),
+        goal: SmartSuggestionGoal.lifeSkills,
+        preferences: const FamilySmartPreferences(),
+        activeMissions: const <Mission>[],
+        history: const <SmartSuggestionHistory>[],
+        now: now,
+      );
 
-    expect(result, isEmpty);
-  });
+      expect(
+        result.map((suggestion) => suggestion.contentId),
+        containsAll(<String>['older', 'younger']),
+      );
+      expect(result.map((suggestion) => suggestion.score).toSet(), <int>{60});
+    },
+  );
+
+  test(
+    'usa faixa compatível como bônus de relevância sem bloquear catálogo',
+    () async {
+      final repository = _FakeSmartContentRepository(<SmartMissionTemplate>[
+        template(
+          id: 'inside-range',
+          title: 'Missão adequada',
+          domain: 'life_skills',
+          skills: const <String>['independence'],
+          ageMin: 9,
+          ageMax: 11,
+        ),
+        template(
+          id: 'outside-range',
+          title: 'Missão fora da faixa',
+          domain: 'life_skills',
+          skills: const <String>['independence'],
+          ageMin: 13,
+          ageMax: 14,
+        ),
+      ]);
+
+      final service = SmartSuggestionService(repository);
+
+      final result = await service.suggest(
+        child: child(),
+        goal: SmartSuggestionGoal.lifeSkills,
+        preferences: const FamilySmartPreferences(),
+        activeMissions: const <Mission>[],
+        history: const <SmartSuggestionHistory>[],
+        now: now,
+      );
+
+      expect(
+        result.map((suggestion) => suggestion.contentId),
+        containsAll(<String>['inside-range', 'outside-range']),
+      );
+      expect(result.first.contentId, 'inside-range');
+      expect(result.first.score, 70);
+      expect(
+        result
+            .singleWhere(
+              (suggestion) => suggestion.contentId == 'outside-range',
+            )
+            .score,
+        60,
+      );
+    },
+  );
 
   test('não sugere equivalente já ativo para a criança', () async {
     final repository = _FakeSmartContentRepository(<SmartMissionTemplate>[
