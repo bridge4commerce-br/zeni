@@ -251,18 +251,9 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
     MissionLog? currentLog,
     GlobalKey? sourceKey,
   ) async {
-    final result = await showModalBottomSheet<TaskCompletionResult>(
+    final result = await showTaskCompletionModal(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: TaskCompletionSheet(mission: mission),
-        );
-      },
+      mission: mission,
     );
 
     if (result == null) return;

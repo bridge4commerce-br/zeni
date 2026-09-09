@@ -260,26 +260,17 @@ class ChildHomeTab extends StatelessWidget {
     Mission mission,
   ) async {
     final log = logForMission(mission.id);
-    final action = await showModalBottomSheet<TaskChildDetailAction>(
+    final action = await showTaskChildDetailModal(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: TaskChildDetailSheet(
-          mission: mission,
-          onListenToMission: () => onListenToMission(mission),
-          onListenToMissionDetails: () =>
-              onListenToMissionDetails(mission, logForMission(mission.id)),
-          log: log,
-          showListenActions: canListenToMission,
-          canUndoCompletion: canUndoAutomaticMissionCompletion(
-            mission: mission,
-            log: log,
-          ),
-        ),
+      mission: mission,
+      onListenToMission: () => onListenToMission(mission),
+      onListenToMissionDetails: () =>
+          onListenToMissionDetails(mission, logForMission(mission.id)),
+      log: log,
+      showListenActions: canListenToMission,
+      canUndoCompletion: canUndoAutomaticMissionCompletion(
+        mission: mission,
+        log: log,
       ),
     );
     if (!context.mounted) return;

@@ -120,6 +120,8 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
       _customDaysOfWeek = mission.effectiveCustomDaysOfWeek.toSet();
       _timeGroup = mission.timeGroup;
       _approvalMode = mission.approvalMode;
+      // The option is unavailable for changes, but an existing legacy value
+      // must survive an otherwise unrelated edit.
       _requiresPhoto = mission.requiresPhoto;
     }
   }
@@ -306,14 +308,11 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
               const SizedBox(height: ZeniSpacing.lg),
               ZeniSwitch(
                 title: 'Pedir foto',
-                subtitle: 'A criança poderá anexar foto ao concluir',
+                subtitle:
+                    'Em breve: a criança poderá enviar uma foto ao concluir.',
                 icon: Icons.photo_camera_rounded,
                 value: _requiresPhoto,
-                onChanged: (value) {
-                  setState(() {
-                    _requiresPhoto = value;
-                  });
-                },
+                onChanged: null,
               ),
               const SizedBox(height: ZeniSpacing.xl),
               Text(

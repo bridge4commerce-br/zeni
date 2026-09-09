@@ -77,38 +77,21 @@ class ChildMissionsTab extends StatelessWidget {
                   onTap: () async {
                     final log = logForMission(mission.id);
 
-                    final action =
-                        await showModalBottomSheet<TaskChildDetailAction>(
-                          context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (context) {
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: MediaQuery.viewInsetsOf(context).bottom,
-                              ),
-                              child: TaskChildDetailSheet(
-                                mission: mission,
-                                onListenToMission: () {
-                                  onListenToMission(mission);
-                                },
-                                onListenToMissionDetails: () {
-                                  onListenToMissionDetails(
-                                    mission,
-                                    logForMission(mission.id),
-                                  );
-                                },
-                                log: log,
-                                showListenActions: canListenToMission,
-                                canUndoCompletion:
-                                    canUndoAutomaticMissionCompletion(
-                                      mission: mission,
-                                      log: log,
-                                    ),
-                              ),
-                            );
-                          },
-                        );
+                    final action = await showTaskChildDetailModal(
+                      context: context,
+                      mission: mission,
+                      onListenToMission: () => onListenToMission(mission),
+                      onListenToMissionDetails: () => onListenToMissionDetails(
+                        mission,
+                        logForMission(mission.id),
+                      ),
+                      log: log,
+                      showListenActions: canListenToMission,
+                      canUndoCompletion: canUndoAutomaticMissionCompletion(
+                        mission: mission,
+                        log: log,
+                      ),
+                    );
 
                     if (!context.mounted) return;
 

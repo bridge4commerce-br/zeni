@@ -62,12 +62,45 @@ void main() {
     );
   }
 
-  testWidgets('awaiting approval mission shows cancel submission action', (
+  Future<void> pumpModal(
+    WidgetTester tester, {
+    required Size size,
+    required MissionLog? log,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showTaskChildDetailModal(
+                context: context,
+                mission: automaticMission,
+                log: log,
+                onListenToMission: () {},
+                onListenToMissionDetails: () {},
+              ),
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('awaiting approval mission is read only for the child', (
     tester,
   ) async {
     await pumpSheet(tester, log: awaitingApprovalLog, canUndoCompletion: false);
 
-    expect(find.text('Cancelar envio'), findsOneWidget);
+    expect(find.text('Enviada para o responsável aprovar.'), findsOneWidget);
+    expect(find.text('Cancelar envio'), findsNothing);
+    expect(find.text('Concluir missão'), findsNothing);
     expect(find.text('Desfazer conclusão'), findsNothing);
   });
 
@@ -77,5 +110,51 @@ void main() {
     await pumpSheet(tester, log: approvedLog, canUndoCompletion: true);
 
     expect(find.text('Desfazer conclusão'), findsOneWidget);
+  });
+
+  testWidgets('child details keep only action-relevant metadata', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TaskChildDetailSheet(
+            mission: automaticMission.copyWith(requiresPhoto: true),
+            onListenToMission: () {},
+            onListenToMissionDetails: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('5 estrelas'), findsOneWidget);
+    expect(find.text('Manhã'), findsOneWidget);
+    expect(find.text('Todos os dias'), findsNothing);
+    expect(find.text('Pode pedir foto'), findsNothing);
+  });
+
+  testWidgets('uses a bottom sheet in compact windows', (tester) async {
+    await pumpModal(tester, size: const Size(390, 844), log: null);
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Concluir missão'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses a centered dialog in expanded and large windows', (
+    tester,
+  ) async {
+    for (final size in const [Size(1024, 1366), Size(1366, 1024)]) {
+      await pumpModal(tester, size: size, log: awaitingApprovalLog);
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('Enviada para o responsável aprovar.'), findsOneWidget);
+      expect(find.text('Concluir missão'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.tapAt(const Offset(2, 2));
+      await tester.pumpAndSettle();
+    }
   });
 }

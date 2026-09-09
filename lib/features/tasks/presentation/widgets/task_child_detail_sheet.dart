@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/status_badge.dart';
@@ -12,6 +13,46 @@ import '../../data/models/mission.dart';
 import '../../data/models/mission_log.dart';
 
 enum TaskChildDetailAction { complete, cancelSubmission, undoCompletion }
+
+Future<TaskChildDetailAction?> showTaskChildDetailModal({
+  required BuildContext context,
+  required Mission mission,
+  required VoidCallback onListenToMission,
+  required VoidCallback onListenToMissionDetails,
+  MissionLog? log,
+  bool canUndoCompletion = false,
+  bool showListenActions = true,
+}) {
+  final content = TaskChildDetailSheet(
+    mission: mission,
+    onListenToMission: onListenToMission,
+    onListenToMissionDetails: onListenToMissionDetails,
+    log: log,
+    canUndoCompletion: canUndoCompletion,
+    showListenActions: showListenActions,
+  );
+
+  if (ZeniAdaptiveModal.usesDialog(context)) {
+    return showDialog<TaskChildDetailAction>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(ZeniSpacing.xl),
+        child: ZeniAdaptiveModalFrame(child: content),
+      ),
+    );
+  }
+
+  return showModalBottomSheet<TaskChildDetailAction>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: content,
+    ),
+  );
+}
 
 class TaskChildDetailSheet extends StatelessWidget {
   const TaskChildDetailSheet({
@@ -79,11 +120,6 @@ class TaskChildDetailSheet extends StatelessWidget {
               runSpacing: ZeniSpacing.sm,
               children: [
                 StatusBadge(
-                  label: status.label,
-                  icon: _statusIcon(status),
-                  tone: _statusTone(status),
-                ),
-                StatusBadge(
                   label: '${mission.stars} estrelas',
                   icon: Icons.star_rounded,
                   tone: StatusBadgeTone.info,
@@ -93,31 +129,25 @@ class TaskChildDetailSheet extends StatelessWidget {
                   icon: Icons.schedule_rounded,
                   tone: StatusBadgeTone.neutral,
                 ),
-                StatusBadge(
-                  label: mission.recurrence.label,
-                  icon: Icons.repeat_rounded,
-                  tone: StatusBadgeTone.neutral,
-                ),
-                StatusBadge(
-                  label: mission.approvalMode.label,
-                  icon:
-                      mission.approvalMode == MissionApprovalMode.parentApproval
-                      ? Icons.verified_user_rounded
-                      : Icons.flash_on_rounded,
-                  tone:
-                      mission.approvalMode == MissionApprovalMode.parentApproval
-                      ? StatusBadgeTone.warning
-                      : StatusBadgeTone.success,
-                ),
-                if (mission.requiresPhoto)
+                if (mission.approvalMode == MissionApprovalMode.parentApproval)
                   const StatusBadge(
-                    label: 'Pode pedir foto',
-                    icon: Icons.photo_camera_rounded,
-                    tone: StatusBadgeTone.neutral,
+                    label: 'Aprovação',
+                    icon: Icons.verified_user_rounded,
+                    tone: StatusBadgeTone.warning,
                   ),
               ],
             ),
             const SizedBox(height: ZeniSpacing.xl),
+            if (status == MissionLogStatus.awaitingApproval &&
+                (log?.note?.trim().isNotEmpty ?? false)) ...[
+              Text(
+                'Sua observação',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: ZeniSpacing.xs),
+              Text(log!.note!, style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: ZeniSpacing.xl),
+            ],
             if (showListenActions) ...[
               Row(
                 children: [
@@ -141,22 +171,15 @@ class TaskChildDetailSheet extends StatelessWidget {
               const SizedBox(height: ZeniSpacing.md),
             ],
             if (status == MissionLogStatus.pending)
-              ZeniPrimaryButton(
-                label: 'Concluir missão',
-                icon: Icons.check_rounded,
-                onPressed: () {
-                  Navigator.of(context).pop(TaskChildDetailAction.complete);
-                },
-              ),
-            if (status == MissionLogStatus.awaitingApproval)
-              ZeniSecondaryButton(
-                label: 'Cancelar envio',
-                icon: Icons.undo_rounded,
-                onPressed: () {
-                  Navigator.of(
-                    context,
-                  ).pop(TaskChildDetailAction.cancelSubmission);
-                },
+              SizedBox(
+                height: ZeniTouchTargets.childPriority,
+                child: ZeniPrimaryButton(
+                  label: 'Concluir missão',
+                  icon: Icons.check_rounded,
+                  onPressed: () {
+                    Navigator.of(context).pop(TaskChildDetailAction.complete);
+                  },
+                ),
               ),
             if (status == MissionLogStatus.approved)
               Column(
@@ -196,26 +219,6 @@ class TaskChildDetailSheet extends StatelessWidget {
       MissionLogStatus.approved => 'Missão concluída hoje.',
       MissionLogStatus.rejected => 'O responsável pediu para tentar de novo.',
       MissionLogStatus.skipped => 'Essa missão foi pulada hoje.',
-    };
-  }
-
-  IconData _statusIcon(MissionLogStatus status) {
-    return switch (status) {
-      MissionLogStatus.pending => Icons.hourglass_empty_rounded,
-      MissionLogStatus.awaitingApproval => Icons.hourglass_top_rounded,
-      MissionLogStatus.approved => Icons.check_circle_rounded,
-      MissionLogStatus.rejected => Icons.cancel_rounded,
-      MissionLogStatus.skipped => Icons.next_plan_rounded,
-    };
-  }
-
-  StatusBadgeTone _statusTone(MissionLogStatus status) {
-    return switch (status) {
-      MissionLogStatus.pending => StatusBadgeTone.warning,
-      MissionLogStatus.awaitingApproval => StatusBadgeTone.info,
-      MissionLogStatus.approved => StatusBadgeTone.success,
-      MissionLogStatus.rejected => StatusBadgeTone.error,
-      MissionLogStatus.skipped => StatusBadgeTone.neutral,
     };
   }
 }
