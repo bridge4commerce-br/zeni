@@ -55,6 +55,8 @@ import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
 import '../../../tasks/presentation/providers/remote_missions_providers.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
+import '../../../smart_content/data/models/smart_mission_template.dart';
+import '../../../smart_content/presentation/pages/smart_suggestions_page.dart';
 import '../widgets/monthly_star_projection_card.dart';
 import '../widgets/mission_approval_card.dart';
 import '../widgets/parent_child_form_sheet.dart';
@@ -101,7 +103,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     );
   }
 
-  Future<void> _openCreateMissionSheet() async {
+  Future<void> _openCreateMissionSheet({TaskFormInitialValues? initialValues}) async {
     final appState = _currentAppState;
     if (appState == null) return;
     final data = _buildParentModeData(appState);
@@ -115,7 +117,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: TaskFormSheet(children: data.children),
+          child: TaskFormSheet(children: data.children, initialValues: initialValues),
         );
       },
     );
@@ -151,6 +153,35 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
       title: 'Missão criada!',
       message:
           '${mission.title} foi adicionada para ${data.childById(mission.childId)?.name ?? 'a criança'}.',
+    );
+  }
+
+  Future<void> _openSmartSuggestions(_ParentModeData data) {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => SmartSuggestionsPage(
+          children: data.activeChildren,
+          activeMissions: data.activeMissions,
+          onSelectMission: (template, child) => _openSuggestedMission(template, child),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSuggestedMission(
+    SmartMissionTemplate template,
+    ChildProfile child,
+  ) {
+    return _openCreateMissionSheet(
+      initialValues: TaskFormInitialValues(
+        childId: child.id,
+        title: template.title,
+        description: template.description,
+        stars: template.suggestedStars > 0 ? template.suggestedStars : 10,
+        approvalMode: template.requiresApprovalByDefault
+            ? MissionApprovalMode.parentApproval
+            : MissionApprovalMode.automatic,
+      ),
     );
   }
 
@@ -1125,6 +1156,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onEditMission: _openEditMissionSheet,
             onArchiveMission: _archiveMission,
             onRestoreMission: _restoreMission,
+            onOpenSuggestions: () => _openSmartSuggestions(data),
             onRefresh: _refreshPrimaryLists,
           ),
           ParentRewardsTab(

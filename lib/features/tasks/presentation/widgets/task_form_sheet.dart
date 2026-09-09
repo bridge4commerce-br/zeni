@@ -40,11 +40,33 @@ class TaskFormResult {
   final bool requiresPhoto;
 }
 
+class TaskFormInitialValues {
+  const TaskFormInitialValues({
+    required this.childId,
+    required this.title,
+    required this.description,
+    required this.stars,
+    required this.approvalMode,
+  });
+
+  final String childId;
+  final String title;
+  final String description;
+  final int stars;
+  final MissionApprovalMode approvalMode;
+}
+
 class TaskFormSheet extends StatefulWidget {
-  const TaskFormSheet({super.key, required this.children, this.initialMission});
+  const TaskFormSheet({
+    super.key,
+    required this.children,
+    this.initialMission,
+    this.initialValues,
+  });
 
   final List<ChildProfile> children;
   final Mission? initialMission;
+  final TaskFormInitialValues? initialValues;
 
   @override
   State<TaskFormSheet> createState() => _TaskFormSheetState();
@@ -105,7 +127,8 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
     super.initState();
 
     final mission = widget.initialMission;
-    _childId = mission?.childId ?? widget.children.first.id;
+    final initialValues = widget.initialValues;
+    _childId = mission?.childId ?? initialValues?.childId ?? widget.children.first.id;
     _selectedEmoji = mission?.emoji ?? _emojiOptions.first;
 
     if (!_emojiOptions.contains(_selectedEmoji)) {
@@ -123,6 +146,11 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
       // The option is unavailable for changes, but an existing legacy value
       // must survive an otherwise unrelated edit.
       _requiresPhoto = mission.requiresPhoto;
+    } else if (initialValues != null) {
+      _titleController.text = initialValues.title;
+      _descriptionController.text = initialValues.description;
+      _stars = initialValues.stars;
+      _approvalMode = initialValues.approvalMode;
     }
   }
 

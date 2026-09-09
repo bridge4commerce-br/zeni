@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeni/features/family/data/models/child_profile.dart';
+import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
 import 'package:zeni/features/smart_content/data/repositories/asset_smart_content_repository.dart';
 
 void main() {
@@ -40,13 +44,23 @@ void main() {
       );
     });
 
-    test('usa pt-BR como fallback para locale não suportado', () async {
+    test('usa inglês como fallback para locale não suportado', () async {
       final unsupported = await repository.getMissions('it-IT');
-      final fallback = await repository.getMissions('pt-BR');
+      final fallback = await repository.getMissions('en');
 
       expect(
         unsupported.map((mission) => mission.title).toList(),
         fallback.map((mission) => mission.title).toList(),
+      );
+    });
+
+    test('mantém conteúdo correspondente em locale suportado', () async {
+      final spanish = await repository.getRoutines('es-MX');
+      final base = await repository.getRoutines('es');
+
+      expect(
+        spanish.map((routine) => routine.title).toList(),
+        base.map((routine) => routine.title).toList(),
       );
     });
 
@@ -71,5 +85,37 @@ void main() {
         }
       },
     );
+  });
+
+  testWidgets('suggestions page resolves pt-BR without English titles', (
+    tester,
+  ) async {
+    final child = ChildProfile(
+      id: 'child-1',
+      familyId: 'family-1',
+      name: 'Luna',
+      emoji: '⭐',
+      starBalance: 0,
+      streakCount: 0,
+      createdAt: DateTime(2026, 9, 9),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('pt', 'BR'),
+        supportedLocales: const [Locale('pt', 'BR'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: SmartSuggestionsPage(
+          children: [child],
+          activeMissions: const [],
+          onSelectMission: (_, _) async {},
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Sugestões para sua família'), findsWidgets);
+    expect(find.text('Brush your teeth'), findsNothing);
+    expect(find.text('I\'m home'), findsNothing);
   });
 }

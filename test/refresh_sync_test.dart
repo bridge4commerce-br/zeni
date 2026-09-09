@@ -60,49 +60,48 @@ void main() {
     },
   );
 
-  testWidgets(
-    'child rewards pull-to-refresh calls the shared refresh action',
-    (tester) async {
-      var refreshCalls = 0;
-      final reward = Reward(
-        id: 'reward-1',
-        familyId: 'family-1',
-        childId: 'child-1',
-        title: 'Escolher o filme',
-        description: 'Uma noite especial.',
-        cost: 20,
-        renewal: RewardRenewal.always,
-        createdAt: DateTime(2026, 7, 3),
-        updatedAt: DateTime(2026, 7, 3),
-      );
+  testWidgets('child rewards pull-to-refresh calls the shared refresh action', (
+    tester,
+  ) async {
+    var refreshCalls = 0;
+    final reward = Reward(
+      id: 'reward-1',
+      familyId: 'family-1',
+      childId: 'child-1',
+      title: 'Escolher o filme',
+      description: 'Uma noite especial.',
+      cost: 20,
+      renewal: RewardRenewal.always,
+      createdAt: DateTime(2026, 7, 3),
+      updatedAt: DateTime(2026, 7, 3),
+    );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ChildRewardsTab(
-              childBalance: 30,
-              rewards: [reward],
-              pendingRewardRequests: const [],
-              rewardById: (rewardId) => rewardId == reward.id ? reward : null,
-              onRedeemReward: (_) {},
-              onListenToReward: (_) {},
-              onListenToRewardDetails: (reward, request) {},
-              canListenToReward: false,
-              onRefresh: () async {
-                refreshCalls += 1;
-              },
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ChildRewardsTab(
+            childBalance: 30,
+            rewards: [reward],
+            pendingRewardRequests: const [],
+            rewardById: (rewardId) => rewardId == reward.id ? reward : null,
+            onRedeemReward: (_) {},
+            onListenToReward: (_) {},
+            onListenToRewardDetails: (reward, request) {},
+            canListenToReward: false,
+            onRefresh: () async {
+              refreshCalls += 1;
+            },
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+    await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
-      expect(refreshCalls, 1);
-    },
-  );
+    expect(refreshCalls, 1);
+  });
 
   testWidgets(
     'parent missions pull-to-refresh calls the shared refresh action',
@@ -159,6 +158,7 @@ void main() {
               onEditMission: (_) {},
               onArchiveMission: (_) {},
               onRestoreMission: (_) {},
+              onOpenSuggestions: () {},
               onRefresh: () async {
                 refreshCalls += 1;
               },

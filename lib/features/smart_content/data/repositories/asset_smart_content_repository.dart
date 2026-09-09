@@ -10,7 +10,7 @@ class AssetSmartContentRepository implements SmartContentRepository {
   AssetSmartContentRepository({AssetBundle? bundle})
     : _bundle = bundle ?? rootBundle;
 
-  static const String fallbackLocale = 'pt-BR';
+  static const String fallbackLocale = 'en';
 
   static const List<String> supportedLocales = <String>[
     'pt-BR',
@@ -127,9 +127,7 @@ class AssetSmartContentRepository implements SmartContentRepository {
 
     final languageCode = normalized.split('-').first.toLowerCase();
 
-    if (languageCode == 'pt') {
-      return fallbackLocale;
-    }
+    if (languageCode == 'pt') return 'pt-BR';
 
     for (final locale in supportedLocales) {
       if (locale.toLowerCase() == languageCode) {

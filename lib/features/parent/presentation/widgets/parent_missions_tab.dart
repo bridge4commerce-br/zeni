@@ -28,6 +28,7 @@ class ParentMissionsTab extends StatefulWidget {
     required this.onEditMission,
     required this.onArchiveMission,
     required this.onRestoreMission,
+    required this.onOpenSuggestions,
     this.onRefresh,
   });
 
@@ -44,6 +45,7 @@ class ParentMissionsTab extends StatefulWidget {
   final ValueChanged<Mission> onEditMission;
   final ValueChanged<Mission> onArchiveMission;
   final ValueChanged<Mission> onRestoreMission;
+  final VoidCallback onOpenSuggestions;
   final Future<void> Function()? onRefresh;
 
   @override
@@ -95,6 +97,17 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
             children: widget.activeChildren,
             selectedChildId: _selectedChildId,
             onChanged: _changeSelectedChild,
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          ZeniCard(
+            onTap: widget.onOpenSuggestions,
+            child: const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.auto_awesome_rounded),
+              title: Text('Sugestões para sua família'),
+              subtitle: Text('Encontre missões e rotinas para facilitar o dia a dia.'),
+              trailing: Icon(Icons.chevron_right_rounded),
+            ),
           ),
           const SizedBox(height: ZeniSpacing.xl),
           Row(
