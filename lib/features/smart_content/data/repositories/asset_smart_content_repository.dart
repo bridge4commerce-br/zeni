@@ -80,7 +80,7 @@ class AssetSmartContentRepository implements SmartContentRepository {
     );
     final fallbackById = _indexById(_readObjectList(fallbackJson, 'routines'));
 
-    return globalRoutines
+    final routines = globalRoutines
         .map((globalRoutine) {
           final id = globalRoutine['id'] as String;
           final localizedRoutine = localizedById[id] ?? fallbackById[id];
@@ -97,6 +97,18 @@ class AssetSmartContentRepository implements SmartContentRepository {
           );
         })
         .toList(growable: false);
+    final missions = await getMissions(localeTag);
+    final missionIds = missions.map((mission) => mission.id).toSet();
+    for (final routine in routines) {
+      for (final missionId in routine.steps) {
+        if (!missionIds.contains(missionId)) {
+          throw FormatException(
+            'Routine ${routine.id} references missing mission $missionId',
+          );
+        }
+      }
+    }
+    return routines;
   }
 
   Future<Map<String, dynamic>> _loadLocale(String locale) {

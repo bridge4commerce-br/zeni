@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeni/features/smart_content/data/models/smart_mission_template.dart';
 import 'package:zeni/features/smart_content/data/models/smart_routine_template.dart';
 
 void main() {
@@ -56,17 +57,32 @@ void main() {
       ]);
     });
 
-    test('valida faixa etária', () {
+    test('deriva adequação etária de todas as missões', () {
       final routine = SmartRoutineTemplate.fromJson(
         globalJson: globalJson,
         localizedJson: localizedJson,
       );
+      final missions = <SmartMissionTemplate>[
+        _mission('put_backpack_away_on_arrival', ageMin: 5, ageMax: 14),
+        _mission('organize_shoes', ageMin: 6, ageMax: 14),
+        _mission('wash_hands_on_arrival', ageMin: 5, ageMax: 14),
+      ];
 
-      expect(routine.supportsAge(5), isTrue);
-      expect(routine.supportsAge(10), isTrue);
-      expect(routine.supportsAge(14), isTrue);
-      expect(routine.supportsAge(4), isFalse);
-      expect(routine.supportsAge(15), isFalse);
+      expect(routine.isSuitableForAge(6, missions), isTrue);
+      expect(routine.isSuitableForAge(5, missions), isFalse);
+      expect(routine.isSuitableForAge(15, missions), isFalse);
+    });
+
+    test('considera rotina inadequada quando uma missão não existe', () {
+      final routine = SmartRoutineTemplate.fromJson(
+        globalJson: globalJson,
+        localizedJson: localizedJson,
+      );
+      final missions = <SmartMissionTemplate>[
+        _mission('put_backpack_away_on_arrival', ageMin: 5, ageMax: 14),
+      ];
+
+      expect(routine.isSuitableForAge(10, missions), isFalse);
     });
 
     test('rejeita localização com id diferente', () {
@@ -84,4 +100,48 @@ void main() {
       );
     });
   });
+}
+
+SmartMissionTemplate _mission(
+  String id, {
+  required int? ageMin,
+  required int? ageMax,
+}) {
+  return SmartMissionTemplate(
+    id: id,
+    domain: 'self_care',
+    priority: 'P0',
+    ageMin: ageMin,
+    ageMax: ageMax,
+    estimatedDuration: '5 min',
+    suggestedStars: 1,
+    eligibleAsExtra: false,
+    requiresApprovalByDefault: false,
+    support: const SmartMissionSupport(
+      oneStepAtATime: 'recommended',
+      visual: 'optional',
+      tts: 'optional',
+      timer: 'neutral',
+      transition: 'low',
+      sensoryLoad: 'low',
+      cognitiveLoad: 'low',
+      canSplit: true,
+    ),
+    masteryPath: 'support',
+    culturalRelevance: 'global',
+    culturalTags: const <String>[],
+    status: 'approved',
+    familyFit: 'general',
+    contexts: const <String>[],
+    skills: const <String>[],
+    effort: 'low',
+    rewardMode: 'optional',
+    adultSupport: 'none',
+    safetyLevel: 'safe',
+    applicability: 'general',
+    localePriority: const <String, dynamic>{},
+    title: id,
+    description: '',
+    helpSteps: const <String>[],
+  );
 }

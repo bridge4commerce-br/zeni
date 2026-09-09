@@ -76,6 +76,66 @@ void main() {
       expect(mission.supportsAge(15), isFalse);
     });
 
+    test('aceita limite inferior ou superior isoladamente', () {
+      final onlyMin = SmartMissionTemplate.fromJson(
+        globalJson: <String, dynamic>{...globalJson, 'ageMax': null},
+        localizedJson: localizedJson,
+      );
+      final onlyMax = SmartMissionTemplate.fromJson(
+        globalJson: <String, dynamic>{...globalJson, 'ageMin': null},
+        localizedJson: localizedJson,
+      );
+
+      expect(onlyMin.isSuitableForAge(5), isFalse);
+      expect(onlyMin.isSuitableForAge(99), isTrue);
+      expect(onlyMax.isSuitableForAge(0), isTrue);
+      expect(onlyMax.isSuitableForAge(15), isFalse);
+    });
+
+    test('considera conteúdo sem faixa adequado para qualquer idade', () {
+      final mission = SmartMissionTemplate.fromJson(
+        globalJson: <String, dynamic>{
+          ...globalJson,
+          'ageMin': null,
+          'ageMax': null,
+        },
+        localizedJson: localizedJson,
+      );
+
+      expect(mission.ageMin, isNull);
+      expect(mission.ageMax, isNull);
+      expect(mission.isSuitableForAge(0), isTrue);
+      expect(mission.isSuitableForAge(99), isTrue);
+    });
+
+    test('rejeita faixa inválida', () {
+      expect(
+        () => SmartMissionTemplate.fromJson(
+          globalJson: <String, dynamic>{...globalJson, 'ageMin': -1},
+          localizedJson: localizedJson,
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => SmartMissionTemplate.fromJson(
+          globalJson: <String, dynamic>{
+            ...globalJson,
+            'ageMin': 10,
+            'ageMax': 9,
+          },
+          localizedJson: localizedJson,
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => SmartMissionTemplate.fromJson(
+          globalJson: <String, dynamic>{...globalJson, 'ageMax': '14'},
+          localizedJson: localizedJson,
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('rejeita localização com id diferente', () {
       final wrongLocalizedJson = <String, dynamic>{
         ...localizedJson,

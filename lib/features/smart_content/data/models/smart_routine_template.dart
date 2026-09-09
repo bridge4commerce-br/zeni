@@ -1,3 +1,5 @@
+import 'smart_mission_template.dart';
+
 class SmartRoutineTemplate {
   const SmartRoutineTemplate({
     required this.id,
@@ -34,7 +36,11 @@ class SmartRoutineTemplate {
   final String title;
   final String description;
 
-  bool supportsAge(int age) => age >= ageMin && age <= ageMax;
+  /// Routine suitability is derived from every required mission.
+  bool isSuitableForAge(int age, Iterable<SmartMissionTemplate> missions) {
+    final byId = {for (final mission in missions) mission.id: mission};
+    return steps.every((id) => byId[id]?.isSuitableForAge(age) == true);
+  }
 
   factory SmartRoutineTemplate.fromJson({
     required Map<String, dynamic> globalJson,

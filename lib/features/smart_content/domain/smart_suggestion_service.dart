@@ -162,8 +162,16 @@ class SmartSuggestionService {
   }
 
   bool _isGoodAgeFit(SmartMissionTemplate mission, int age) {
-    final middle = (mission.ageMin + mission.ageMax) / 2;
-    final radius = (mission.ageMax - mission.ageMin) / 4;
+    if (!mission.isSuitableForAge(age) ||
+        mission.ageMin == null ||
+        mission.ageMax == null) {
+      return false;
+    }
+    final ageMin = mission.ageMin;
+    final ageMax = mission.ageMax;
+    if (ageMin == null || ageMax == null) return false;
+    final middle = (ageMin + ageMax) / 2;
+    final radius = (ageMax - ageMin) / 4;
 
     return (age - middle).abs() <= radius.clamp(1, double.infinity);
   }

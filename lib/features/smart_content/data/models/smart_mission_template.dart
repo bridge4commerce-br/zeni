@@ -38,8 +38,8 @@ class SmartMissionTemplate {
     required this.id,
     required this.domain,
     required this.priority,
-    required this.ageMin,
-    required this.ageMax,
+    this.ageMin,
+    this.ageMax,
     required this.estimatedDuration,
     required this.suggestedStars,
     required this.eligibleAsExtra,
@@ -61,13 +61,15 @@ class SmartMissionTemplate {
     required this.title,
     required this.description,
     required this.helpSteps,
-  });
+  }) : assert(ageMin == null || ageMin >= 0),
+       assert(ageMax == null || ageMax >= 0),
+       assert(ageMin == null || ageMax == null || ageMax >= ageMin);
 
   final String id;
   final String domain;
   final String priority;
-  final int ageMin;
-  final int ageMax;
+  final int? ageMin;
+  final int? ageMax;
   final String estimatedDuration;
   final int suggestedStars;
   final bool eligibleAsExtra;
@@ -91,7 +93,10 @@ class SmartMissionTemplate {
   final String description;
   final List<String> helpSteps;
 
-  bool supportsAge(int age) => age >= ageMin && age <= ageMax;
+  bool supportsAge(int age) => isSuitableForAge(age);
+
+  bool isSuitableForAge(int age) =>
+      (ageMin == null || age >= ageMin!) && (ageMax == null || age <= ageMax!);
 
   factory SmartMissionTemplate.fromJson({
     required Map<String, dynamic> globalJson,
@@ -107,12 +112,15 @@ class SmartMissionTemplate {
       );
     }
 
+    final ageMin = _readOptionalAge(globalJson, 'ageMin');
+    final ageMax = _readOptionalAge(globalJson, 'ageMax');
+    _validateAgeRange(ageMin, ageMax);
     return SmartMissionTemplate(
       id: globalId,
       domain: globalJson['domain'] as String,
       priority: globalJson['priority'] as String,
-      ageMin: globalJson['ageMin'] as int,
-      ageMax: globalJson['ageMax'] as int,
+      ageMin: ageMin,
+      ageMax: ageMax,
       estimatedDuration: globalJson['estimatedDuration'] as String,
       suggestedStars: globalJson['suggestedStars'] as int,
       eligibleAsExtra: globalJson['eligibleAsExtra'] as bool,
@@ -139,6 +147,23 @@ class SmartMissionTemplate {
       title: localizedJson['title'] as String,
       description: localizedJson['description'] as String,
       helpSteps: _readStringList(localizedJson['helpSteps']),
+    );
+  }
+}
+
+int? _readOptionalAge(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! int || value < 0) {
+    throw FormatException('$key must be a non-negative integer');
+  }
+  return value;
+}
+
+void _validateAgeRange(int? ageMin, int? ageMax) {
+  if (ageMin != null && ageMax != null && ageMax < ageMin) {
+    throw const FormatException(
+      'ageMax must be greater than or equal to ageMin',
     );
   }
 }
