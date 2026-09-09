@@ -14,7 +14,6 @@ import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_balance_pill.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/feedback/zeni_confirm_action_sheet.dart';
@@ -55,7 +54,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
   int _currentIndex = 0;
   bool _isMascotCelebrating = false;
   Timer? _mascotCelebrationTimer;
-  final _balancePillKey = GlobalKey();
+  final _balanceAnchorKey = GlobalKey();
   final Map<String, GlobalKey> _missionAnchorKeys = <String, GlobalKey>{};
 
   ZeniAppState? get _currentAppState =>
@@ -317,7 +316,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         _centerFor(sourceKey) ??
         Offset(screenSize.width * 0.48, screenSize.height * 0.56);
     final to =
-        _centerFor(_balancePillKey) ??
+        _centerFor(_balanceAnchorKey) ??
         Offset(screenSize.width - 56, mediaQuery?.padding.top ?? 44);
 
     notifyDebugFlyingStarShown(from, to);
@@ -497,6 +496,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onListenToMissionDetails: _listenToMissionDetails,
             canListenToMission: canUseReadAloud,
             isCelebrating: _isMascotCelebrating,
+            balanceAnchorKey: _balanceAnchorKey,
             onOpenRewards: () {
               ref.read(zeniHapticsProvider).selection();
               setState(() {
@@ -533,7 +533,6 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         return ZeniScaffold(
           appBar: _ChildIdentityHeader(
             child: data.child,
-            balancePillKey: _balancePillKey,
             onSwitchProfile: () {
               ref.read(zeniHapticsProvider).selection();
               context.go('/');
@@ -657,12 +656,10 @@ class _ChildIdentityHeader extends StatelessWidget
     implements PreferredSizeWidget {
   const _ChildIdentityHeader({
     required this.child,
-    required this.balancePillKey,
     required this.onSwitchProfile,
   });
 
   final ChildProfile child;
-  final GlobalKey balancePillKey;
   final VoidCallback onSwitchProfile;
 
   @override
@@ -721,16 +718,12 @@ class _ChildIdentityHeader extends StatelessWidget
         ],
       ),
       actions: [
-        IconButton(
-          tooltip: 'Trocar perfil',
-          icon: const Icon(Icons.swap_horiz_rounded),
-          onPressed: onSwitchProfile,
-        ),
         Padding(
           padding: const EdgeInsets.only(right: ZeniSpacing.md),
-          child: KeyedSubtree(
-            key: balancePillKey,
-            child: ZeniBalancePill(stars: child.starBalance),
+          child: IconButton(
+            tooltip: 'Trocar perfil',
+            icon: const Icon(Icons.swap_horiz_rounded),
+            onPressed: onSwitchProfile,
           ),
         ),
       ],

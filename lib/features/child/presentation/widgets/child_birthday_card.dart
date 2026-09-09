@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_avatar.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../family/data/models/child_profile.dart';
+import '../../../family/presentation/avatar_catalog.dart';
 
 class ChildBirthdayCard extends StatefulWidget {
   const ChildBirthdayCard({super.key, required this.child});
@@ -51,34 +54,39 @@ class _ChildBirthdayCardState extends State<ChildBirthdayCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    final avatar = ZeniChildAvatarCatalog.byId(widget.child.avatarId);
     return RepaintBoundary(
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          ZeniCard(
+          ZeniSurface(
+            role: ZeniSurfaceRole.interactive,
+            mode: ZeniVisualMode.kids,
+            backgroundColor: colors.surfaceSubtle,
+            padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
             onTap: _playConfetti,
             child: Row(
               children: [
                 ZeniAvatar(
                   label: widget.child.name,
-                  emoji: widget.child.emoji,
-                  size: 72,
+                  imageProvider: AssetImage(avatar.assetPath),
+                  size: 56,
                 ),
-                const SizedBox(width: ZeniSpacing.md),
+                const SizedBox(width: ZeniSpacing.spaceCard),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Feliz aniversário, ${widget.child.name}! 🎂',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: typography.cardTitle,
                       ),
-                      const SizedBox(height: ZeniSpacing.xs),
+                      const SizedBox(height: ZeniSpacing.spaceInlineTight),
                       Text(
                         'Hoje é seu dia especial.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: ZeniColors.mutedText,
-                        ),
+                        style: typography.metadata,
                       ),
                     ],
                   ),

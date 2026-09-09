@@ -5,7 +5,10 @@ import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_radius.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/zeni_mascot.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../rewards/data/models/reward.dart';
@@ -67,6 +70,7 @@ class ChildHomeTab extends StatelessWidget {
     required this.canListenToMission,
     required this.onOpenRewards,
     this.isCelebrating = false,
+    this.balanceAnchorKey,
   });
 
   final ChildProfile child;
@@ -84,12 +88,12 @@ class ChildHomeTab extends StatelessWidget {
   final VoidCallback onOpenRewards;
   final bool canListenToMission;
   final bool isCelebrating;
+  final GlobalKey? balanceAnchorKey;
 
   @override
   Widget build(BuildContext context) {
-    final metrics = _ChildHomeMetrics.forWindow(
-      ZeniResponsive.windowClass(context),
-    );
+    final windowClass = ZeniResponsive.windowClass(context);
+    final expression = ZeniVisualExpression.resolve(ZeniVisualMode.kids);
     final approved = todayLogs.where((log) => log.isApproved).length;
     final awaiting = todayLogs.where((log) => log.isAwaitingApproval).length;
     final pending = missions
@@ -108,7 +112,7 @@ class ChildHomeTab extends StatelessWidget {
           (mission) => logForMission(mission.id)?.isAwaitingApproval ?? false,
         )
         .toList();
-    final currentMission = orderedPending.isEmpty ? null : orderedPending.first;
+    final currentMission = orderedPending.firstOrNull;
     final reward = _rewardTarget(rewards, child.starBalance);
     final mascotState = _mascotState(
       hasPendingMission: currentMission != null,
@@ -117,96 +121,149 @@ class ChildHomeTab extends StatelessWidget {
       reward: reward,
     );
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(0, metrics.topSpacing, 0, 48),
-      child: ZeniPageFrame(
-        width: ZeniPageWidth.main,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ChildHomeHeader(name: child.name, metrics: metrics),
-            SizedBox(height: metrics.greetingSpacing),
-            _SummaryArea(
-              metrics: metrics,
-              companion: _ZeniCompanion(
-                state: mascotState,
-                message: _mascotMessage(mascotState, orderedPending.length),
-                metrics: metrics,
-              ),
-              progress: missions.isNotEmpty
-                  ? _ChildDayProgress(
-                      completed: approved,
-                      awaitingApproval: awaiting,
-                      total: missions.length,
-                      metrics: metrics,
-                    )
-                  : null,
-            ),
-            SizedBox(height: metrics.sectionSpacing),
-            if (_isBirthday(child)) ...[
-              ChildBirthdayCard(child: child),
-              const SizedBox(height: ZeniSpacing.xl),
-            ],
-            if (pendingRewardRequests.isNotEmpty) ...[
-              _ChildPendingRewardHint(
-                count: pendingRewardRequests.length,
-                onTap: onOpenRewards,
-              ),
-              const SizedBox(height: ZeniSpacing.lg),
-            ],
-            if (currentMission != null) ...[
-              Text('Agora', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: ZeniSpacing.sm),
-              KeyedSubtree(
-                key: missionAnchorKeyFor('home:${currentMission.id}'),
-                child: _ChildCurrentMissionCard(
-                  mission: currentMission,
-                  onOpen: () => _openMissionDetails(context, currentMission),
-                  metrics: metrics,
-                ),
-              ),
-              if (orderedPending.length > 1) ...[
-                const SizedBox(height: ZeniSpacing.xl),
-                _ChildUpcomingMissions(
-                  missions: orderedPending.skip(1).take(3).toList(),
-                  onOpen: (mission) => _openMissionDetails(context, mission),
-                  metrics: metrics,
-                ),
-              ],
-            ],
-            if (awaitingMissions.isNotEmpty) ...[
-              const SizedBox(height: ZeniSpacing.xl),
-              _AwaitingApprovalMissions(
-                missions: awaitingMissions,
-                onOpen: (mission) => _openMissionDetails(context, mission),
-                metrics: metrics,
-              ),
-            ] else if (currentMission == null && missions.isEmpty) ...[
-              const _ChildStatusCard(
-                icon: Icons.wb_sunny_rounded,
-                title: 'Sem missões por enquanto',
-                message: 'Aproveite seu dia no seu ritmo.',
-              ),
-            ] else if (currentMission == null &&
-                approved == missions.length) ...[
-              const _ChildStatusCard(
-                icon: Icons.check_circle_rounded,
-                title: 'Tudo pronto por hoje!',
-                message: 'Você cuidou muito bem das suas missões.',
-              ),
-            ],
-            if (reward != null) ...[
-              const SizedBox(height: ZeniSpacing.xl),
-              _ChildRewardProgress(
-                reward: reward,
-                balance: child.starBalance,
-                onTap: onOpenRewards,
-              ),
-            ],
-          ],
-        ),
-      ),
+    const greeting = _ChildHomeHeader();
+    final balance = _ChildBalanceHighlight(
+      balance: child.starBalance,
+      anchorKey: balanceAnchorKey,
     );
+    final companion = _ZeniCompanion(
+      state: mascotState,
+      message: _mascotMessage(mascotState, orderedPending.length),
+    );
+    final progress = missions.isEmpty
+        ? null
+        : _ChildDayProgress(
+            completed: approved,
+            awaitingApproval: awaiting,
+            total: missions.length,
+          );
+    final current = currentMission == null
+        ? null
+        : KeyedSubtree(
+            key: missionAnchorKeyFor('home:${currentMission.id}'),
+            child: _ChildCurrentMissionCard(
+              mission: currentMission,
+              prominentTitle:
+                  windowClass == ZeniWindowClass.expanded ||
+                  windowClass == ZeniWindowClass.large,
+              onOpen: () => _openMissionDetails(context, currentMission),
+            ),
+          );
+    final later = orderedPending.length <= 1
+        ? null
+        : _ChildMissionList(
+            title: 'Depois',
+            missions: orderedPending.skip(1).take(3).toList(),
+            onOpen: (mission) => _openMissionDetails(context, mission),
+          );
+    final waiting = awaitingMissions.isEmpty
+        ? null
+        : _ChildMissionList(
+            key: const Key('child-home-waiting'),
+            title: 'Aguardando aprovação',
+            missions: awaitingMissions,
+            waitingApproval: true,
+            onOpen: (mission) => _openMissionDetails(context, mission),
+          );
+    final rewardProgress = reward == null
+        ? null
+        : _ChildRewardProgress(
+            reward: reward,
+            balance: child.starBalance,
+            onTap: onOpenRewards,
+          );
+    final status = _statusFor(
+      currentMission: currentMission,
+      awaitingMissions: awaitingMissions,
+      approved: approved,
+    );
+    final notices = <Widget>[
+      if (_isBirthday(child)) ChildBirthdayCard(child: child),
+      if (pendingRewardRequests.isNotEmpty)
+        _ChildPendingRewardHint(
+          count: pendingRewardRequests.length,
+          onTap: onOpenRewards,
+        ),
+    ];
+
+    final content = switch (windowClass) {
+      ZeniWindowClass.compact ||
+      ZeniWindowClass.medium => _ChildHomeSingleColumn(
+        greeting: greeting,
+        notices: notices,
+        balance: balance,
+        companion: companion,
+        current: current,
+        status: status,
+        progress: progress,
+        later: later,
+        waiting: waiting,
+        reward: rewardProgress,
+        spacing: expression.sectionSpacing,
+      ),
+      ZeniWindowClass.expanded => _ChildHomePortraitLayout(
+        greeting: greeting,
+        notices: notices,
+        balance: balance,
+        companion: companion,
+        progress: progress,
+        current: current,
+        status: status,
+        later: later,
+        waiting: waiting,
+        reward: rewardProgress,
+        spacing: expression.sectionSpacing,
+      ),
+      ZeniWindowClass.large => _ChildHomeLandscapeLayout(
+        greeting: greeting,
+        notices: notices,
+        balance: balance,
+        companion: companion,
+        progress: progress,
+        current: current,
+        status: status,
+        later: later,
+        waiting: waiting,
+        reward: rewardProgress,
+        spacing: expression.sectionSpacing,
+      ),
+    };
+
+    final topSpacing = switch (windowClass) {
+      ZeniWindowClass.compact => ZeniSpacing.spaceCard,
+      ZeniWindowClass.medium => ZeniSpacing.spaceGroup,
+      ZeniWindowClass.expanded => ZeniSpacing.spaceSection,
+      ZeniWindowClass.large => ZeniSpacing.spaceHero,
+    };
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(top: topSpacing, bottom: ZeniSpacing.spaceHero),
+      child: ZeniPageFrame(width: ZeniPageWidth.main, child: content),
+    );
+  }
+
+  Widget? _statusFor({
+    required Mission? currentMission,
+    required List<Mission> awaitingMissions,
+    required int approved,
+  }) {
+    if (currentMission != null || awaitingMissions.isNotEmpty) return null;
+    if (missions.isEmpty) {
+      return const _ChildStatus(
+        key: Key('child-home-empty-state'),
+        icon: Icons.wb_sunny_rounded,
+        title: 'Sem missões por enquanto',
+        message: 'Aproveite seu dia no seu ritmo.',
+      );
+    }
+    if (approved == missions.length) {
+      return const _ChildStatus(
+        icon: Icons.check_circle_rounded,
+        title: 'Tudo pronto por hoje!',
+        message: 'Você cuidou muito bem das suas missões.',
+      );
+    }
+    return null;
   }
 
   ZeniMascotState _mascotState({
@@ -245,7 +302,7 @@ class ChildHomeTab extends StatelessWidget {
     for (final reward in sorted) {
       if (reward.cost >= balance) return reward;
     }
-    return sorted.isEmpty ? null : sorted.first;
+    return sorted.firstOrNull;
   }
 
   bool _isBirthday(ChildProfile profile) {
@@ -292,242 +349,344 @@ class ChildHomeTab extends StatelessWidget {
   }
 }
 
-class _ChildHomeHeader extends StatelessWidget {
-  const _ChildHomeHeader({required this.name, required this.metrics});
-  final String name;
-  final _ChildHomeMetrics metrics;
+class _ChildHomeSingleColumn extends StatelessWidget {
+  const _ChildHomeSingleColumn({
+    required this.greeting,
+    required this.notices,
+    required this.balance,
+    required this.companion,
+    required this.current,
+    required this.status,
+    required this.progress,
+    required this.later,
+    required this.waiting,
+    required this.reward,
+    required this.spacing,
+  });
+
+  final Widget greeting;
+  final List<Widget> notices;
+  final Widget balance;
+  final Widget companion;
+  final Widget? current;
+  final Widget? status;
+  final Widget? progress;
+  final Widget? later;
+  final Widget? waiting;
+  final Widget? reward;
+  final double spacing;
+
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => _ChildHomeFlow(
+    key: const Key('child-home-compact-layout'),
+    spacing: spacing,
     children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Oi, $name! 👋',
-              style: metrics.isTablet
-                  ? Theme.of(context).textTheme.headlineLarge
-                  : Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: ZeniSpacing.xs),
-            Text(
-              'Vamos cuidar do seu dia?',
-              style:
-                  (metrics.isTablet
-                          ? Theme.of(context).textTheme.titleMedium
-                          : Theme.of(context).textTheme.bodyLarge)
-                      ?.copyWith(color: ZeniColors.mutedText),
-            ),
-          ],
-        ),
-      ),
+      greeting,
+      if (notices.isNotEmpty)
+        _ChildHomeFlow(spacing: ZeniSpacing.spaceControl, children: notices),
+      balance,
+      companion,
+      ?current,
+      ?status,
+      ?progress,
+      ?later,
+      ?waiting,
+      ?reward,
     ],
   );
 }
 
-class _SummaryArea extends StatelessWidget {
-  const _SummaryArea({
-    required this.metrics,
+class _ChildHomePortraitLayout extends StatelessWidget {
+  const _ChildHomePortraitLayout({
+    required this.greeting,
+    required this.notices,
+    required this.balance,
     required this.companion,
     required this.progress,
+    required this.current,
+    required this.status,
+    required this.later,
+    required this.waiting,
+    required this.reward,
+    required this.spacing,
   });
 
-  final _ChildHomeMetrics metrics;
+  final Widget greeting;
+  final List<Widget> notices;
+  final Widget balance;
   final Widget companion;
   final Widget? progress;
+  final Widget? current;
+  final Widget? status;
+  final Widget? later;
+  final Widget? waiting;
+  final Widget? reward;
+  final double spacing;
 
   @override
   Widget build(BuildContext context) {
-    if (progress == null) return companion;
-    if (!metrics.usesSummaryRow) {
-      return Column(
-        children: [
-          companion,
-          const SizedBox(height: ZeniSpacing.xxl),
-          progress!,
-        ],
-      );
-    }
+    final secondary = <Widget>[?waiting, ?reward];
+    final lowerContent = _balancedColumns(
+      key: const Key('child-home-portrait-lower-row'),
+      left: later,
+      right: secondary.isEmpty
+          ? null
+          : _ChildHomeFlow(spacing: spacing, children: secondary),
+      spacing: ZeniSpacing.spaceGroup,
+      leftFlex: 3,
+      rightFlex: 2,
+    );
 
-    return Row(
-      key: const Key('child-home-summary-row'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _ChildHomeFlow(
+      key: const Key('child-home-portrait-layout'),
+      spacing: spacing,
       children: [
-        Expanded(flex: 6, child: companion),
-        SizedBox(width: metrics.summaryGap),
-        Expanded(flex: 5, child: progress!),
+        greeting,
+        if (notices.isNotEmpty)
+          _ChildHomeFlow(spacing: ZeniSpacing.spaceControl, children: notices),
+        balance,
+        if (progress == null)
+          companion
+        else
+          Row(
+            key: const Key('child-home-summary-row'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: companion),
+              const SizedBox(width: ZeniSpacing.spaceGroup),
+              Expanded(flex: 2, child: progress!),
+            ],
+          ),
+        ?current,
+        ?status,
+        ?lowerContent,
       ],
     );
   }
 }
 
-class _ChildHomeMetrics {
-  const _ChildHomeMetrics({
-    required this.windowClass,
-    required this.topSpacing,
-    required this.greetingSpacing,
-    required this.sectionSpacing,
-    required this.companionHorizontalPadding,
-    required this.companionVerticalPadding,
-    required this.companionGap,
-    required this.mascotSize,
-    required this.missionCardPadding,
-    required this.missionIconSize,
-    required this.missionEmojiSize,
-    required this.upcomingHorizontalPadding,
-    required this.upcomingVerticalPadding,
-    required this.upcomingEmojiSize,
-    required this.awaitingCardPadding,
-    required this.progressHeight,
-    required this.summaryGap,
+class _ChildHomeLandscapeLayout extends StatelessWidget {
+  const _ChildHomeLandscapeLayout({
+    required this.greeting,
+    required this.notices,
+    required this.balance,
+    required this.companion,
+    required this.progress,
+    required this.current,
+    required this.status,
+    required this.later,
+    required this.waiting,
+    required this.reward,
+    required this.spacing,
   });
 
-  factory _ChildHomeMetrics.forWindow(ZeniWindowClass windowClass) =>
-      switch (windowClass) {
-        ZeniWindowClass.compact => const _ChildHomeMetrics(
-          windowClass: ZeniWindowClass.compact,
-          topSpacing: 16,
-          greetingSpacing: ZeniSpacing.lg,
-          sectionSpacing: ZeniSpacing.xl,
-          companionHorizontalPadding: ZeniSpacing.lg,
-          companionVerticalPadding: ZeniSpacing.md,
-          companionGap: ZeniSpacing.md,
-          mascotSize: 92,
-          missionCardPadding: ZeniSpacing.lg,
-          missionIconSize: 48,
-          missionEmojiSize: 27,
-          upcomingHorizontalPadding: ZeniSpacing.md,
-          upcomingVerticalPadding: ZeniSpacing.xs,
-          upcomingEmojiSize: 25,
-          awaitingCardPadding: ZeniSpacing.md,
-          progressHeight: 12,
-          summaryGap: 0,
-        ),
-        ZeniWindowClass.medium => const _ChildHomeMetrics(
-          windowClass: ZeniWindowClass.medium,
-          topSpacing: ZeniSpacing.xl,
-          greetingSpacing: ZeniSpacing.xl,
-          sectionSpacing: ZeniSpacing.xxl,
-          companionHorizontalPadding: ZeniSpacing.xl,
-          companionVerticalPadding: ZeniSpacing.xl,
-          companionGap: ZeniSpacing.lg,
-          mascotSize: 120,
-          missionCardPadding: ZeniSpacing.xl,
-          missionIconSize: 60,
-          missionEmojiSize: 30,
-          upcomingHorizontalPadding: ZeniSpacing.lg,
-          upcomingVerticalPadding: ZeniSpacing.sm,
-          upcomingEmojiSize: 28,
-          awaitingCardPadding: ZeniSpacing.lg,
-          progressHeight: 12,
-          summaryGap: ZeniSpacing.lg,
-        ),
-        ZeniWindowClass.expanded => const _ChildHomeMetrics(
-          windowClass: ZeniWindowClass.expanded,
-          topSpacing: ZeniSpacing.xxl,
-          greetingSpacing: ZeniSpacing.xxl,
-          sectionSpacing: 40,
-          companionHorizontalPadding: ZeniSpacing.xxl,
-          companionVerticalPadding: ZeniSpacing.xxl,
-          companionGap: ZeniSpacing.xl,
-          mascotSize: 148,
-          missionCardPadding: ZeniSpacing.xxl,
-          missionIconSize: 68,
-          missionEmojiSize: 34,
-          upcomingHorizontalPadding: ZeniSpacing.xl,
-          upcomingVerticalPadding: ZeniSpacing.md,
-          upcomingEmojiSize: 30,
-          awaitingCardPadding: ZeniSpacing.xl,
-          progressHeight: 14,
-          summaryGap: ZeniSpacing.xl,
-        ),
-        ZeniWindowClass.large => const _ChildHomeMetrics(
-          windowClass: ZeniWindowClass.large,
-          topSpacing: 40,
-          greetingSpacing: 40,
-          sectionSpacing: 48,
-          companionHorizontalPadding: 40,
-          companionVerticalPadding: 40,
-          companionGap: ZeniSpacing.xxl,
-          mascotSize: 160,
-          missionCardPadding: 40,
-          missionIconSize: 72,
-          missionEmojiSize: 36,
-          upcomingHorizontalPadding: ZeniSpacing.xxl,
-          upcomingVerticalPadding: ZeniSpacing.md,
-          upcomingEmojiSize: 32,
-          awaitingCardPadding: ZeniSpacing.xxl,
-          progressHeight: 14,
-          summaryGap: 40,
-        ),
-      };
+  final Widget greeting;
+  final List<Widget> notices;
+  final Widget balance;
+  final Widget companion;
+  final Widget? progress;
+  final Widget? current;
+  final Widget? status;
+  final Widget? later;
+  final Widget? waiting;
+  final Widget? reward;
+  final double spacing;
 
-  final ZeniWindowClass windowClass;
-  final double topSpacing;
-  final double greetingSpacing;
-  final double sectionSpacing;
-  final double companionHorizontalPadding;
-  final double companionVerticalPadding;
-  final double companionGap;
-  final double mascotSize;
-  final double missionCardPadding;
-  final double missionIconSize;
-  final double missionEmojiSize;
-  final double upcomingHorizontalPadding;
-  final double upcomingVerticalPadding;
-  final double upcomingEmojiSize;
-  final double awaitingCardPadding;
-  final double progressHeight;
-  final double summaryGap;
+  @override
+  Widget build(BuildContext context) {
+    final primary = _ChildHomeFlow(
+      key: const Key('child-home-primary-column'),
+      spacing: spacing,
+      children: [companion, ?current, ?status, ?later],
+    );
+    final secondaryItems = <Widget>[?progress, ?waiting, ?reward];
+    final body = secondaryItems.isEmpty
+        ? primary
+        : Row(
+            key: const Key('child-home-landscape-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 7, child: primary),
+              const SizedBox(width: ZeniSpacing.spaceSection),
+              Expanded(
+                flex: 4,
+                child: _ChildHomeFlow(
+                  key: const Key('child-home-secondary-column'),
+                  spacing: spacing,
+                  children: secondaryItems,
+                ),
+              ),
+            ],
+          );
 
-  bool get isTablet => windowClass != ZeniWindowClass.compact;
-  bool get usesSummaryRow =>
-      windowClass == ZeniWindowClass.expanded ||
-      windowClass == ZeniWindowClass.large;
+    return _ChildHomeFlow(
+      spacing: spacing,
+      children: [
+        greeting,
+        if (notices.isNotEmpty)
+          _ChildHomeFlow(spacing: ZeniSpacing.spaceControl, children: notices),
+        balance,
+        body,
+      ],
+    );
+  }
+}
+
+Widget? _balancedColumns({
+  required Key key,
+  required Widget? left,
+  required Widget? right,
+  required double spacing,
+  required int leftFlex,
+  required int rightFlex,
+}) {
+  if (left == null) return right;
+  if (right == null) return left;
+  return Row(
+    key: key,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(flex: leftFlex, child: left),
+      SizedBox(width: spacing),
+      Expanded(flex: rightFlex, child: right),
+    ],
+  );
+}
+
+class _ChildHomeFlow extends StatelessWidget {
+  const _ChildHomeFlow({
+    super.key,
+    required this.children,
+    required this.spacing,
+  });
+
+  final List<Widget> children;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (var index = 0; index < children.length; index++) ...[
+        if (index > 0) SizedBox(height: spacing),
+        children[index],
+      ],
+    ],
+  );
+}
+
+class _ChildHomeHeader extends StatelessWidget {
+  const _ChildHomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final windowClass = ZeniResponsive.windowClass(context);
+    final greetingStyle = windowClass == ZeniWindowClass.compact
+        ? typography.sectionTitle
+        : typography.pageTitle;
+
+    return Text('Vamos cuidar do seu dia? 👋', style: greetingStyle);
+  }
+}
+
+class _ChildBalanceHighlight extends StatelessWidget {
+  const _ChildBalanceHighlight({required this.balance, this.anchorKey});
+
+  final int balance;
+  final GlobalKey? anchorKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    final balanceText = balance == 1 ? '1 estrela' : '$balance estrelas';
+    final background = Color.alphaBlend(
+      colors.accentStar.withValues(alpha: .16),
+      colors.surface,
+    );
+
+    return Semantics(
+      container: true,
+      label: 'Seu saldo: $balanceText',
+      child: ExcludeSemantics(
+        child: ZeniSurface(
+          key: const Key('child-home-balance'),
+          role: ZeniSurfaceRole.highlight,
+          mode: ZeniVisualMode.kids,
+          backgroundColor: background,
+          padding: const EdgeInsets.symmetric(
+            horizontal: ZeniSpacing.spaceGroup,
+            vertical: ZeniSpacing.spaceCard,
+          ),
+          child: Row(
+            children: [
+              KeyedSubtree(
+                key: anchorKey,
+                child: Container(
+                  width: ZeniTouchTargets.childPriority,
+                  height: ZeniTouchTargets.childPriority,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.accentStar.withValues(alpha: .28),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text('⭐', style: TextStyle(fontSize: 30)),
+                ),
+              ),
+              const SizedBox(width: ZeniSpacing.spaceCard),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Seu saldo', style: typography.metadata),
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                    Text(balanceText, style: typography.sectionTitle),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ZeniCompanion extends StatelessWidget {
-  const _ZeniCompanion({
-    required this.state,
-    required this.message,
-    required this.metrics,
-  });
+  const _ZeniCompanion({required this.state, required this.message});
+
   final ZeniMascotState state;
   final String message;
-  final _ChildHomeMetrics metrics;
+
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Zeni diz: $message',
-    child: ExcludeSemantics(
-      child: Container(
-        key: const Key('child-home-companion'),
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(
-          horizontal: metrics.companionHorizontalPadding,
-          vertical: metrics.companionVerticalPadding,
-        ),
-        decoration: BoxDecoration(
-          color: ZeniColors.primaryLight.withValues(alpha: 0.34),
-          borderRadius: BorderRadius.circular(ZeniRadius.xl),
-        ),
-        child: Row(
-          children: [
-            ZeniMascot(state: state, size: metrics.mascotSize),
-            SizedBox(width: metrics.companionGap),
-            Expanded(
-              child: Text(
-                message,
-                style: metrics.isTablet
-                    ? Theme.of(context).textTheme.titleLarge
-                    : Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Semantics(
+      container: true,
+      label: 'Zeni diz: $message',
+      child: ExcludeSemantics(
+        child: ZeniSurface(
+          key: const Key('child-home-companion'),
+          role: ZeniSurfaceRole.grouped,
+          mode: ZeniVisualMode.kids,
+          backgroundColor: colors.surfaceSubtle,
+          padding: const EdgeInsets.symmetric(
+            horizontal: ZeniSpacing.spaceGroup,
+            vertical: ZeniSpacing.spaceCard,
+          ),
+          child: Row(
+            children: [
+              ZeniMascot(state: state, size: 96),
+              const SizedBox(width: ZeniSpacing.spaceCard),
+              Expanded(child: Text(message, style: typography.cardTitle)),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ChildDayProgress extends StatelessWidget {
@@ -535,48 +694,57 @@ class _ChildDayProgress extends StatelessWidget {
     required this.completed,
     required this.awaitingApproval,
     required this.total,
-    required this.metrics,
   });
+
   final int completed;
   final int awaitingApproval;
   final int total;
-  final _ChildHomeMetrics metrics;
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
     final status = awaitingApproval > 0
         ? '$awaitingApproval aguardando aprovação'
         : '$completed de $total concluídas';
     return Semantics(
       label: 'Seu dia: $status',
       child: ExcludeSemantics(
-        child: ZeniCard(
+        child: ZeniSurface(
           key: const Key('child-home-day-progress'),
+          role: ZeniSurfaceRole.grouped,
+          mode: ZeniVisualMode.kids,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Seu dia',
-                style: metrics.isTablet
-                    ? Theme.of(context).textTheme.headlineSmall
-                    : Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: ZeniSpacing.xs),
-              Text(
-                status,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
+              Text('Seu dia', style: typography.cardTitle),
+              const SizedBox(height: ZeniSpacing.spaceInline),
+              Text(status, style: typography.metadata),
+              const SizedBox(height: ZeniSpacing.spaceCard),
               ClipRRect(
                 borderRadius: BorderRadius.circular(ZeniRadius.pill),
                 child: LinearProgressIndicator(
                   value: (completed / total).clamp(0, 1),
-                  minHeight: metrics.progressHeight,
-                  backgroundColor: ZeniColors.primaryLight.withValues(
-                    alpha: 0.36,
-                  ),
+                  minHeight: 10,
+                  color: colors.brand,
+                  backgroundColor: colors.surfaceSubtle,
                 ),
+              ),
+              const SizedBox(height: ZeniSpacing.spaceCard),
+              Wrap(
+                spacing: ZeniSpacing.spaceCard,
+                runSpacing: ZeniSpacing.spaceInline,
+                children: [
+                  _ProgressLabel(
+                    icon: Icons.check_circle_outline_rounded,
+                    label: '$completed concluídas',
+                  ),
+                  if (awaitingApproval > 0)
+                    _ProgressLabel(
+                      icon: Icons.hourglass_top_rounded,
+                      label: '$awaitingApproval em análise',
+                    ),
+                ],
               ),
             ],
           ),
@@ -586,183 +754,274 @@ class _ChildDayProgress extends StatelessWidget {
   }
 }
 
+class _ProgressLabel extends StatelessWidget {
+  const _ProgressLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: colors.textSecondary),
+        const SizedBox(width: ZeniSpacing.spaceInlineTight),
+        Text(label, style: typography.metadata),
+      ],
+    );
+  }
+}
+
 class _ChildCurrentMissionCard extends StatelessWidget {
   const _ChildCurrentMissionCard({
     required this.mission,
+    required this.prominentTitle,
     required this.onOpen,
-    required this.metrics,
   });
+
   final Mission mission;
+  final bool prominentTitle;
   final VoidCallback onOpen;
-  final _ChildHomeMetrics metrics;
+
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label:
-        'Missão de agora: ${mission.title}${mission.stars > 0 ? ', ${mission.stars} estrelas' : ''}',
-    child: ZeniCard(
-      key: const Key('child-home-current-mission'),
-      onTap: onOpen,
-      padding: EdgeInsets.all(metrics.missionCardPadding),
-      child: Row(
-        children: [
-          Container(
-            width: metrics.missionIconSize,
-            height: metrics.missionIconSize,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: ZeniColors.primaryLight.withValues(alpha: 0.4),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              mission.emoji,
-              style: TextStyle(fontSize: metrics.missionEmojiSize),
-            ),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Semantics(
+      container: true,
+      label:
+          'Missão de agora: ${mission.title}${mission.stars > 0 ? ', ${mission.stars} estrelas' : ''}',
+      child: ZeniSurface(
+        key: const Key('child-home-current-mission'),
+        role: ZeniSurfaceRole.highlight,
+        mode: ZeniVisualMode.kids,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Agora', style: typography.sectionTitle),
+            const SizedBox(height: ZeniSpacing.spaceCard),
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  mission.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: metrics.isTablet
-                      ? Theme.of(context).textTheme.headlineSmall
-                      : Theme.of(context).textTheme.titleLarge,
+                Container(
+                  width: ZeniTouchTargets.childPriority,
+                  height: ZeniTouchTargets.childPriority,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.brand.withValues(alpha: .14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    mission.emoji,
+                    style: const TextStyle(fontSize: 30),
+                  ),
                 ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  'Toque para ver e concluir',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+                const SizedBox(width: ZeniSpacing.spaceCard),
+                Expanded(
+                  child: Text(
+                    mission.title,
+                    style: prominentTitle
+                        ? typography.sectionTitle
+                        : typography.cardTitle,
+                  ),
                 ),
               ],
             ),
-          ),
-          if (mission.stars > 0)
-            Text(
-              '+${mission.stars} ⭐',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-          const SizedBox(width: ZeniSpacing.xs),
-          const Icon(Icons.chevron_right_rounded),
-        ],
-      ),
-    ),
-  );
-}
-
-class _ChildUpcomingMissions extends StatelessWidget {
-  const _ChildUpcomingMissions({
-    required this.missions,
-    required this.onOpen,
-    required this.metrics,
-  });
-  final List<Mission> missions;
-  final ValueChanged<Mission> onOpen;
-  final _ChildHomeMetrics metrics;
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('Depois', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: ZeniSpacing.sm),
-      ZeniCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            for (var i = 0; i < missions.length; i++) ...[
-              Material(
-                color: Colors.transparent,
-                child: ListTile(
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: metrics.upcomingHorizontalPadding,
-                    vertical: metrics.upcomingVerticalPadding,
-                  ),
-                  leading: Text(
-                    missions[i].emoji,
-                    style: TextStyle(fontSize: metrics.upcomingEmojiSize),
-                  ),
-                  title: Text(
-                    missions[i].title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    missions[i].stars > 0 ? '+${missions[i].stars} ⭐' : '›',
-                  ),
-                  onTap: () => onOpen(missions[i]),
+            const SizedBox(height: ZeniSpacing.spaceCard),
+            Wrap(
+              spacing: ZeniSpacing.spaceCard,
+              runSpacing: ZeniSpacing.spaceInline,
+              children: [
+                _MissionMetadata(
+                  icon: Icons.schedule_rounded,
+                  label: mission.timeGroup.label,
                 ),
-              ),
-              if (i != missions.length - 1) const Divider(height: 1),
-            ],
+                if (mission.stars > 0)
+                  _MissionMetadata(
+                    icon: Icons.star_rounded,
+                    label: '+${mission.stars} estrelas',
+                    color: colors.actionPrimary,
+                  ),
+                if (mission.approvalMode == MissionApprovalMode.parentApproval)
+                  const _MissionMetadata(
+                    icon: Icons.verified_user_outlined,
+                    label: 'O responsável confere depois',
+                  ),
+              ],
+            ),
+            const SizedBox(height: ZeniSpacing.spaceGroup),
+            ZeniButton(
+              label: 'Ver missão',
+              icon: Icons.arrow_forward_rounded,
+              role: ZeniButtonRole.primary,
+              mode: ZeniVisualMode.kids,
+              onPressed: onOpen,
+            ),
           ],
         ),
       ),
-    ],
-  );
+    );
+  }
 }
 
-class _AwaitingApprovalMissions extends StatelessWidget {
-  const _AwaitingApprovalMissions({
-    required this.missions,
-    required this.onOpen,
-    required this.metrics,
-  });
-  final List<Mission> missions;
-  final ValueChanged<Mission> onOpen;
-  final _ChildHomeMetrics metrics;
+class _MissionMetadata extends StatelessWidget {
+  const _MissionMetadata({required this.icon, required this.label, this.color});
+
+  final IconData icon;
+  final String label;
+  final Color? color;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Aguardando aprovação',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-      const SizedBox(height: ZeniSpacing.sm),
-      for (final mission in missions) ...[
-        ZeniCard(
-          onTap: () => onOpen(mission),
-          padding: EdgeInsets.all(metrics.awaitingCardPadding),
-          child: Row(
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final effectiveColor = color ?? context.zeniColors.textSecondary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: effectiveColor),
+        const SizedBox(width: ZeniSpacing.spaceInlineTight),
+        Text(label, style: typography.metadata.copyWith(color: effectiveColor)),
+      ],
+    );
+  }
+}
+
+class _ChildMissionList extends StatelessWidget {
+  const _ChildMissionList({
+    super.key,
+    required this.title,
+    required this.missions,
+    required this.onOpen,
+    this.waitingApproval = false,
+  });
+
+  final String title;
+  final List<Mission> missions;
+  final ValueChanged<Mission> onOpen;
+  final bool waitingApproval;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceControl),
+        ZeniSurface(
+          role: ZeniSurfaceRole.grouped,
+          mode: ZeniVisualMode.kids,
+          backgroundColor: waitingApproval ? colors.surfaceSubtle : null,
+          padding: EdgeInsets.zero,
+          child: Column(
             children: [
-              Text(
-                mission.emoji,
-                style: TextStyle(fontSize: metrics.upcomingEmojiSize),
+              for (var index = 0; index < missions.length; index++) ...[
+                _ChildMissionRow(
+                  mission: missions[index],
+                  waitingApproval: waitingApproval,
+                  onTap: () => onOpen(missions[index]),
+                ),
+                if (index != missions.length - 1)
+                  Divider(height: 1, color: colors.borderSubtle),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChildMissionRow extends StatelessWidget {
+  const _ChildMissionRow({
+    required this.mission,
+    required this.waitingApproval,
+    required this.onTap,
+  });
+
+  final Mission mission;
+  final bool waitingApproval;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    final stateLabel = waitingApproval
+        ? 'Aguardando o responsável'
+        : mission.timeGroup.label;
+    return Semantics(
+      button: true,
+      label:
+          '${mission.title}, $stateLabel${mission.stars > 0 ? ', ${mission.stars} estrelas' : ''}',
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: ZeniTouchTargets.childPriority,
               ),
-              const SizedBox(width: ZeniSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ZeniSpacing.spaceCard,
+                  vertical: ZeniSpacing.spaceControl,
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      mission.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      'Aguardando o responsável',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: ZeniColors.mutedText,
+                    Text(mission.emoji, style: const TextStyle(fontSize: 26)),
+                    const SizedBox(width: ZeniSpacing.spaceControl),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(mission.title, style: typography.bodyEmphasis),
+                          const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                          Row(
+                            children: [
+                              if (waitingApproval) ...[
+                                Icon(
+                                  Icons.hourglass_top_rounded,
+                                  size: 16,
+                                  color: colors.textSecondary,
+                                ),
+                                const SizedBox(
+                                  width: ZeniSpacing.spaceInlineTight,
+                                ),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  stateLabel,
+                                  style: typography.metadata,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: ZeniSpacing.spaceInline),
+                    if (mission.stars > 0)
+                      Text('+${mission.stars} ⭐', style: typography.metadata),
+                    const SizedBox(width: ZeniSpacing.spaceInlineTight),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textSecondary,
                     ),
                   ],
                 ),
               ),
-              Text('+${mission.stars} ⭐'),
-            ],
+            ),
           ),
         ),
-        const SizedBox(height: ZeniSpacing.sm),
-      ],
-    ],
-  );
+      ),
+    );
+  }
 }
 
 class _ChildRewardProgress extends StatelessWidget {
@@ -771,89 +1030,115 @@ class _ChildRewardProgress extends StatelessWidget {
     required this.balance,
     required this.onTap,
   });
+
   final Reward reward;
   final int balance;
   final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final missing = (reward.cost - balance).clamp(0, reward.cost);
-    return ZeniCard(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Text(reward.emoji, style: const TextStyle(fontSize: 34)),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Progresso para mimo',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  missing == 0
-                      ? '${reward.title} já está disponível!'
-                      : 'Faltam $missing estrelas para ${reward.title}.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-                ),
-                const SizedBox(height: ZeniSpacing.sm),
-                LinearProgressIndicator(
-                  value: reward.cost == 0
-                      ? 1
-                      : (balance / reward.cost).clamp(0, 1),
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(ZeniRadius.pill),
-                  color: ZeniColors.purple,
-                  backgroundColor: ZeniColors.purple.withValues(alpha: 0.14),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChildStatusCard extends StatelessWidget {
-  const _ChildStatusCard({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-  final IconData icon;
-  final String title;
-  final String message;
-  @override
-  Widget build(BuildContext context) => ZeniCard(
-    child: Row(
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: ZeniColors.primaryDark, size: 38),
-        const SizedBox(width: ZeniSpacing.md),
-        Expanded(
-          child: Column(
+        Text('Mimo no horizonte', style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceControl),
+        ZeniSurface(
+          key: const Key('child-home-reward-progress'),
+          role: ZeniSurfaceRole.interactive,
+          mode: ZeniVisualMode.kids,
+          onTap: onTap,
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: ZeniSpacing.xs),
-              Text(
-                message,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+              Text(reward.emoji, style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: ZeniSpacing.spaceControl),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(reward.title, style: typography.cardTitle),
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                    Text(
+                      missing == 0
+                          ? 'Já está disponível!'
+                          : 'Faltam $missing estrelas para chegar lá.',
+                      style: typography.metadata,
+                    ),
+                    const SizedBox(height: ZeniSpacing.spaceControl),
+                    LinearProgressIndicator(
+                      value: reward.cost == 0
+                          ? 1
+                          : (balance / reward.cost).clamp(0, 1),
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(ZeniRadius.pill),
+                      color: colors.brand,
+                      backgroundColor: colors.surfaceSubtle,
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: ZeniSpacing.spaceInline),
+              Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],
           ),
         ),
       ],
-    ),
-  );
+    );
+  }
+}
+
+class _ChildStatus extends StatelessWidget {
+  const _ChildStatus({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return ZeniSurface(
+      role: ZeniSurfaceRole.plain,
+      mode: ZeniVisualMode.kids,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.spaceCard),
+        child: Row(
+          children: [
+            Container(
+              width: ZeniTouchTargets.childPriority,
+              height: ZeniTouchTargets.childPriority,
+              decoration: BoxDecoration(
+                color: colors.surfaceSubtle,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: colors.actionPrimary, size: 30),
+            ),
+            const SizedBox(width: ZeniSpacing.spaceCard),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: typography.cardTitle),
+                  const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                  Text(message, style: typography.body),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ChildPendingRewardHint extends StatelessWidget {
@@ -863,13 +1148,27 @@ class _ChildPendingRewardHint extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => TextButton.icon(
-    onPressed: onTap,
-    icon: const Icon(Icons.card_giftcard_rounded),
-    label: Text(
-      count == 1
-          ? 'Você tem mimo aguardando aprovação 🎁'
-          : 'Você tem $count mimos aguardando aprovação 🎁',
-    ),
-  );
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    final message = count == 1
+        ? 'Você tem mimo aguardando aprovação 🎁'
+        : 'Você tem $count mimos aguardando aprovação 🎁';
+    return ZeniSurface(
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.kids,
+      backgroundColor: colors.surfaceSubtle,
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(Icons.card_giftcard_rounded, color: colors.actionPrimary),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Expanded(child: Text(message, style: typography.bodyEmphasis)),
+          const SizedBox(width: ZeniSpacing.spaceInline),
+          Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+        ],
+      ),
+    );
+  }
 }

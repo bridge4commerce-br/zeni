@@ -14,6 +14,7 @@ class ZeniSurface extends StatelessWidget {
     required this.mode,
     this.padding,
     this.margin,
+    this.backgroundColor,
     this.onTap,
   });
 
@@ -22,6 +23,7 @@ class ZeniSurface extends StatelessWidget {
   final ZeniVisualMode mode;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
+  final Color? backgroundColor;
   final VoidCallback? onTap;
 
   @override
@@ -38,12 +40,14 @@ class ZeniSurface extends StatelessWidget {
       padding:
           padding ?? EdgeInsets.all(isPlain ? 0 : expression.surfacePadding),
       decoration: BoxDecoration(
-        color: switch (role) {
-          ZeniSurfaceRole.plain => Colors.transparent,
-          ZeniSurfaceRole.grouped ||
-          ZeniSurfaceRole.interactive => colors.surface,
-          ZeniSurfaceRole.highlight => colors.surfaceSubtle,
-        },
+        color:
+            backgroundColor ??
+            switch (role) {
+              ZeniSurfaceRole.plain => Colors.transparent,
+              ZeniSurfaceRole.grouped ||
+              ZeniSurfaceRole.interactive => colors.surface,
+              ZeniSurfaceRole.highlight => colors.surfaceSubtle,
+            },
         borderRadius: isPlain ? null : borderRadius,
         border: role == ZeniSurfaceRole.grouped || isInteractive
             ? Border.all(color: colors.borderSubtle)

@@ -1483,7 +1483,7 @@ void main() {
       await tester.tap(find.text('Pedro'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Oi, Pedro! 👋'), findsOneWidget);
+      expect(find.textContaining('Vamos cuidar do seu dia?'), findsOneWidget);
       await tester.tap(find.text('Missões'));
       await tester.pumpAndSettle();
       expect(find.text('Escovar os dentes'), findsOneWidget);
@@ -1623,7 +1623,7 @@ void main() {
     await tester.tap(find.text('Luna'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Oi, Luna! 👋'), findsOneWidget);
+    expect(find.textContaining('Vamos cuidar do seu dia?'), findsOneWidget);
     expect(find.text('Seu dia'), findsOneWidget);
     expect(find.text('Arrumar a cama'), findsOneWidget);
   });
@@ -1947,7 +1947,7 @@ void main() {
       await tester.tap(find.text('Luna'));
       await tester.pumpAndSettle();
 
-      expect(find.text('120'), findsWidgets);
+      expect(find.text('120 estrelas'), findsOneWidget);
 
       await tester.tap(find.text('Missões'));
       await tester.pumpAndSettle();
@@ -1965,7 +1965,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Missão concluída!'), findsOneWidget);
-      expect(find.text('125'), findsWidgets);
+
+      await tester.tap(find.text('Hoje').last);
+      await tester.pumpAndSettle();
+      expect(find.text('125 estrelas'), findsOneWidget);
     },
   );
 
@@ -2072,13 +2075,13 @@ void main() {
     await tester.tap(find.text('Pedir mimo'));
     await tester.pumpAndSettle();
 
-    expect(find.text('80'), findsWidgets);
     expect(find.text('Pedidos pendentes'), findsOneWidget);
     expect(find.text('Aguardando responsável'), findsWidgets);
 
     await tester.tap(find.text('Hoje').last);
     await tester.pumpAndSettle();
 
+    expect(find.text('80 estrelas'), findsOneWidget);
     expect(
       find.text('Você tem 2 mimos aguardando aprovação 🎁'),
       findsOneWidget,
