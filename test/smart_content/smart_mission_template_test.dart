@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeni/core/domain/zeni_enums.dart';
 import 'package:zeni/features/smart_content/data/models/smart_mission_template.dart';
 
 void main() {
@@ -74,6 +75,30 @@ void main() {
       expect(mission.supportsAge(14), isTrue);
       expect(mission.supportsAge(5), isFalse);
       expect(mission.supportsAge(15), isFalse);
+    });
+
+    test('lê sugestões globais opcionais de turno e recorrência', () {
+      final mission = SmartMissionTemplate.fromJson(
+        globalJson: <String, dynamic>{
+          ...globalJson,
+          'suggestedTimeGroup': 'evening',
+          'suggestedRecurrence': 'daily',
+        },
+        localizedJson: localizedJson,
+      );
+
+      expect(mission.suggestedTimeGroup, MissionTimeGroup.evening);
+      expect(mission.suggestedRecurrence, MissionRecurrence.daily);
+    });
+
+    test('aceita missão sem sugestões operacionais', () {
+      final mission = SmartMissionTemplate.fromJson(
+        globalJson: globalJson,
+        localizedJson: localizedJson,
+      );
+
+      expect(mission.suggestedTimeGroup, isNull);
+      expect(mission.suggestedRecurrence, isNull);
     });
 
     test('aceita limite inferior ou superior isoladamente', () {

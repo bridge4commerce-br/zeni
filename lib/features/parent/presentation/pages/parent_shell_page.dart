@@ -55,7 +55,6 @@ import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
 import '../../../tasks/presentation/providers/remote_missions_providers.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
-import '../../../smart_content/data/models/smart_mission_template.dart';
 import '../../../smart_content/presentation/pages/smart_suggestions_page.dart';
 import '../widgets/monthly_star_projection_card.dart';
 import '../widgets/mission_approval_card.dart';
@@ -103,7 +102,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     );
   }
 
-  Future<void> _openCreateMissionSheet({TaskFormInitialValues? initialValues}) async {
+  Future<void> _openCreateMissionSheet({
+    TaskFormInitialValues? initialValues,
+  }) async {
     final appState = _currentAppState;
     if (appState == null) return;
     final data = _buildParentModeData(appState);
@@ -117,7 +118,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: TaskFormSheet(children: data.children, initialValues: initialValues),
+          child: TaskFormSheet(
+            children: data.children,
+            initialValues: initialValues,
+          ),
         );
       },
     );
@@ -162,27 +166,58 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
         builder: (context) => SmartSuggestionsPage(
           children: data.activeChildren,
           activeMissions: data.activeMissions,
-          onSelectMission: (template, child) => _openSuggestedMission(template, child),
+          onConfirmBatch: (drafts, children) =>
+              _createSuggestedMissions(data.family.id, drafts, children),
         ),
       ),
     );
   }
 
-  Future<void> _openSuggestedMission(
-    SmartMissionTemplate template,
-    ChildProfile child,
-  ) {
-    return _openCreateMissionSheet(
-      initialValues: TaskFormInitialValues(
-        childId: child.id,
-        title: template.title,
-        description: template.description,
-        stars: template.suggestedStars > 0 ? template.suggestedStars : 10,
-        approvalMode: template.requiresApprovalByDefault
-            ? MissionApprovalMode.parentApproval
-            : MissionApprovalMode.automatic,
-      ),
-    );
+  Future<SmartBatchCreationResult> _createSuggestedMissions(
+    String familyId,
+    List<SmartBatchMissionDraft> drafts,
+    List<ChildProfile> children,
+  ) async {
+    final repository = ref.read(missionRepositoryProvider);
+    final current = _currentAppState;
+    final active =
+        current?.missions.where((mission) => mission.isActive).toList() ??
+        const <Mission>[];
+    var created = 0;
+    var skipped = 0;
+    final known = <String>{
+      for (final mission in active)
+        '${mission.childId}:${mission.title.trim().toLowerCase()}',
+    };
+    for (final child in children) {
+      for (final draft in drafts) {
+        final key = '${child.id}:${draft.title.trim().toLowerCase()}';
+        if (!known.add(key)) {
+          skipped += 1;
+          continue;
+        }
+        await repository.createMission(
+          familyId: familyId,
+          childId: child.id,
+          title: draft.title,
+          description: draft.description,
+          emoji: draft.emoji,
+          stars: draft.stars,
+          recurrence: draft.recurrence,
+          customDaysOfWeek: draft.customDaysOfWeek,
+          timeGroup: draft.timeGroup,
+          approvalMode: draft.approvalMode,
+          requiresPhoto: false,
+        );
+        created += 1;
+      }
+    }
+    if (created > 0) {
+      ref
+          .read(zeniOpportunisticSyncControllerProvider)
+          .scheduleSync(reason: 'parent_create_smart_missions_batch');
+    }
+    return SmartBatchCreationResult(created: created, skipped: skipped);
   }
 
   Future<void> _openEditMissionSheet(Mission mission) async {

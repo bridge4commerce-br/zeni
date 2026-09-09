@@ -1,3 +1,5 @@
+import '../../../../core/domain/zeni_enums.dart';
+
 class SmartMissionSupport {
   const SmartMissionSupport({
     required this.oneStepAtATime,
@@ -40,6 +42,8 @@ class SmartMissionTemplate {
     required this.priority,
     this.ageMin,
     this.ageMax,
+    this.suggestedTimeGroup,
+    this.suggestedRecurrence,
     required this.estimatedDuration,
     required this.suggestedStars,
     required this.eligibleAsExtra,
@@ -70,6 +74,8 @@ class SmartMissionTemplate {
   final String priority;
   final int? ageMin;
   final int? ageMax;
+  final MissionTimeGroup? suggestedTimeGroup;
+  final MissionRecurrence? suggestedRecurrence;
   final String estimatedDuration;
   final int suggestedStars;
   final bool eligibleAsExtra;
@@ -121,6 +127,8 @@ class SmartMissionTemplate {
       priority: globalJson['priority'] as String,
       ageMin: ageMin,
       ageMax: ageMax,
+      suggestedTimeGroup: _readTimeGroup(globalJson['suggestedTimeGroup']),
+      suggestedRecurrence: _readRecurrence(globalJson['suggestedRecurrence']),
       estimatedDuration: globalJson['estimatedDuration'] as String,
       suggestedStars: globalJson['suggestedStars'] as int,
       eligibleAsExtra: globalJson['eligibleAsExtra'] as bool,
@@ -149,6 +157,28 @@ class SmartMissionTemplate {
       helpSteps: _readStringList(localizedJson['helpSteps']),
     );
   }
+}
+
+MissionTimeGroup? _readTimeGroup(dynamic value) {
+  if (value == null) return null;
+  return switch (value) {
+    'morning' => MissionTimeGroup.morning,
+    'afternoon' => MissionTimeGroup.afternoon,
+    'evening' => MissionTimeGroup.evening,
+    'anytime' => MissionTimeGroup.anytime,
+    _ => throw FormatException('Invalid suggestedTimeGroup: $value'),
+  };
+}
+
+MissionRecurrence? _readRecurrence(dynamic value) {
+  if (value == null) return null;
+  return switch (value) {
+    'once' => MissionRecurrence.once,
+    'daily' => MissionRecurrence.daily,
+    'weekdays' => MissionRecurrence.weekdays,
+    'weekends' => MissionRecurrence.weekends,
+    _ => throw FormatException('Invalid suggestedRecurrence: $value'),
+  };
 }
 
 int? _readOptionalAge(Map<String, dynamic> json, String key) {

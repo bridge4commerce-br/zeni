@@ -309,6 +309,56 @@ void main() {
   );
 
   test(
+    'archiving one same-title mission keeps the other child mission active',
+    () async {
+      seedMockAppState();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final repository = container.read(missionRepositoryProvider);
+      await container.read(zeniAppStateControllerProvider.future);
+      final first = await repository.createMission(
+        familyId: 'family-1',
+        childId: 'child-1',
+        title: 'Guardar mochila',
+        description: '',
+        emoji: '🎒',
+        stars: 10,
+        recurrence: MissionRecurrence.once,
+        timeGroup: MissionTimeGroup.anytime,
+        approvalMode: MissionApprovalMode.automatic,
+        requiresPhoto: false,
+      );
+      final second = await repository.createMission(
+        familyId: 'family-1',
+        childId: 'child-2',
+        title: 'Guardar mochila',
+        description: '',
+        emoji: '🎒',
+        stars: 10,
+        recurrence: MissionRecurrence.once,
+        timeGroup: MissionTimeGroup.anytime,
+        approvalMode: MissionApprovalMode.automatic,
+        requiresPhoto: false,
+      );
+
+      await repository.archiveMission(first.id);
+
+      expect(
+        (await repository.getMissionsForChild(
+          'child-1',
+        )).any((item) => item.id == first.id),
+        isFalse,
+      );
+      expect(
+        (await repository.getMissionsForChild(
+          'child-2',
+        )).any((item) => item.id == second.id),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'restoring mission returns it to active parent and child lists',
     () async {
       seedMockAppState();

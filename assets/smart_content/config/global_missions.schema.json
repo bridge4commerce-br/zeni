@@ -55,6 +55,14 @@
             "type": "integer",
             "minimum": 0
           },
+          "suggestedTimeGroup": {
+            "type": "string",
+            "enum": ["morning", "afternoon", "evening", "anytime"]
+          },
+          "suggestedRecurrence": {
+            "type": "string",
+            "enum": ["once", "daily", "weekdays", "weekends"]
+          },
           "suggestedStars": {
             "type": "integer",
             "minimum": 0,

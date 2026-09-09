@@ -47,6 +47,10 @@ class TaskFormInitialValues {
     required this.description,
     required this.stars,
     required this.approvalMode,
+    this.emoji = '✅',
+    this.recurrence = MissionRecurrence.once,
+    this.customDaysOfWeek = const <int>[],
+    this.timeGroup = MissionTimeGroup.anytime,
   });
 
   final String childId;
@@ -54,6 +58,10 @@ class TaskFormInitialValues {
   final String description;
   final int stars;
   final MissionApprovalMode approvalMode;
+  final String emoji;
+  final MissionRecurrence recurrence;
+  final List<int> customDaysOfWeek;
+  final MissionTimeGroup timeGroup;
 }
 
 class TaskFormSheet extends StatefulWidget {
@@ -128,7 +136,8 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
 
     final mission = widget.initialMission;
     final initialValues = widget.initialValues;
-    _childId = mission?.childId ?? initialValues?.childId ?? widget.children.first.id;
+    _childId =
+        mission?.childId ?? initialValues?.childId ?? widget.children.first.id;
     _selectedEmoji = mission?.emoji ?? _emojiOptions.first;
 
     if (!_emojiOptions.contains(_selectedEmoji)) {
@@ -151,6 +160,10 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
       _descriptionController.text = initialValues.description;
       _stars = initialValues.stars;
       _approvalMode = initialValues.approvalMode;
+      _selectedEmoji = initialValues.emoji;
+      _recurrence = initialValues.recurrence;
+      _customDaysOfWeek = initialValues.customDaysOfWeek.toSet();
+      _timeGroup = initialValues.timeGroup;
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zeni/core/domain/zeni_enums.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
 import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
 import 'package:zeni/features/smart_content/data/repositories/asset_smart_content_repository.dart';
@@ -32,6 +33,19 @@ void main() {
       expect(routines.first.id, 'after_school');
       expect(routines.first.title, 'Cheguei em casa');
     });
+
+    test(
+      'hora de dormir usa sugestão noturna, não o fallback de manhã',
+      () async {
+        final missions = await repository.getMissions('pt-BR');
+        final bedtime = missions.singleWhere(
+          (mission) => mission.id == 'bedtime_checklist',
+        );
+
+        expect(bedtime.suggestedTimeGroup?.label, 'Noite');
+        expect(bedtime.suggestedRecurrence?.label, 'Todos os dias');
+      },
+    );
 
     test('resolve locale regional para idioma suportado', () async {
       final regional = await repository.getMissions('en-US');
@@ -108,7 +122,8 @@ void main() {
         home: SmartSuggestionsPage(
           children: [child],
           activeMissions: const [],
-          onSelectMission: (_, _) async {},
+          onConfirmBatch: (_, _) async =>
+              const SmartBatchCreationResult(created: 0, skipped: 0),
         ),
       ),
     );
