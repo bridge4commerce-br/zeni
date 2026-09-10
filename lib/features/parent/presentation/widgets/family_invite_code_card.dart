@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_icon_action_button.dart';
+import '../../../../core/theme/zeni_typography.dart';
 import '../../../family/data/models/family.dart';
 
 class FamilyInviteCodeCard extends StatelessWidget {
@@ -14,24 +14,24 @@ class FamilyInviteCodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ZeniCard(
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Padding(
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
       child: Row(
         children: [
           const Text('🔗', style: TextStyle(fontSize: 36)),
-          const SizedBox(width: ZeniSpacing.md),
+          const SizedBox(width: ZeniSpacing.spaceControl),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Código da família',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
+                Text('Código da família', style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
                 Text(
                   family.inviteCode,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: ZeniColors.primaryDark,
+                  style: typography.sectionTitle.copyWith(
+                    color: colors.actionPrimary,
                   ),
                 ),
               ],

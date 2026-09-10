@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/widgets/base/zeni_avatar.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../family/data/models/child_profile.dart';
 
 class ParentArchivedChildCard extends StatelessWidget {
@@ -18,43 +19,38 @@ class ParentArchivedChildCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ZeniCard(
+    final typography = ZeniTypography.of(context);
+    return Padding(
+      key: Key('parent-family-archived-child-${child.id}'),
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               ZeniAvatar(label: child.name, emoji: child.emoji, size: 56),
-              const SizedBox(width: ZeniSpacing.md),
+              const SizedBox(width: ZeniSpacing.spaceControl),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      child.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: ZeniSpacing.xs),
-                    Text(
-                      'Perfil arquivado',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: ZeniColors.mutedText,
-                      ),
-                    ),
+                    Text(child.name, style: typography.cardTitle),
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                    Text('Perfil arquivado', style: typography.metadata),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: ZeniSpacing.lg),
+          const SizedBox(height: ZeniSpacing.spaceCard),
           const Divider(),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(Icons.restore_rounded),
-              label: const Text('Restaurar criança'),
-              onPressed: onRestore,
-            ),
+          ZeniButton(
+            label: 'Restaurar criança',
+            icon: Icons.restore_rounded,
+            role: ZeniButtonRole.tertiary,
+            mode: ZeniVisualMode.parent,
+            fullWidth: false,
+            onPressed: onRestore,
           ),
         ],
       ),
