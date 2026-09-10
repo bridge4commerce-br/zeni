@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/accessibility/zeni_accessibility_settings.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
 import '../../../../core/widgets/inputs/counter_stepper.dart';
@@ -147,81 +151,88 @@ class ParentSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Ajustes', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Preferências do app, acessibilidade e recursos da família.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          _ParentSettingsGroup(
-            parentDisplayName: parentDisplayName,
-            appSettings: appSettings,
-            accessibilitySettings: accessibilitySettings,
-            onThemeModeChanged: onThemeModeChanged,
-            onDyslexiaFontChanged: onDyslexiaFontChanged,
-            onTextScaleChanged: onTextScaleChanged,
-            onVibrationChanged: onVibrationChanged,
-            onNotificationsChanged: onNotificationsChanged,
-            onTtsChanged: onTtsChanged,
-            onReadAloudByChildProfileChanged: onReadAloudByChildProfileChanged,
-            onConfigurePin: onConfigurePin,
-            onBiometricsChanged: onBiometricsChanged,
-            authState: authState,
-            remoteFamilySummary: remoteFamilySummary,
-            localChildrenCount: localChildrenCount,
-            remoteChildrenCount: remoteChildrenCount,
-            localMissionsCount: localMissionsCount,
-            remoteMissionsCount: remoteMissionsCount,
-            localRewardsCount: localRewardsCount,
-            remoteRewardsCount: remoteRewardsCount,
-            localMissionLogsCount: localMissionLogsCount,
-            remoteMissionLogsCount: remoteMissionLogsCount,
-            localRewardRequestsCount: localRewardRequestsCount,
-            remoteRewardRequestsCount: remoteRewardRequestsCount,
-            localStarLedgerCount: localStarLedgerCount,
-            remoteStarLedgerCount: remoteStarLedgerCount,
-            childBalanceDiagnostics: childBalanceDiagnostics,
-            hasRemoteChildBalanceData: hasRemoteChildBalanceData,
-            cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
-            cloudConsistencyErrorText: cloudConsistencyErrorText,
-            lastChildrenSyncAt: lastChildrenSyncAt,
-            lastMissionsSyncAt: lastMissionsSyncAt,
-            lastRewardsSyncAt: lastRewardsSyncAt,
-            lastMissionLogsSyncAt: lastMissionLogsSyncAt,
-            lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
-            lastStarLedgerSyncAt: lastStarLedgerSyncAt,
-            lastFullSyncAt: lastFullSyncAt,
-            isSupabaseConfigured: isSupabaseConfigured,
-            supabaseBootstrapState: supabaseBootstrapState,
-            isGoogleSignInAvailable: isGoogleSignInAvailable,
-            isAppleSignInAvailable: isAppleSignInAvailable,
-            showHistoricalRestoreStatus: showHistoricalRestoreStatus,
-            showDeviceBootstrapStatus: showDeviceBootstrapStatus,
-            showDeviceBootstrapAction: showDeviceBootstrapAction,
-            canRunDeviceBootstrap: canRunDeviceBootstrap,
-            deviceBootstrapMessage: deviceBootstrapMessage,
-            showHistoricalRestoreAction: showHistoricalRestoreAction,
-            canRunHistoricalRestore: canRunHistoricalRestore,
-            historicalRestoreMessage: historicalRestoreMessage,
-            onOpenAccount: onOpenAccount,
-            onSignOut: onSignOut,
-            onManageAccountAndData: onManageAccountAndData,
-            onClearLocalDeviceData: onClearLocalDeviceData,
-            onUpdateParentDisplayName: onUpdateParentDisplayName,
-            onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
-            onSyncCloudData: onSyncCloudData,
-            onDeviceBootstrap: onDeviceBootstrap,
-            onHistoricalRestore: onHistoricalRestore,
-          ),
-        ],
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceSection,
+        bottom: ZeniSpacing.spaceCanvas + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.dashboard,
+        child: Column(
+          key: const Key('parent-settings-v2-content'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ajustes', style: typography.pageTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(
+              'Preferências do app, acessibilidade e recursos da família.',
+              style: typography.body,
+            ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            _ParentSettingsGroup(
+              parentDisplayName: parentDisplayName,
+              appSettings: appSettings,
+              accessibilitySettings: accessibilitySettings,
+              onThemeModeChanged: onThemeModeChanged,
+              onDyslexiaFontChanged: onDyslexiaFontChanged,
+              onTextScaleChanged: onTextScaleChanged,
+              onVibrationChanged: onVibrationChanged,
+              onNotificationsChanged: onNotificationsChanged,
+              onTtsChanged: onTtsChanged,
+              onReadAloudByChildProfileChanged:
+                  onReadAloudByChildProfileChanged,
+              onConfigurePin: onConfigurePin,
+              onBiometricsChanged: onBiometricsChanged,
+              authState: authState,
+              remoteFamilySummary: remoteFamilySummary,
+              localChildrenCount: localChildrenCount,
+              remoteChildrenCount: remoteChildrenCount,
+              localMissionsCount: localMissionsCount,
+              remoteMissionsCount: remoteMissionsCount,
+              localRewardsCount: localRewardsCount,
+              remoteRewardsCount: remoteRewardsCount,
+              localMissionLogsCount: localMissionLogsCount,
+              remoteMissionLogsCount: remoteMissionLogsCount,
+              localRewardRequestsCount: localRewardRequestsCount,
+              remoteRewardRequestsCount: remoteRewardRequestsCount,
+              localStarLedgerCount: localStarLedgerCount,
+              remoteStarLedgerCount: remoteStarLedgerCount,
+              childBalanceDiagnostics: childBalanceDiagnostics,
+              hasRemoteChildBalanceData: hasRemoteChildBalanceData,
+              cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
+              cloudConsistencyErrorText: cloudConsistencyErrorText,
+              lastChildrenSyncAt: lastChildrenSyncAt,
+              lastMissionsSyncAt: lastMissionsSyncAt,
+              lastRewardsSyncAt: lastRewardsSyncAt,
+              lastMissionLogsSyncAt: lastMissionLogsSyncAt,
+              lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
+              lastStarLedgerSyncAt: lastStarLedgerSyncAt,
+              lastFullSyncAt: lastFullSyncAt,
+              isSupabaseConfigured: isSupabaseConfigured,
+              supabaseBootstrapState: supabaseBootstrapState,
+              isGoogleSignInAvailable: isGoogleSignInAvailable,
+              isAppleSignInAvailable: isAppleSignInAvailable,
+              showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+              showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+              showDeviceBootstrapAction: showDeviceBootstrapAction,
+              canRunDeviceBootstrap: canRunDeviceBootstrap,
+              deviceBootstrapMessage: deviceBootstrapMessage,
+              showHistoricalRestoreAction: showHistoricalRestoreAction,
+              canRunHistoricalRestore: canRunHistoricalRestore,
+              historicalRestoreMessage: historicalRestoreMessage,
+              onOpenAccount: onOpenAccount,
+              onSignOut: onSignOut,
+              onManageAccountAndData: onManageAccountAndData,
+              onClearLocalDeviceData: onClearLocalDeviceData,
+              onUpdateParentDisplayName: onUpdateParentDisplayName,
+              onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
+              onSyncCloudData: onSyncCloudData,
+              onDeviceBootstrap: onDeviceBootstrap,
+              onHistoricalRestore: onHistoricalRestore,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,345 +365,339 @@ class _ParentSettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ZeniColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(ZeniSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ParentProfileCard(
-              name: parentDisplayName,
-              email: authState.user?.email,
-              onTap: () => _openParentProfileNameSheet(context),
+    return ZeniSurface(
+      key: const Key('parent-settings-preferences-group'),
+      role: ZeniSurfaceRole.grouped,
+      mode: ZeniVisualMode.parent,
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ParentProfileCard(
+            name: parentDisplayName,
+            email: authState.user?.email,
+            onTap: () => _openParentProfileNameSheet(context),
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _SectionTitle(title: 'Segurança'),
+          ZeniOptionRow(
+            title: 'PIN do responsável',
+            subtitle: appSettings.hasParentPin
+                ? 'Toque para alterar o PIN de 4 dígitos'
+                : 'Defina um PIN de 4 dígitos para proteger o acesso',
+            leading: const Icon(
+              Icons.pin_rounded,
+              color: ZeniColors.primaryDark,
             ),
-            const SizedBox(height: ZeniSpacing.xl),
-            _SectionTitle(title: 'Segurança'),
+            trailing: Text(
+              appSettings.hasParentPin ? 'Alterar' : 'Criar',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
+            ),
+            onTap: onConfigurePin,
+          ),
+          ZeniSwitch(
+            title: 'Biometria',
+            subtitle: appSettings.hasParentPin
+                ? 'Usar Face ID ou impressão digital antes do PIN'
+                : 'Configure um PIN para liberar a biometria',
+            icon: Icons.fingerprint_rounded,
+            value: appSettings.parentBiometricsEnabled,
+            onChanged: appSettings.hasParentPin ? onBiometricsChanged : null,
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _SectionTitle(title: 'Preferências'),
+          Text(
+            'Tema e acessibilidade',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          for (final option in ZeniThemeModeOption.values) ...[
             ZeniOptionRow(
-              title: 'PIN do responsável',
-              subtitle: appSettings.hasParentPin
-                  ? 'Toque para alterar o PIN de 4 dígitos'
-                  : 'Defina um PIN de 4 dígitos para proteger o acesso',
+              title: option.label,
+              subtitle: option.description,
+              selected: accessibilitySettings.themeModeOption == option,
+              leading: Icon(switch (option) {
+                ZeniThemeModeOption.system => Icons.phone_iphone_rounded,
+                ZeniThemeModeOption.light => Icons.light_mode_rounded,
+                ZeniThemeModeOption.dark => Icons.dark_mode_rounded,
+              }, color: ZeniColors.primaryDark),
+              onTap: () => onThemeModeChanged(option),
+            ),
+            if (option != ZeniThemeModeOption.values.last)
+              const SizedBox(height: ZeniSpacing.sm),
+          ],
+          const SizedBox(height: ZeniSpacing.md),
+          ZeniSwitch(
+            title: 'Fonte OpenDyslexic',
+            subtitle: 'Aplicar a fonte acessível em todo o app',
+            icon: Icons.text_fields_rounded,
+            value: accessibilitySettings.dyslexiaFontEnabled,
+            onChanged: onDyslexiaFontChanged,
+          ),
+          CounterStepper(
+            label: 'Tamanho da letra',
+            subtitle: 'Ajuste aplicado no app inteiro',
+            value: (accessibilitySettings.textScale * 100).round(),
+            min: 85,
+            max: 135,
+            step: 5,
+            suffix: '%',
+            onChanged: (value) => onTextScaleChanged(value / 100),
+          ),
+          const SizedBox(height: ZeniSpacing.md),
+          ZeniSwitch(
+            title: 'Vibração',
+            subtitle: 'Ativar feedback tátil do app',
+            icon: Icons.vibration_rounded,
+            value: accessibilitySettings.vibrationEnabled,
+            onChanged: onVibrationChanged,
+          ),
+          ZeniSwitch(
+            title: 'Notificações',
+            subtitle: 'Receber lembretes e pedidos de aprovação',
+            icon: Icons.notifications_active_rounded,
+            value: accessibilitySettings.notificationsEnabled,
+            onChanged: onNotificationsChanged,
+          ),
+          ZeniSwitch(
+            title: 'Leitura em voz alta',
+            subtitle: 'Usar a voz do dispositivo quando disponível',
+            icon: Icons.record_voice_over_rounded,
+            value: accessibilitySettings.ttsEnabled,
+            onChanged: onTtsChanged,
+          ),
+          ZeniSwitch(
+            title: 'Leitura por perfil da criança',
+            subtitle: 'Permitir configuração individual de leitura em voz alta',
+            icon: Icons.child_care_rounded,
+            value: accessibilitySettings.readAloudByChildProfile,
+            onChanged: onReadAloudByChildProfileChanged,
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _SectionTitle(title: 'Sincronização e backup'),
+          if (authState.isAuthenticated && remoteFamilySummary != null) ...[
+            ZeniOptionRow(
+              title: 'Nome da família no backup',
+              subtitle: remoteFamilySummary!.familyName,
               leading: const Icon(
-                Icons.pin_rounded,
+                Icons.cloud_done_rounded,
                 color: ZeniColors.primaryDark,
               ),
               trailing: Text(
-                appSettings.hasParentPin ? 'Alterar' : 'Criar',
+                'Editar',
                 style: Theme.of(
                   context,
                 ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
               ),
-              onTap: onConfigurePin,
+              onTap: () =>
+                  _openRemoteFamilyNameSheet(context, remoteFamilySummary!),
             ),
-            ZeniSwitch(
-              title: 'Biometria',
-              subtitle: appSettings.hasParentPin
-                  ? 'Usar Face ID ou impressão digital antes do PIN'
-                  : 'Configure um PIN para liberar a biometria',
-              icon: Icons.fingerprint_rounded,
-              value: appSettings.parentBiometricsEnabled,
-              onChanged: appSettings.hasParentPin ? onBiometricsChanged : null,
+            const SizedBox(height: ZeniSpacing.sm),
+            _CloudSyncSection(
+              localChildrenCount: localChildrenCount,
+              remoteChildrenCount: remoteChildrenCount,
+              localMissionsCount: localMissionsCount,
+              remoteMissionsCount: remoteMissionsCount,
+              localRewardsCount: localRewardsCount,
+              remoteRewardsCount: remoteRewardsCount,
+              localMissionLogsCount: localMissionLogsCount,
+              remoteMissionLogsCount: remoteMissionLogsCount,
+              localRewardRequestsCount: localRewardRequestsCount,
+              remoteRewardRequestsCount: remoteRewardRequestsCount,
+              localStarLedgerCount: localStarLedgerCount,
+              remoteStarLedgerCount: remoteStarLedgerCount,
+              childBalanceDiagnostics: childBalanceDiagnostics,
+              hasRemoteChildBalanceData: hasRemoteChildBalanceData,
+              cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
+              cloudConsistencyErrorText: cloudConsistencyErrorText,
+              lastChildrenSyncAt: lastChildrenSyncAt,
+              lastMissionsSyncAt: lastMissionsSyncAt,
+              lastRewardsSyncAt: lastRewardsSyncAt,
+              lastMissionLogsSyncAt: lastMissionLogsSyncAt,
+              lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
+              lastStarLedgerSyncAt: lastStarLedgerSyncAt,
+              onSyncCloudData: onSyncCloudData,
+              lastFullSyncAt: lastFullSyncAt,
             ),
-            const SizedBox(height: ZeniSpacing.xl),
-            _SectionTitle(title: 'Preferências'),
+          ] else if (authState.isAuthenticated &&
+              remoteFamilySummary == null) ...[
             Text(
-              'Tema e acessibilidade',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            for (final option in ZeniThemeModeOption.values) ...[
-              ZeniOptionRow(
-                title: option.label,
-                subtitle: option.description,
-                selected: accessibilitySettings.themeModeOption == option,
-                leading: Icon(switch (option) {
-                  ZeniThemeModeOption.system => Icons.phone_iphone_rounded,
-                  ZeniThemeModeOption.light => Icons.light_mode_rounded,
-                  ZeniThemeModeOption.dark => Icons.dark_mode_rounded,
-                }, color: ZeniColors.primaryDark),
-                onTap: () => onThemeModeChanged(option),
-              ),
-              if (option != ZeniThemeModeOption.values.last)
-                const SizedBox(height: ZeniSpacing.sm),
-            ],
-            const SizedBox(height: ZeniSpacing.md),
-            ZeniSwitch(
-              title: 'Fonte OpenDyslexic',
-              subtitle: 'Aplicar a fonte acessível em todo o app',
-              icon: Icons.text_fields_rounded,
-              value: accessibilitySettings.dyslexiaFontEnabled,
-              onChanged: onDyslexiaFontChanged,
-            ),
-            CounterStepper(
-              label: 'Tamanho da letra',
-              subtitle: 'Ajuste aplicado no app inteiro',
-              value: (accessibilitySettings.textScale * 100).round(),
-              min: 85,
-              max: 135,
-              step: 5,
-              suffix: '%',
-              onChanged: (value) => onTextScaleChanged(value / 100),
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            ZeniSwitch(
-              title: 'Vibração',
-              subtitle: 'Ativar feedback tátil do app',
-              icon: Icons.vibration_rounded,
-              value: accessibilitySettings.vibrationEnabled,
-              onChanged: onVibrationChanged,
-            ),
-            ZeniSwitch(
-              title: 'Notificações',
-              subtitle: 'Receber lembretes e pedidos de aprovação',
-              icon: Icons.notifications_active_rounded,
-              value: accessibilitySettings.notificationsEnabled,
-              onChanged: onNotificationsChanged,
-            ),
-            ZeniSwitch(
-              title: 'Leitura em voz alta',
-              subtitle: 'Usar a voz do dispositivo quando disponível',
-              icon: Icons.record_voice_over_rounded,
-              value: accessibilitySettings.ttsEnabled,
-              onChanged: onTtsChanged,
-            ),
-            ZeniSwitch(
-              title: 'Leitura por perfil da criança',
-              subtitle:
-                  'Permitir configuração individual de leitura em voz alta',
-              icon: Icons.child_care_rounded,
-              value: accessibilitySettings.readAloudByChildProfile,
-              onChanged: onReadAloudByChildProfileChanged,
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            _SectionTitle(title: 'Sincronização e backup'),
-            if (authState.isAuthenticated && remoteFamilySummary != null) ...[
-              ZeniOptionRow(
-                title: 'Nome da família no backup',
-                subtitle: remoteFamilySummary!.familyName,
-                leading: const Icon(
-                  Icons.cloud_done_rounded,
-                  color: ZeniColors.primaryDark,
-                ),
-                trailing: Text(
-                  'Editar',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: ZeniColors.primaryDark,
-                  ),
-                ),
-                onTap: () =>
-                    _openRemoteFamilyNameSheet(context, remoteFamilySummary!),
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
-              _CloudSyncSection(
-                localChildrenCount: localChildrenCount,
-                remoteChildrenCount: remoteChildrenCount,
-                localMissionsCount: localMissionsCount,
-                remoteMissionsCount: remoteMissionsCount,
-                localRewardsCount: localRewardsCount,
-                remoteRewardsCount: remoteRewardsCount,
-                localMissionLogsCount: localMissionLogsCount,
-                remoteMissionLogsCount: remoteMissionLogsCount,
-                localRewardRequestsCount: localRewardRequestsCount,
-                remoteRewardRequestsCount: remoteRewardRequestsCount,
-                localStarLedgerCount: localStarLedgerCount,
-                remoteStarLedgerCount: remoteStarLedgerCount,
-                childBalanceDiagnostics: childBalanceDiagnostics,
-                hasRemoteChildBalanceData: hasRemoteChildBalanceData,
-                cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
-                cloudConsistencyErrorText: cloudConsistencyErrorText,
-                lastChildrenSyncAt: lastChildrenSyncAt,
-                lastMissionsSyncAt: lastMissionsSyncAt,
-                lastRewardsSyncAt: lastRewardsSyncAt,
-                lastMissionLogsSyncAt: lastMissionLogsSyncAt,
-                lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
-                lastStarLedgerSyncAt: lastStarLedgerSyncAt,
-                onSyncCloudData: onSyncCloudData,
-                lastFullSyncAt: lastFullSyncAt,
-              ),
-            ] else if (authState.isAuthenticated &&
-                remoteFamilySummary == null) ...[
-              Text(
-                'Sua conta está conectada, mas ainda não encontramos um backup da família para este aparelho.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
-              _CloudConnectionCard(
-                title: 'Configurar sincronização',
-                subtitle: 'Abra sua conta para preparar backup e restauração.',
-                onTap: onOpenAccount,
-              ),
-            ] else ...[
-              Text(
-                'Conecte sua conta para salvar um backup da família e restaurar em outro aparelho quando precisar.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
-              _CloudConnectionCard(
-                title: 'Conectar conta',
-                subtitle: !supabaseBootstrapState.isConfigured
-                    ? 'A nuvem não foi incluída neste build.'
-                    : supabaseBootstrapState.isInitialized
-                    ? 'Ative backup, sincronização e restauração.'
-                    : 'A conexão com a nuvem falhou ao iniciar neste aparelho.',
-                onTap: onOpenAccount,
-              ),
-            ],
-            const SizedBox(height: ZeniSpacing.xl),
-            _BackupRestoreSection(
-              isAvailable:
-                  authState.isAuthenticated && remoteFamilySummary != null,
-              showDeviceBootstrapStatus: showDeviceBootstrapStatus,
-              showHistoricalRestoreStatus: showHistoricalRestoreStatus,
-              showDeviceBootstrapAction: showDeviceBootstrapAction,
-              canRunDeviceBootstrap: canRunDeviceBootstrap,
-              deviceBootstrapMessage: deviceBootstrapMessage,
-              showHistoricalRestoreAction: showHistoricalRestoreAction,
-              canRunHistoricalRestore: canRunHistoricalRestore,
-              historicalRestoreMessage: historicalRestoreMessage,
-              onDeviceBootstrap: onDeviceBootstrap,
-              onHistoricalRestore: onHistoricalRestore,
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            _SectionTitle(title: 'Ajuda e informações'),
-            ZeniOptionRow(
-              title: 'Suporte',
-              subtitle:
-                  'Ajuda com conta, sincronização, restauração e privacidade.',
-              leading: const Icon(
-                Icons.support_agent_rounded,
-                color: ZeniColors.primaryDark,
-              ),
-              onTap: () => _openInfoSheet(
+              'Sua conta está conectada, mas ainda não encontramos um backup da família para este aparelho.',
+              style: Theme.of(
                 context,
-                title: 'Suporte',
-                message:
-                    'Para ajuda com conta, sincronização, restauração, exclusão de conta ou dúvidas sobre privacidade, entre em contato com o suporte.\n\nE-mail: suporte@luminadigital.app',
-              ),
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
             ),
             const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Política de Privacidade',
-              subtitle: 'Como o app salva e pode sincronizar dados da família.',
-              leading: const Icon(
-                Icons.privacy_tip_rounded,
-                color: ZeniColors.primaryDark,
-              ),
-              onTap: () => _openInfoSheet(
+            _CloudConnectionCard(
+              title: 'Configurar sincronização',
+              subtitle: 'Abra sua conta para preparar backup e restauração.',
+              onTap: onOpenAccount,
+            ),
+          ] else ...[
+            Text(
+              'Conecte sua conta para salvar um backup da família e restaurar em outro aparelho quando precisar.',
+              style: Theme.of(
                 context,
-                title: 'Política de Privacidade',
-                message:
-                    'O Zeni salva dados da família para organizar crianças, missões, mimos, pedidos e histórico de estrelas. O app pode funcionar apenas neste aparelho. Quando você entra com uma conta, parte desses dados pode ser sincronizada na nuvem para permitir restauração e continuidade em outro aparelho. Você pode apagar dados locais deste aparelho e também solicitar a exclusão da conta e dos dados da nuvem.',
-              ),
+              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
             ),
             const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Termos de Uso',
-              subtitle:
-                  'Resumo das responsabilidades e do uso adequado do app.',
-              leading: const Icon(
-                Icons.description_rounded,
-                color: ZeniColors.primaryDark,
-              ),
-              onTap: () => _openInfoSheet(
-                context,
-                title: 'Termos de Uso',
-                message:
-                    'O Zeni é uma ferramenta de organização familiar. O responsável é quem cria e gerencia crianças, missões, mimos e aprovações. O app não substitui acompanhamento parental, financeiro, educacional ou profissional. Ao usar recursos de conta e nuvem, você concorda em manter suas credenciais seguras e usar o app de forma adequada à sua família.',
-              ),
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Como seus dados são salvos',
-              subtitle:
-                  'Entenda o que fica neste aparelho e o que pode ir para a sua conta.',
-              leading: const Icon(
-                Icons.cloud_queue_rounded,
-                color: ZeniColors.primaryDark,
-              ),
-              onTap: () => _openInfoSheet(
-                context,
-                title: 'Como seus dados são salvos',
-                message:
-                    'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
-              ),
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Informações técnicas para suporte',
-              subtitle:
-                  'Abra apenas se precisar compartilhar diagnóstico com o suporte.',
-              leading: const Icon(
-                Icons.health_and_safety_rounded,
-                color: ZeniColors.primaryDark,
-              ),
-              onTap: () => _openTechnicalDiagnosticsSheet(context),
-            ),
-            const SizedBox(height: ZeniSpacing.xl),
-            _SectionTitle(title: 'Conta e dados'),
-            if (authState.isAuthenticated) ...[
-              ZeniOptionRow(
-                title: 'Dados na nuvem',
-                subtitle:
-                    'Envia alterações deste aparelho e busca atualizações salvas na nuvem.',
-                leading: const Icon(
-                  Icons.cloud_sync_rounded,
-                  color: ZeniColors.primaryDark,
-                ),
-                trailing: Text(
-                  'Abrir',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: ZeniColors.primaryDark,
-                  ),
-                ),
-                onTap: () => _openCloudDataSheet(context),
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
-              ZeniOptionRow(
-                title: 'Sair da conta',
-                subtitle:
-                    'Sair da conta remove apenas sua sessão neste aparelho. A família e os dados locais continuam salvos aqui.',
-                leading: Icon(
-                  Icons.logout_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                onTap: onSignOut,
-              ),
-              const SizedBox(height: ZeniSpacing.sm),
-            ],
-            ZeniOptionRow(
-              title: 'Apagar dados deste aparelho',
-              subtitle:
-                  'Remove os dados locais deste aparelho sem apagar o que estiver salvo na sua conta.',
-              leading: Icon(
-                Icons.delete_forever_rounded,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              onTap: () async {
-                await onClearLocalDeviceData();
-              },
-            ),
-            const SizedBox(height: ZeniSpacing.sm),
-            ZeniOptionRow(
-              title: 'Excluir conta e dados da nuvem',
-              subtitle:
-                  'Indisponível nesta versão. Veja o que muda entre dados locais, conta e nuvem.',
-              leading: Icon(
-                Icons.cloud_off_rounded,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              onTap: onManageAccountAndData,
+            _CloudConnectionCard(
+              title: 'Conectar conta',
+              subtitle: !supabaseBootstrapState.isConfigured
+                  ? 'A nuvem não foi incluída neste build.'
+                  : supabaseBootstrapState.isInitialized
+                  ? 'Ative backup, sincronização e restauração.'
+                  : 'A conexão com a nuvem falhou ao iniciar neste aparelho.',
+              onTap: onOpenAccount,
             ),
           ],
-        ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _BackupRestoreSection(
+            isAvailable:
+                authState.isAuthenticated && remoteFamilySummary != null,
+            showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+            showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+            showDeviceBootstrapAction: showDeviceBootstrapAction,
+            canRunDeviceBootstrap: canRunDeviceBootstrap,
+            deviceBootstrapMessage: deviceBootstrapMessage,
+            showHistoricalRestoreAction: showHistoricalRestoreAction,
+            canRunHistoricalRestore: canRunHistoricalRestore,
+            historicalRestoreMessage: historicalRestoreMessage,
+            onDeviceBootstrap: onDeviceBootstrap,
+            onHistoricalRestore: onHistoricalRestore,
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _SectionTitle(title: 'Ajuda e informações'),
+          ZeniOptionRow(
+            title: 'Suporte',
+            subtitle:
+                'Ajuda com conta, sincronização, restauração e privacidade.',
+            leading: const Icon(
+              Icons.support_agent_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            onTap: () => _openInfoSheet(
+              context,
+              title: 'Suporte',
+              message:
+                  'Para ajuda com conta, sincronização, restauração, exclusão de conta ou dúvidas sobre privacidade, entre em contato com o suporte.\n\nE-mail: suporte@luminadigital.app',
+            ),
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Política de Privacidade',
+            subtitle: 'Como o app salva e pode sincronizar dados da família.',
+            leading: const Icon(
+              Icons.privacy_tip_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            onTap: () => _openInfoSheet(
+              context,
+              title: 'Política de Privacidade',
+              message:
+                  'O Zeni salva dados da família para organizar crianças, missões, mimos, pedidos e histórico de estrelas. O app pode funcionar apenas neste aparelho. Quando você entra com uma conta, parte desses dados pode ser sincronizada na nuvem para permitir restauração e continuidade em outro aparelho. Você pode apagar dados locais deste aparelho e também solicitar a exclusão da conta e dos dados da nuvem.',
+            ),
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Termos de Uso',
+            subtitle: 'Resumo das responsabilidades e do uso adequado do app.',
+            leading: const Icon(
+              Icons.description_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            onTap: () => _openInfoSheet(
+              context,
+              title: 'Termos de Uso',
+              message:
+                  'O Zeni é uma ferramenta de organização familiar. O responsável é quem cria e gerencia crianças, missões, mimos e aprovações. O app não substitui acompanhamento parental, financeiro, educacional ou profissional. Ao usar recursos de conta e nuvem, você concorda em manter suas credenciais seguras e usar o app de forma adequada à sua família.',
+            ),
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Como seus dados são salvos',
+            subtitle:
+                'Entenda o que fica neste aparelho e o que pode ir para a sua conta.',
+            leading: const Icon(
+              Icons.cloud_queue_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            onTap: () => _openInfoSheet(
+              context,
+              title: 'Como seus dados são salvos',
+              message:
+                  'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
+            ),
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Informações técnicas para suporte',
+            subtitle:
+                'Abra apenas se precisar compartilhar diagnóstico com o suporte.',
+            leading: const Icon(
+              Icons.health_and_safety_rounded,
+              color: ZeniColors.primaryDark,
+            ),
+            onTap: () => _openTechnicalDiagnosticsSheet(context),
+          ),
+          const SizedBox(height: ZeniSpacing.xl),
+          _SectionTitle(title: 'Conta e dados'),
+          if (authState.isAuthenticated) ...[
+            ZeniOptionRow(
+              title: 'Dados na nuvem',
+              subtitle:
+                  'Envia alterações deste aparelho e busca atualizações salvas na nuvem.',
+              leading: const Icon(
+                Icons.cloud_sync_rounded,
+                color: ZeniColors.primaryDark,
+              ),
+              trailing: Text(
+                'Abrir',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
+              ),
+              onTap: () => _openCloudDataSheet(context),
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+            ZeniOptionRow(
+              title: 'Sair da conta',
+              subtitle:
+                  'Sair da conta remove apenas sua sessão neste aparelho. A família e os dados locais continuam salvos aqui.',
+              leading: Icon(
+                Icons.logout_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              onTap: onSignOut,
+            ),
+            const SizedBox(height: ZeniSpacing.sm),
+          ],
+          ZeniOptionRow(
+            title: 'Apagar dados deste aparelho',
+            subtitle:
+                'Remove os dados locais deste aparelho sem apagar o que estiver salvo na sua conta.',
+            leading: Icon(
+              Icons.delete_forever_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            onTap: () async {
+              await onClearLocalDeviceData();
+            },
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          ZeniOptionRow(
+            title: 'Excluir conta e dados da nuvem',
+            subtitle:
+                'Indisponível nesta versão. Veja o que muda entre dados locais, conta e nuvem.',
+            leading: Icon(
+              Icons.cloud_off_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            onTap: onManageAccountAndData,
+          ),
+        ],
       ),
     );
   }
