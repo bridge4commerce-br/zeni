@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/zeni_colors.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_balance_pill.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../balance/domain/monthly_star_projection.dart';
 import '../../../family/data/models/child_profile.dart';
 
@@ -21,15 +23,17 @@ class MonthlyStarProjectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
 
-    return ZeniCard(
+    return ZeniSurface(
+      role: ZeniSurfaceRole.highlight,
+      mode: ZeniVisualMode.parent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (childSelector != null) ...[
             childSelector!,
-            const SizedBox(height: ZeniSpacing.md),
+            const SizedBox(height: ZeniSpacing.spaceCard),
           ],
           Row(
             children: [
@@ -37,13 +41,11 @@ class MonthlyStarProjectionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Potencial do mês', style: textTheme.titleLarge),
-                    const SizedBox(height: ZeniSpacing.xs),
+                    Text('Potencial do mês', style: typography.sectionTitle),
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
                     Text(
                       '${child.name} ainda pode ganhar até ${projection.maxPossibleStars} estrelas neste mês.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: ZeniColors.mutedText,
-                      ),
+                      style: typography.body,
                     ),
                   ],
                 ),
@@ -51,20 +53,46 @@ class MonthlyStarProjectionCard extends StatelessWidget {
               ZeniBalancePill(stars: projection.currentBalance),
             ],
           ),
-          const SizedBox(height: ZeniSpacing.lg),
-          _ProjectionMetaRow(
-            label: 'Dias restantes',
-            value: '${projection.daysRemainingInMonth}',
-          ),
-          const SizedBox(height: ZeniSpacing.sm),
-          _ProjectionMetaRow(
-            label: 'Missões previstas',
-            value: '${projection.totalRemainingOccurrences}',
-          ),
-          const SizedBox(height: ZeniSpacing.sm),
-          _ProjectionMetaRow(
-            label: 'Estrelas possíveis',
-            value: '${projection.maxPossibleStars}',
+          const SizedBox(height: ZeniSpacing.spaceGroup),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = ZeniAdaptiveGrid.columnsForWidth(
+                availableWidth: constraints.maxWidth,
+                windowClass: ZeniResponsive.windowClass(context),
+                minItemWidth: 132,
+              );
+              final itemWidth =
+                  (constraints.maxWidth -
+                      (columns - 1) * ZeniSpacing.spaceControl) /
+                  columns;
+              return Wrap(
+                spacing: ZeniSpacing.spaceControl,
+                runSpacing: ZeniSpacing.spaceControl,
+                children: [
+                  SizedBox(
+                    width: itemWidth,
+                    child: _ProjectionMetric(
+                      label: 'Dias restantes',
+                      value: '${projection.daysRemainingInMonth}',
+                    ),
+                  ),
+                  SizedBox(
+                    width: itemWidth,
+                    child: _ProjectionMetric(
+                      label: 'Missões previstas',
+                      value: '${projection.totalRemainingOccurrences}',
+                    ),
+                  ),
+                  SizedBox(
+                    width: itemWidth,
+                    child: _ProjectionMetric(
+                      label: 'Estrelas possíveis',
+                      value: '${projection.maxPossibleStars}',
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -72,25 +100,21 @@ class MonthlyStarProjectionCard extends StatelessWidget {
   }
 }
 
-class _ProjectionMetaRow extends StatelessWidget {
-  const _ProjectionMetaRow({required this.label, required this.value});
+class _ProjectionMetric extends StatelessWidget {
+  const _ProjectionMetric({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-          ),
-        ),
-        Text(value, style: Theme.of(context).textTheme.titleMedium),
+        Text(label, style: typography.metadata),
+        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+        Text(value, style: typography.cardTitle),
       ],
     );
   }

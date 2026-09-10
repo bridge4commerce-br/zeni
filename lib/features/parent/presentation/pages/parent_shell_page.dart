@@ -12,11 +12,16 @@ import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_choice_chip.dart';
+import '../../../../core/widgets/base/zeni_avatar.dart';
 import '../../../../core/widgets/base/zeni_fab.dart';
 import '../../../../core/widgets/base/zeni_icon_action_button.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../../core/widgets/inputs/zeni_option_row.dart';
@@ -59,9 +64,7 @@ import '../../../smart_content/presentation/pages/smart_suggestions_page.dart';
 import '../widgets/monthly_star_projection_card.dart';
 import '../widgets/mission_approval_card.dart';
 import '../widgets/parent_child_form_sheet.dart';
-import '../widgets/parent_child_summary_card.dart';
 import '../widgets/parent_family_tab.dart';
-import '../widgets/parent_metric_card.dart';
 import '../widgets/parent_missions_tab.dart';
 import '../widgets/parent_rewards_tab.dart';
 import '../widgets/parent_settings_tab.dart';
@@ -1454,61 +1457,58 @@ class _ParentDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: ZeniPageFrame(
-        key: const Key('parent-dashboard-frame'),
-        width: ZeniPageWidth.dashboard,
-        child: LayoutBuilder(
-          builder: (context, _) {
-            final layout = _ParentDashboardLayout.fromContext(context);
-            final metrics = [
-              ParentMetricCard(
-                emoji: '👧',
-                value: '${data.activeChildren.length}',
-                label: 'crianças',
-                onTap: onOpenFamily,
-              ),
-              ParentMetricCard(
-                emoji: '⏳',
-                value: '${data.awaitingLogs.length}',
-                label: 'aprovações',
-                onTap: onOpenMissionApprovals,
-              ),
-              ParentMetricCard(
-                emoji: '✅',
-                value: '${data.activeMissions.length}',
-                label: 'missões ativas',
-                onTap: onOpenMissions,
-              ),
-              ParentMetricCard(
-                emoji: '🎁',
-                value: '${data.pendingRequests.length}',
-                label: 'mimos pedidos',
-                onTap: onOpenRewardRequests,
-              ),
-            ];
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(
+          top: ZeniSpacing.spaceGroup,
+          bottom: ZeniSpacing.spaceCanvas,
+        ),
+        child: ZeniPageFrame(
+          key: const Key('parent-dashboard-frame'),
+          width: ZeniPageWidth.dashboard,
+          child: LayoutBuilder(
+            builder: (context, _) {
+              final layout = _ParentDashboardLayout.fromContext(context);
+              final metrics = [
+                _DashboardMetricItem(
+                  metricKey: const Key('parent-dashboard-metric-children'),
+                  icon: Icons.family_restroom_outlined,
+                  value: '${data.activeChildren.length}',
+                  label: 'crianças',
+                  onTap: onOpenFamily,
+                ),
+                _DashboardMetricItem(
+                  metricKey: const Key('parent-dashboard-metric-approvals'),
+                  icon: Icons.pending_actions_outlined,
+                  value: '${data.awaitingLogs.length}',
+                  label: 'aprovações',
+                  onTap: onOpenMissionApprovals,
+                ),
+                _DashboardMetricItem(
+                  metricKey: const Key('parent-dashboard-metric-missions'),
+                  icon: Icons.task_alt_rounded,
+                  value: '${data.activeMissions.length}',
+                  label: 'missões ativas',
+                  onTap: onOpenMissions,
+                ),
+                _DashboardMetricItem(
+                  metricKey: const Key('parent-dashboard-metric-rewards'),
+                  icon: Icons.card_giftcard_outlined,
+                  value: '${data.pendingRequests.length}',
+                  label: 'mimos pedidos',
+                  onTap: onOpenRewardRequests,
+                ),
+              ];
 
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.xl),
-              child: SizedBox(
+              return SizedBox(
                 key: const Key('parent-dashboard-content'),
                 width: double.infinity,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Painel do responsável',
-                      style: Theme.of(context).textTheme.displayLarge,
-                    ),
-                    const SizedBox(height: ZeniSpacing.sm),
-                    Text(
-                      'Acompanhe missões, aprovações, mimos e evolução da família.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: ZeniColors.mutedText,
-                      ),
-                    ),
+                    const _DashboardHeader(),
                     if (data.pendingCount > 0) ...[
-                      const SizedBox(height: ZeniSpacing.xl),
+                      const SizedBox(height: ZeniSpacing.spaceGroup),
                       _PendingTodaySection(
                         data: data,
                         onApproveMission: onApproveMission,
@@ -1517,19 +1517,14 @@ class _ParentDashboardPage extends StatelessWidget {
                         onRejectRewardRequest: onRejectRewardRequest,
                       ),
                     ],
-                    const SizedBox(height: ZeniSpacing.xl),
+                    const SizedBox(height: ZeniSpacing.spaceGroup),
                     _ParentMetricGrid(
                       columns: layout.metricColumns,
                       children: metrics,
                     ),
-                    const SizedBox(height: ZeniSpacing.xl),
-                    Text(
-                      'Crianças',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: ZeniSpacing.md),
+                    const SizedBox(height: ZeniSpacing.spaceSection),
                     _ParentChildrenDashboard(
-                      isSideBySide: layout.isWide,
+                      isSideBySide: layout.usesDetailColumns,
                       children: data.activeChildren,
                       projectionFor: (child) =>
                           _projectionCalculator.calculateForChild(
@@ -1539,9 +1534,9 @@ class _ParentDashboardPage extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1551,17 +1546,17 @@ class _ParentDashboardPage extends StatelessWidget {
 class _ParentDashboardLayout {
   const _ParentDashboardLayout({
     required this.metricColumns,
-    required this.isWide,
+    required this.usesDetailColumns,
   });
 
   final int metricColumns;
-  final bool isWide;
+  final bool usesDetailColumns;
 
   factory _ParentDashboardLayout.fromContext(BuildContext context) {
     final windowClass = ZeniResponsive.windowClass(context);
     return _ParentDashboardLayout(
       metricColumns: windowClass == ZeniWindowClass.large ? 4 : 2,
-      isWide: switch (windowClass) {
+      usesDetailColumns: switch (windowClass) {
         ZeniWindowClass.expanded || ZeniWindowClass.large => true,
         ZeniWindowClass.compact || ZeniWindowClass.medium => false,
       },
@@ -1576,20 +1571,109 @@ class _ParentMetricGrid extends StatelessWidget {
   final List<Widget> children;
 
   @override
+  Widget build(BuildContext context) => ZeniSurface(
+    key: const Key('parent-dashboard-metrics'),
+    role: ZeniSurfaceRole.grouped,
+    mode: ZeniVisualMode.parent,
+    padding: EdgeInsets.zero,
+    child: Column(
+      children: [
+        for (var start = 0; start < children.length; start += columns) ...[
+          if (start > 0) const _DashboardDivider(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var column = 0; column < columns; column++) ...[
+                Expanded(
+                  child: start + column < children.length
+                      ? children[start + column]
+                      : const SizedBox.shrink(),
+                ),
+                if (column < columns - 1)
+                  const SizedBox(width: ZeniSpacing.spaceInline),
+              ],
+            ],
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader();
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemWidth =
-            (constraints.maxWidth - (columns - 1) * ZeniSpacing.md) / columns;
-        return Wrap(
-          spacing: ZeniSpacing.md,
-          runSpacing: ZeniSpacing.md,
-          children: [
-            for (final child in children)
-              SizedBox(width: itemWidth, child: child),
-          ],
-        );
-      },
+    final typography = ZeniTypography.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 640),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Painel do responsável', style: typography.pageTitle),
+          const SizedBox(height: ZeniSpacing.spaceInline),
+          Text(
+            'Acompanhe missões, aprovações, mimos e evolução da família.',
+            style: typography.body,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardMetricItem extends StatelessWidget {
+  const _DashboardMetricItem({
+    required this.metricKey,
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.onTap,
+  });
+
+  final Key metricKey;
+  final IconData icon;
+  final String value;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Semantics(
+      button: true,
+      label: '$value $label',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            key: metricKey,
+            padding: const EdgeInsets.symmetric(
+              horizontal: ZeniSpacing.spaceControl,
+              vertical: ZeniSpacing.spaceControl,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: colors.actionPrimary),
+                const SizedBox(width: ZeniSpacing.spaceControl),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(value, style: typography.sectionTitle),
+                      const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                      Text(label, style: typography.metadata),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1655,23 +1739,40 @@ class _ParentChildrenDashboardState extends State<_ParentChildrenDashboard> {
     );
     final childrenList = Column(
       key: const Key('parent-dashboard-children-column'),
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final child in widget.children) ...[
-          ParentChildSummaryCard(
-            child: child,
-            isSelected: child.id == selectedChild.id,
-            onTap: () => _selectChild(child.id),
+        const _DashboardSectionHeader(
+          title: 'Crianças',
+          subtitle: 'Saldo e sequência local de cada perfil.',
+        ),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        ZeniSurface(
+          role: ZeniSurfaceRole.grouped,
+          mode: ZeniVisualMode.parent,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (var index = 0; index < widget.children.length; index++) ...[
+                _DashboardChildRow(
+                  child: widget.children[index],
+                  isSelected: widget.children[index].id == selectedChild.id,
+                  onTap: () => _selectChild(widget.children[index].id),
+                ),
+                if (index < widget.children.length - 1)
+                  const _DashboardDivider(),
+              ],
+            ],
           ),
-          const SizedBox(height: ZeniSpacing.md),
-        ],
+        ),
       ],
     );
 
     if (!widget.isSideBySide) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           childrenList,
-          const SizedBox(height: ZeniSpacing.sm),
+          const SizedBox(height: ZeniSpacing.spaceSection),
           projectionPanel,
         ],
       );
@@ -1680,9 +1781,10 @@ class _ParentChildrenDashboardState extends State<_ParentChildrenDashboard> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: childrenList),
-        const SizedBox(width: ZeniSpacing.md),
+        Expanded(flex: 3, child: childrenList),
+        const SizedBox(width: ZeniSpacing.spaceGroup),
         Expanded(
+          flex: 2,
           child: Column(
             key: const Key('parent-dashboard-projections-column'),
             children: [projectionPanel],
@@ -1691,6 +1793,124 @@ class _ParentChildrenDashboardState extends State<_ParentChildrenDashboard> {
       ],
     );
   }
+}
+
+class _DashboardSectionHeader extends StatelessWidget {
+  const _DashboardSectionHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+        Text(subtitle, style: typography.metadata),
+      ],
+    );
+  }
+}
+
+class _DashboardChildRow extends StatelessWidget {
+  const _DashboardChildRow({
+    required this.child,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ChildProfile child;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label:
+          '${child.name}, ${child.starBalance} estrelas, ${child.streakCount} dias de sequência',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            key: Key('parent-dashboard-child-${child.id}'),
+            padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+            child: Row(
+              children: [
+                ExcludeSemantics(
+                  child: ZeniAvatar(
+                    label: child.name,
+                    emoji: child.emoji,
+                    size: 44,
+                  ),
+                ),
+                const SizedBox(width: ZeniSpacing.spaceControl),
+                Expanded(
+                  child: ExcludeSemantics(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                child.name,
+                                style: typography.cardTitle,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: ZeniSpacing.spaceInline),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: colors.actionPrimary,
+                                size: 18,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                        Text(
+                          '${child.streakCount} dias de sequência',
+                          style: typography.metadata,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: ZeniSpacing.spaceInline),
+                ExcludeSemantics(
+                  child: Text(
+                    '${child.starBalance} ⭐',
+                    style: typography.bodyEmphasis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardDivider extends StatelessWidget {
+  const _DashboardDivider();
+
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    indent: ZeniSpacing.spaceCard,
+    endIndent: ZeniSpacing.spaceCard,
+    color: context.zeniColors.borderSubtle,
+  );
 }
 
 class _ProjectionChildSelector extends StatelessWidget {
@@ -1706,25 +1926,23 @@ class _ProjectionChildSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text('Criança', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(width: ZeniSpacing.md),
-        Expanded(
-          child: DropdownButton<String>(
-            key: const Key('parent-dashboard-projection-selector'),
-            value: selectedChildId,
-            isExpanded: true,
-            onChanged: (childId) {
-              if (childId != null) onChanged(childId);
-            },
-            items: [
-              for (final child in children)
-                DropdownMenuItem(value: child.id, child: Text(child.name)),
-            ],
-          ),
-        ),
-      ],
+    return SingleChildScrollView(
+      key: const Key('parent-dashboard-projection-selector'),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final child in children) ...[
+            ZeniChoiceChip(
+              label: child.name,
+              icon: Text(child.emoji),
+              selected: child.id == selectedChildId,
+              onSelected: (_) => onChanged(child.id),
+              mode: ZeniVisualMode.parent,
+            ),
+            const SizedBox(width: ZeniSpacing.spaceInline),
+          ],
+        ],
+      ),
     );
   }
 }
