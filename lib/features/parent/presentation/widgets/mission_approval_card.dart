@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/status_badge.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
@@ -24,6 +28,7 @@ class MissionApprovalCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
     this.onSelectionChanged,
+    this.embedded = false,
   });
 
   final MissionLog log;
@@ -34,11 +39,32 @@ class MissionApprovalCard extends StatelessWidget {
   final bool isSelectionMode;
   final bool isSelected;
   final ValueChanged<bool>? onSelectionChanged;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final missionTitle = mission?.title ?? 'Missão';
     final childName = child?.name ?? 'Criança';
+
+    if (embedded) {
+      return _EmbeddedApprovalRow(
+        key: Key('parent-mission-approval-${log.id}'),
+        missionTitle: missionTitle,
+        missionEmoji: mission?.emoji ?? '✅',
+        childName: childName,
+        stars: log.starsAwarded,
+        isSelectionMode: isSelectionMode,
+        isSelected: isSelected,
+        onSelectionChanged: onSelectionChanged,
+        onTap: () {
+          if (isSelectionMode) {
+            onSelectionChanged?.call(!isSelected);
+            return;
+          }
+          _openDetails(context);
+        },
+      );
+    }
 
     return ZeniCard(
       onTap: () {
@@ -107,6 +133,18 @@ class MissionApprovalCard extends StatelessWidget {
   }
 
   void _openDetails(BuildContext context) {
+    if (embedded && ZeniAdaptiveModal.usesDialog(context)) {
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          child: ZeniAdaptiveModalFrame(
+            child: _approvalDetailsContainer(dialogContext),
+          ),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -116,26 +154,123 @@ class MissionApprovalCard extends StatelessWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
-          child: ZeniModalSheetContainer(
-            title: 'Aprovar missão',
-            child: SingleChildScrollView(
-              child: _MissionApprovalDetails(
-                log: log,
-                mission: mission,
-                child: child,
-                onApprove: () {
-                  Navigator.of(sheetContext).pop();
-                  onApprove?.call();
-                },
-                onReject: () {
-                  Navigator.of(sheetContext).pop();
-                  onReject?.call();
-                },
+          child: _approvalDetailsContainer(sheetContext),
+        );
+      },
+    );
+  }
+
+  Widget _approvalDetailsContainer(BuildContext modalContext) {
+    return ZeniModalSheetContainer(
+      title: 'Aprovar missão',
+      child: _MissionApprovalDetails(
+        log: log,
+        mission: mission,
+        child: child,
+        useZeniV2: embedded,
+        onApprove: () {
+          Navigator.of(modalContext).pop();
+          onApprove?.call();
+        },
+        onReject: () {
+          Navigator.of(modalContext).pop();
+          onReject?.call();
+        },
+      ),
+    );
+  }
+}
+
+class _EmbeddedApprovalRow extends StatelessWidget {
+  const _EmbeddedApprovalRow({
+    super.key,
+    required this.missionTitle,
+    required this.missionEmoji,
+    required this.childName,
+    required this.stars,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onSelectionChanged,
+    required this.onTap,
+  });
+
+  final String missionTitle;
+  final String missionEmoji;
+  final String childName;
+  final int stars;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final ValueChanged<bool>? onSelectionChanged;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+
+    return Semantics(
+      container: true,
+      button: true,
+      selected: isSelectionMode ? isSelected : null,
+      label: '$missionTitle, $childName, $stars estrelas, aguardando aprovação',
+      child: Material(
+        color: isSelected ? colors.surfaceSubtle : Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 80),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ZeniSpacing.spaceCard,
+                vertical: ZeniSpacing.spaceControl,
+              ),
+              child: Row(
+                children: [
+                  if (isSelectionMode)
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) {
+                        onSelectionChanged?.call(value ?? false);
+                      },
+                    )
+                  else
+                    SizedBox.square(
+                      dimension: 32,
+                      child: Center(
+                        child: Text(
+                          missionEmoji,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: ZeniSpacing.spaceControl),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(missionTitle, style: typography.cardTitle),
+                        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                        Text(
+                          '$childName · $stars estrelas',
+                          style: typography.metadata,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isSelectionMode) ...[
+                    const SizedBox(width: ZeniSpacing.spaceInline),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textSecondary,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -145,6 +280,7 @@ class _MissionApprovalDetails extends StatelessWidget {
     required this.log,
     required this.mission,
     required this.child,
+    this.useZeniV2 = false,
     this.onApprove,
     this.onReject,
   });
@@ -152,6 +288,7 @@ class _MissionApprovalDetails extends StatelessWidget {
   final MissionLog log;
   final Mission? mission;
   final ChildProfile? child;
+  final bool useZeniV2;
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
 
@@ -224,8 +361,8 @@ class _MissionApprovalDetails extends StatelessWidget {
           spacing: ZeniSpacing.sm,
           runSpacing: ZeniSpacing.sm,
           children: [
-            const StatusBadge(
-              label: 'Aguardando aprovação',
+            StatusBadge(
+              label: useZeniV2 ? 'Aguardando' : 'Aguardando aprovação',
               icon: Icons.hourglass_top_rounded,
               tone: StatusBadgeTone.warning,
             ),
@@ -249,25 +386,49 @@ class _MissionApprovalDetails extends StatelessWidget {
           ],
         ),
         const SizedBox(height: ZeniSpacing.xl),
-        Row(
-          children: [
-            Expanded(
-              child: ZeniSecondaryButton(
+        if (useZeniV2)
+          Wrap(
+            spacing: ZeniSpacing.spaceControl,
+            runSpacing: ZeniSpacing.spaceInline,
+            children: [
+              ZeniButton(
                 label: 'Rejeitar',
                 icon: Icons.close_rounded,
+                role: ZeniButtonRole.secondary,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
                 onPressed: onReject,
               ),
-            ),
-            const SizedBox(width: ZeniSpacing.md),
-            Expanded(
-              child: ZeniPrimaryButton(
+              ZeniButton(
                 label: 'Aprovar',
                 icon: Icons.check_rounded,
+                role: ZeniButtonRole.primary,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
                 onPressed: onApprove,
               ),
-            ),
-          ],
-        ),
+            ],
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: ZeniSecondaryButton(
+                  label: 'Rejeitar',
+                  icon: Icons.close_rounded,
+                  onPressed: onReject,
+                ),
+              ),
+              const SizedBox(width: ZeniSpacing.md),
+              Expanded(
+                child: ZeniPrimaryButton(
+                  label: 'Aprovar',
+                  icon: Icons.check_rounded,
+                  onPressed: onApprove,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

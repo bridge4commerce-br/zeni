@@ -524,13 +524,14 @@ class _ReviewPageState extends State<_ReviewPage> {
     final created = _drafts.length * widget.children.length - skipped;
     return Scaffold(
       appBar: AppBar(title: const Text('Revisar missões')),
-      body: ZeniPageFrame(
-        width: ZeniPageWidth.main,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            top: ZeniSpacing.md,
-            bottom: ZeniSpacing.xl,
-          ),
+      body: SingleChildScrollView(
+        key: const Key('smart-content-review-scroll'),
+        padding: const EdgeInsets.only(
+          top: ZeniSpacing.md,
+          bottom: ZeniSpacing.xl,
+        ),
+        child: ZeniPageFrame(
+          width: ZeniPageWidth.main,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

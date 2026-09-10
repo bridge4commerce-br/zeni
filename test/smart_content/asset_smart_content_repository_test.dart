@@ -226,6 +226,19 @@ void main() {
     await tester.tap(reviewButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+
+    final recipientsFinder = find.text('Para: Luna');
+    final reviewScaffold = find.ancestor(
+      of: recipientsFinder,
+      matching: find.byType(Scaffold),
+    );
+    final appBar = tester.getRect(
+      find.descendant(of: reviewScaffold, matching: find.byType(AppBar)),
+    );
+    final recipients = tester.getRect(recipientsFinder);
+    expect(recipients.top - appBar.bottom, lessThanOrEqualTo(48));
+    expect(tester.takeException(), isNull);
+
     final confirmButton = find.text('Adicionar 1 missões');
     await tester.ensureVisible(confirmButton);
     await tester.tap(confirmButton);

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/status_badge.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import 'mission_approval_card.dart';
 import 'parent_child_filter_chips.dart';
-import 'parent_empty_state_card.dart';
 import 'parent_mission_card.dart';
-import 'parent_mission_typography.dart';
 
 class ParentMissionsTab extends StatefulWidget {
   const ParentMissionsTab({
@@ -73,199 +74,95 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final windowClass = ZeniResponsive.windowClass(context);
     final awaitingLogs = _filteredAwaitingLogs();
     final missions = _filteredActiveMissions();
     final archivedMissions = _filteredArchivedMissions();
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final usesSplitLayout =
+        awaitingLogs.isNotEmpty &&
+        (windowClass == ZeniWindowClass.large ||
+            (windowClass == ZeniWindowClass.expanded && isLandscape));
+
+    final pendingSection = _PendingMissionsSection(
+      logs: awaitingLogs,
+      missionById: widget.missionById,
+      childById: widget.childById,
+      isSelecting: _isSelecting,
+      selectedLogIds: _selectedLogIds,
+      onToggleSelectionMode: _toggleSelectionMode,
+      onSelectAll: _selectAll,
+      onSelectionChanged: _changeLogSelection,
+      onApprove: widget.onApproveMission,
+      onReject: widget.onRejectMission,
+      onApproveSelected: _approveSelected,
+      onRejectSelected: _rejectSelected,
+    );
+    final catalogSection = _MissionCatalogSection(
+      missions: missions,
+      archivedMissions: archivedMissions,
+      childById: widget.childById,
+      showArchivedMissions: _showArchivedMissions,
+      onEditMission: widget.onEditMission,
+      onArchiveMission: widget.onArchiveMission,
+      onRestoreMission: widget.onRestoreMission,
+      onToggleArchived: _toggleArchivedMissions,
+      onOpenSuggestions: widget.onOpenSuggestions,
+    );
+
+    final body = usesSplitLayout
+        ? Row(
+            key: const Key('parent-missions-split-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: pendingSection),
+              const SizedBox(width: ZeniSpacing.spaceGroup),
+              Expanded(flex: 3, child: catalogSection),
+            ],
+          )
+        : Column(
+            key: const Key('parent-missions-single-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              pendingSection,
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              catalogSection,
+            ],
+          );
 
     final content = SingleChildScrollView(
       physics: widget.onRefresh == null
           ? null
           : const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Missões', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Filtre por criança para aprovar e acompanhar as missões.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
-          ParentChildFilterChips(
-            children: widget.activeChildren,
-            selectedChildId: _selectedChildId,
-            onChanged: _changeSelectedChild,
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
-          ZeniCard(
-            onTap: widget.onOpenSuggestions,
-            child: const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.auto_awesome_rounded),
-              title: Text('Sugestões para sua família'),
-              subtitle: Text(
-                'Encontre missões e rotinas para facilitar o dia a dia.',
-              ),
-              trailing: Icon(Icons.chevron_right_rounded),
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceSection,
+        bottom:
+            ZeniSpacing.spaceCanvas +
+            ZeniSpacing.spaceGroup +
+            MediaQuery.paddingOf(context).bottom,
+      ),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.dashboard,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _ParentMissionsHeader(),
+            const SizedBox(height: ZeniSpacing.spaceGroup),
+            ParentChildFilterChips(
+              children: widget.activeChildren,
+              selectedChildId: _selectedChildId,
+              onChanged: _changeSelectedChild,
+              useZeniV2: true,
             ),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Aprovações pendentes',
-                  style: ParentMissionTypography.sectionTitle(context),
-                ),
-              ),
-              if (awaitingLogs.isNotEmpty)
-                TextButton.icon(
-                  onPressed: _toggleSelectionMode,
-                  icon: Icon(
-                    _isSelecting
-                        ? Icons.close_rounded
-                        : Icons.checklist_rounded,
-                  ),
-                  label: Text(_isSelecting ? 'Cancelar' : 'Selecionar'),
-                ),
-            ],
-          ),
-          if (_isSelecting && awaitingLogs.isNotEmpty) ...[
-            const SizedBox(height: ZeniSpacing.sm),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: _selectAll,
-                  child: const Text('Selecionar todos'),
-                ),
-                const SizedBox(width: ZeniSpacing.sm),
-                Text(
-                  '${_selectedLogIds.length} selecionadas',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-                ),
-              ],
-            ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            body,
           ],
-          const SizedBox(height: ZeniSpacing.md),
-          if (awaitingLogs.isEmpty)
-            const ParentEmptyStateCard(
-              emoji: '✨',
-              title: 'Nada pendente',
-              message:
-                  'Quando uma criança enviar uma missão, ela aparecerá aqui.',
-            )
-          else
-            for (final log in awaitingLogs) ...[
-              MissionApprovalCard(
-                log: log,
-                mission: widget.missionById(log.missionId),
-                child: widget.childById(log.childId),
-                isSelectionMode: _isSelecting,
-                isSelected: _selectedLogIds.contains(log.id),
-                onSelectionChanged: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _selectedLogIds.add(log.id);
-                    } else {
-                      _selectedLogIds.remove(log.id);
-                    }
-                  });
-                },
-                onReject: () => widget.onRejectMission(log),
-                onApprove: () => widget.onApproveMission(log),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-            ],
-          if (_isSelecting && _selectedLogIds.isNotEmpty) ...[
-            const SizedBox(height: ZeniSpacing.md),
-            _MissionBatchActionBar(
-              selectedCount: _selectedLogIds.length,
-              onRejectSelected: _rejectSelected,
-              onApproveSelected: _approveSelected,
-            ),
-          ],
-          const SizedBox(height: ZeniSpacing.xl),
-          Text(
-            'Missões ativas',
-            style: ParentMissionTypography.sectionTitle(context),
-          ),
-          const SizedBox(height: ZeniSpacing.md),
-          if (missions.isEmpty)
-            const ParentEmptyStateCard(
-              emoji: '✅',
-              title: 'Nenhuma missão',
-              message: 'Essa criança ainda não tem missões cadastradas.',
-            )
-          else
-            for (final mission in missions) ...[
-              ParentMissionCard(
-                mission: mission,
-                child: widget.childById(mission.childId),
-                onEdit: () => widget.onEditMission(mission),
-                onDelete: () => widget.onArchiveMission(mission),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-            ],
-          const SizedBox(height: ZeniSpacing.xl),
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              setState(() {
-                _showArchivedMissions = !_showArchivedMissions;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Missões arquivadas (${archivedMissions.length})',
-                      style: ParentMissionTypography.sectionTitle(context),
-                    ),
-                  ),
-                  Icon(
-                    _showArchivedMissions
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    color: ZeniColors.primaryDark,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showArchivedMissions) ...[
-            const SizedBox(height: ZeniSpacing.md),
-            if (archivedMissions.isEmpty)
-              const ParentEmptyStateCard(
-                emoji: '🗂️',
-                title: 'Nenhuma missão arquivada',
-                message: 'As missões arquivadas aparecerão aqui.',
-              )
-            else
-              for (final mission in archivedMissions) ...[
-                _ArchivedMissionCard(
-                  mission: mission,
-                  child: widget.childById(mission.childId),
-                  onRestore: () => widget.onRestoreMission(mission),
-                ),
-                const SizedBox(height: ZeniSpacing.md),
-              ],
-          ],
-          const SizedBox(height: 96),
-        ],
+        ),
       ),
     );
 
-    if (widget.onRefresh == null) {
-      return content;
-    }
-
+    if (widget.onRefresh == null) return content;
     return RefreshIndicator(onRefresh: widget.onRefresh!, child: content);
   }
 
@@ -273,7 +170,6 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
     return widget.awaitingLogs.where((log) {
       final child = widget.childById(log.childId);
       if (child?.isActive != true) return false;
-
       return _selectedChildId == null || log.childId == _selectedChildId;
     }).toList();
   }
@@ -282,7 +178,6 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
     return widget.activeMissions.where((mission) {
       final child = widget.childById(mission.childId);
       if (child?.isActive != true) return false;
-
       return _selectedChildId == null || mission.childId == _selectedChildId;
     }).toList();
   }
@@ -308,10 +203,25 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
     });
   }
 
+  void _toggleArchivedMissions() {
+    setState(() {
+      _showArchivedMissions = !_showArchivedMissions;
+    });
+  }
+
+  void _changeLogSelection(String logId, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedLogIds.add(logId);
+      } else {
+        _selectedLogIds.remove(logId);
+      }
+    });
+  }
+
   void _selectAll() {
     setState(() {
       final allIds = _filteredAwaitingLogs().map((log) => log.id).toSet();
-
       if (_selectedLogIds.length == allIds.length) {
         _selectedLogIds.clear();
       } else {
@@ -331,9 +241,7 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
   void _approveSelected() {
     final logs = _selectedLogs();
     if (logs.isEmpty) return;
-
     widget.onApproveMissionBatch(logs);
-
     setState(() {
       _selectedLogIds.clear();
       _isSelecting = false;
@@ -343,13 +251,500 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
   void _rejectSelected() {
     final logs = _selectedLogs();
     if (logs.isEmpty) return;
-
     widget.onRejectMissionBatch(logs);
-
     setState(() {
       _selectedLogIds.clear();
       _isSelecting = false;
     });
+  }
+}
+
+class _ParentMissionsHeader extends StatelessWidget {
+  const _ParentMissionsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Missões', style: typography.pageTitle),
+        const SizedBox(height: ZeniSpacing.spaceInline),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Text(
+            'Aprove, organize e acompanhe as missões da família.',
+            style: typography.body,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingMissionsSection extends StatelessWidget {
+  const _PendingMissionsSection({
+    required this.logs,
+    required this.missionById,
+    required this.childById,
+    required this.isSelecting,
+    required this.selectedLogIds,
+    required this.onToggleSelectionMode,
+    required this.onSelectAll,
+    required this.onSelectionChanged,
+    required this.onApprove,
+    required this.onReject,
+    required this.onApproveSelected,
+    required this.onRejectSelected,
+  });
+
+  final List<MissionLog> logs;
+  final Mission? Function(String missionId) missionById;
+  final ChildProfile? Function(String childId) childById;
+  final bool isSelecting;
+  final Set<String> selectedLogIds;
+  final VoidCallback onToggleSelectionMode;
+  final VoidCallback onSelectAll;
+  final void Function(String logId, bool selected) onSelectionChanged;
+  final ValueChanged<MissionLog> onApprove;
+  final ValueChanged<MissionLog> onReject;
+  final VoidCallback onApproveSelected;
+  final VoidCallback onRejectSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      key: const Key('parent-missions-pending-panel'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Aprovações pendentes', style: typography.sectionTitle),
+                  if (logs.isNotEmpty) ...[
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                    Text(
+                      '${logs.length} ${logs.length == 1 ? 'missão aguarda' : 'missões aguardam'} sua decisão.',
+                      style: typography.metadata,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (logs.isNotEmpty) ...[
+              const SizedBox(width: ZeniSpacing.spaceInline),
+              ZeniButton(
+                label: isSelecting ? 'Cancelar' : 'Selecionar',
+                icon: isSelecting
+                    ? Icons.close_rounded
+                    : Icons.checklist_rounded,
+                role: ZeniButtonRole.tertiary,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
+                onPressed: onToggleSelectionMode,
+              ),
+            ],
+          ],
+        ),
+        SizedBox(
+          height: logs.isEmpty
+              ? ZeniSpacing.spaceInline
+              : ZeniSpacing.spaceCard,
+        ),
+        if (logs.isEmpty)
+          const _PendingMissionsEmptyNotice()
+        else
+          ZeniSurface(
+            key: const Key('parent-missions-pending-list'),
+            role: ZeniSurfaceRole.highlight,
+            mode: ZeniVisualMode.parent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                if (isSelecting) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ZeniSpacing.spaceCard,
+                      ZeniSpacing.spaceInline,
+                      ZeniSpacing.spaceCard,
+                      ZeniSpacing.spaceInline,
+                    ),
+                    child: Wrap(
+                      spacing: ZeniSpacing.spaceControl,
+                      runSpacing: ZeniSpacing.spaceInline,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ZeniButton(
+                          label: 'Selecionar todas',
+                          role: ZeniButtonRole.tertiary,
+                          mode: ZeniVisualMode.parent,
+                          fullWidth: false,
+                          onPressed: onSelectAll,
+                        ),
+                        Text(
+                          '${selectedLogIds.length} selecionadas',
+                          style: typography.metadata,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const _MissionDivider(),
+                ],
+                for (var index = 0; index < logs.length; index++) ...[
+                  MissionApprovalCard(
+                    log: logs[index],
+                    mission: missionById(logs[index].missionId),
+                    child: childById(logs[index].childId),
+                    isSelectionMode: isSelecting,
+                    isSelected: selectedLogIds.contains(logs[index].id),
+                    embedded: true,
+                    onSelectionChanged: (selected) =>
+                        onSelectionChanged(logs[index].id, selected),
+                    onReject: () => onReject(logs[index]),
+                    onApprove: () => onApprove(logs[index]),
+                  ),
+                  if (index < logs.length - 1) const _MissionDivider(),
+                ],
+                if (isSelecting && selectedLogIds.isNotEmpty) ...[
+                  const _MissionDivider(),
+                  _MissionBatchActionBar(
+                    selectedCount: selectedLogIds.length,
+                    onRejectSelected: onRejectSelected,
+                    onApproveSelected: onApproveSelected,
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PendingMissionsEmptyNotice extends StatelessWidget {
+  const _PendingMissionsEmptyNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final typography = ZeniTypography.of(context);
+    return Semantics(
+      label: 'Aprovações pendentes: nada pendente agora',
+      child: ExcludeSemantics(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline_rounded,
+                color: colors.actionPrimary,
+              ),
+              const SizedBox(width: ZeniSpacing.spaceInline),
+              Text('Nada pendente agora', style: typography.bodyEmphasis),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MissionCatalogSection extends StatelessWidget {
+  const _MissionCatalogSection({
+    required this.missions,
+    required this.archivedMissions,
+    required this.childById,
+    required this.showArchivedMissions,
+    required this.onEditMission,
+    required this.onArchiveMission,
+    required this.onRestoreMission,
+    required this.onToggleArchived,
+    required this.onOpenSuggestions,
+  });
+
+  final List<Mission> missions;
+  final List<Mission> archivedMissions;
+  final ChildProfile? Function(String childId) childById;
+  final bool showArchivedMissions;
+  final ValueChanged<Mission> onEditMission;
+  final ValueChanged<Mission> onArchiveMission;
+  final ValueChanged<Mission> onRestoreMission;
+  final VoidCallback onToggleArchived;
+  final VoidCallback onOpenSuggestions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('parent-missions-catalog-panel'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ActiveMissionsSection(
+          missions: missions,
+          childById: childById,
+          onEditMission: onEditMission,
+          onArchiveMission: onArchiveMission,
+        ),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        _MissionSuggestions(onTap: onOpenSuggestions),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        _ArchivedMissionsSection(
+          missions: archivedMissions,
+          childById: childById,
+          isExpanded: showArchivedMissions,
+          onToggle: onToggleArchived,
+          onRestoreMission: onRestoreMission,
+        ),
+      ],
+    );
+  }
+}
+
+class _ActiveMissionsSection extends StatelessWidget {
+  const _ActiveMissionsSection({
+    required this.missions,
+    required this.childById,
+    required this.onEditMission,
+    required this.onArchiveMission,
+  });
+
+  final List<Mission> missions;
+  final ChildProfile? Function(String childId) childById;
+  final ValueChanged<Mission> onEditMission;
+  final ValueChanged<Mission> onArchiveMission;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Missões ativas', style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+        Text(
+          '${missions.length} ${missions.length == 1 ? 'missão ativa' : 'missões ativas'}',
+          style: typography.metadata,
+        ),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        if (missions.isEmpty)
+          const _MissionEmptyState(
+            icon: Icons.check_circle_outline_rounded,
+            title: 'Nenhuma missão',
+            message: 'Essa criança ainda não tem missões cadastradas.',
+          )
+        else
+          ZeniSurface(
+            key: const Key('parent-missions-active-list'),
+            role: ZeniSurfaceRole.grouped,
+            mode: ZeniVisualMode.parent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var index = 0; index < missions.length; index++) ...[
+                  ParentMissionCard(
+                    mission: missions[index],
+                    child: childById(missions[index].childId),
+                    onEdit: () => onEditMission(missions[index]),
+                    onDelete: () => onArchiveMission(missions[index]),
+                  ),
+                  if (index < missions.length - 1) const _MissionDivider(),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MissionSuggestions extends StatelessWidget {
+  const _MissionSuggestions({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return ZeniSurface(
+      key: const Key('parent-missions-suggestions'),
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.parent,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome_rounded, color: colors.actionPrimary),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sugestões para sua família', style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                Text(
+                  'Encontre missões e rotinas para facilitar o dia a dia.',
+                  style: typography.metadata,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: ZeniSpacing.spaceInline),
+          Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArchivedMissionsSection extends StatelessWidget {
+  const _ArchivedMissionsSection({
+    required this.missions,
+    required this.childById,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onRestoreMission,
+  });
+
+  final List<Mission> missions;
+  final ChildProfile? Function(String childId) childById;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final ValueChanged<Mission> onRestoreMission;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: isExpanded,
+          child: InkWell(
+            key: const Key('parent-missions-archived-toggle'),
+            borderRadius: BorderRadius.circular(16),
+            onTap: onToggle,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Missões arquivadas (${missions.length})',
+                      style: typography.cardTitle,
+                    ),
+                  ),
+                  const SizedBox(width: ZeniSpacing.spaceInline),
+                  Icon(
+                    isExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: colors.actionPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (isExpanded) ...[
+          const SizedBox(height: ZeniSpacing.spaceCard),
+          if (missions.isEmpty)
+            const _MissionEmptyState(
+              icon: Icons.archive_outlined,
+              title: 'Nenhuma missão arquivada',
+              message: 'As missões arquivadas aparecerão aqui.',
+            )
+          else
+            ZeniSurface(
+              key: const Key('parent-missions-archived-list'),
+              role: ZeniSurfaceRole.grouped,
+              mode: ZeniVisualMode.parent,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (var index = 0; index < missions.length; index++) ...[
+                    _ArchivedMissionRow(
+                      mission: missions[index],
+                      child: childById(missions[index].childId),
+                      onRestore: () => onRestoreMission(missions[index]),
+                    ),
+                    if (index < missions.length - 1) const _MissionDivider(),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ArchivedMissionRow extends StatelessWidget {
+  const _ArchivedMissionRow({
+    required this.mission,
+    required this.child,
+    required this.onRestore,
+  });
+
+  final Mission mission;
+  final ChildProfile? child;
+  final VoidCallback onRestore;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Semantics(
+      container: true,
+      label:
+          '${mission.title}, ${child?.name ?? 'Criança'}, ${mission.stars} estrelas, arquivada',
+      child: Padding(
+        key: Key('parent-archived-mission-${mission.id}'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: ZeniSpacing.spaceCard,
+          vertical: ZeniSpacing.spaceControl,
+        ),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 32,
+              child: Center(
+                child: Text(
+                  mission.emoji,
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: ZeniSpacing.spaceControl),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(mission.title, style: typography.cardTitle),
+                  const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                  Text(
+                    '${child?.name ?? 'Criança'} · ${mission.stars} estrelas',
+                    style: typography.metadata,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: ZeniSpacing.spaceInline),
+            IconButton(
+              tooltip: 'Restaurar missão',
+              onPressed: onRestore,
+              color: colors.actionPrimary,
+              icon: const Icon(Icons.restore_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -366,105 +761,92 @@ class _MissionBatchActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: ZeniColors.border),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(ZeniSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$selectedCount selecionadas',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onRejectSelected,
-                    icon: const Icon(Icons.close_rounded),
-                    label: const Text('Rejeitar'),
-                  ),
-                ),
-                const SizedBox(width: ZeniSpacing.md),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onApproveSelected,
-                    icon: const Icon(Icons.check_rounded),
-                    label: const Text('Aprovar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+    final typography = ZeniTypography.of(context);
+    return Padding(
+      key: const Key('parent-missions-batch-actions'),
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$selectedCount selecionadas', style: typography.bodyEmphasis),
+          const SizedBox(height: ZeniSpacing.spaceControl),
+          Wrap(
+            spacing: ZeniSpacing.spaceControl,
+            runSpacing: ZeniSpacing.spaceInline,
+            children: [
+              ZeniButton(
+                label: 'Rejeitar',
+                icon: Icons.close_rounded,
+                role: ZeniButtonRole.destructive,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
+                onPressed: onRejectSelected,
+              ),
+              ZeniButton(
+                label: 'Aprovar',
+                icon: Icons.check_rounded,
+                role: ZeniButtonRole.primary,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
+                onPressed: onApproveSelected,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ArchivedMissionCard extends StatelessWidget {
-  const _ArchivedMissionCard({
-    required this.mission,
-    required this.child,
-    required this.onRestore,
+class _MissionEmptyState extends StatelessWidget {
+  const _MissionEmptyState({
+    required this.icon,
+    required this.title,
+    required this.message,
   });
 
-  final Mission mission;
-  final ChildProfile? child;
-  final VoidCallback onRestore;
+  final IconData icon;
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
-    return ZeniCard(
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZeniSpacing.spaceCard,
+        vertical: ZeniSpacing.spaceGroup,
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(mission.emoji, style: const TextStyle(fontSize: 34)),
-          const SizedBox(width: ZeniSpacing.md),
+          Icon(icon, color: colors.textSecondary),
+          const SizedBox(width: ZeniSpacing.spaceControl),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  mission.title,
-                  style: ParentMissionTypography.missionTitle(
-                    context,
-                    base: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  '${child?.name ?? 'Criança'} · ${mission.stars} estrelas',
-                  style: ParentMissionTypography.metadata(
-                    context,
-                    color: ZeniColors.mutedText,
-                  ),
-                ),
-                const SizedBox(height: ZeniSpacing.sm),
-                const StatusBadge(
-                  label: 'Arquivada',
-                  icon: Icons.archive_outlined,
-                  tone: StatusBadgeTone.neutral,
-                ),
+                Text(title, style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                Text(message, style: typography.metadata),
               ],
-            ),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          TextButton.icon(
-            onPressed: onRestore,
-            icon: const Icon(Icons.restore_rounded),
-            label: Text(
-              'Restaurar',
-              style: ParentMissionTypography.actionLabel(context),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _MissionDivider extends StatelessWidget {
+  const _MissionDivider();
+
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    indent: ZeniSpacing.spaceCard,
+    endIndent: ZeniSpacing.spaceCard,
+    color: context.zeniColors.borderSubtle,
+  );
 }

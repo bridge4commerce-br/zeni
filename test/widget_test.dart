@@ -2106,6 +2106,20 @@ void main() {
     expect(find.text('Família Silva'), findsOneWidget);
   });
 
+  testWidgets('parent missions keeps creation available from the shell FAB', (
+    tester,
+  ) async {
+    await openParentDashboardAt(tester, const Size(390, 844));
+
+    await tester.tap(find.text('Missões').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Criar missão'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Criar missão'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('parent home shows mission pending badge and today section', (
     tester,
   ) async {
