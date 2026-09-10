@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/status_badge.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
 import 'parent_child_filter_chips.dart';
-import 'parent_empty_state_card.dart';
 import 'parent_reward_card.dart';
 import 'reward_request_card.dart';
 
@@ -73,176 +76,97 @@ class _ParentRewardsTabState extends State<ParentRewardsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final windowClass = ZeniResponsive.windowClass(context);
     final pendingRequests = _filteredPendingRequests();
     final rewards = _filteredActiveRewards();
     final archivedRewards = _filteredArchivedRewards();
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final usesSplitLayout =
+        pendingRequests.isNotEmpty &&
+        (windowClass == ZeniWindowClass.large ||
+            (windowClass == ZeniWindowClass.expanded && isLandscape));
+
+    final pendingSection = _PendingRewardsSection(
+      requests: pendingRequests,
+      childById: widget.childById,
+      rewardById: widget.rewardById,
+      isSelecting: _isSelecting,
+      selectedRequestIds: _selectedRequestIds,
+      onToggleSelectionMode: _toggleSelectionMode,
+      onSelectAll: _selectAll,
+      onSelectionChanged: (requestId, selected) {
+        setState(() {
+          if (selected) {
+            _selectedRequestIds.add(requestId);
+          } else {
+            _selectedRequestIds.remove(requestId);
+          }
+        });
+      },
+      onApprove: widget.onApproveRewardRequest,
+      onReject: widget.onRejectRewardRequest,
+      onApproveSelected: _approveSelected,
+      onRejectSelected: _rejectSelected,
+    );
+    final catalogSection = _RewardCatalogSection(
+      rewards: rewards,
+      archivedRewards: archivedRewards,
+      showArchivedRewards: _showArchivedRewards,
+      onEditReward: widget.onEditReward,
+      onArchiveReward: widget.onArchiveReward,
+      onRestoreReward: widget.onRestoreReward,
+      onToggleArchived: () =>
+          setState(() => _showArchivedRewards = !_showArchivedRewards),
+    );
+    final body = usesSplitLayout
+        ? Row(
+            key: const Key('parent-rewards-split-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: pendingSection),
+              const SizedBox(width: ZeniSpacing.spaceGroup),
+              Expanded(flex: 3, child: catalogSection),
+            ],
+          )
+        : Column(
+            key: const Key('parent-rewards-single-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              pendingSection,
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              catalogSection,
+            ],
+          );
 
     final content = SingleChildScrollView(
       physics: widget.onRefresh == null
           ? null
           : const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Mimos', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Filtre por criança para acompanhar pedidos e recompensas.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
-          ParentChildFilterChips(
-            children: widget.activeChildren,
-            selectedChildId: _selectedChildId,
-            onChanged: _changeSelectedChild,
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Pedidos pendentes',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              if (pendingRequests.isNotEmpty)
-                TextButton.icon(
-                  onPressed: _toggleSelectionMode,
-                  icon: Icon(
-                    _isSelecting
-                        ? Icons.close_rounded
-                        : Icons.checklist_rounded,
-                  ),
-                  label: Text(_isSelecting ? 'Cancelar' : 'Selecionar'),
-                ),
-            ],
-          ),
-          if (_isSelecting && pendingRequests.isNotEmpty) ...[
-            const SizedBox(height: ZeniSpacing.sm),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: _selectAll,
-                  child: const Text('Selecionar todos'),
-                ),
-                const SizedBox(width: ZeniSpacing.sm),
-                Text(
-                  '${_selectedRequestIds.length} selecionados',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-                ),
-              ],
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceSection,
+        bottom:
+            ZeniSpacing.spaceCanvas +
+            ZeniSpacing.spaceGroup +
+            MediaQuery.paddingOf(context).bottom,
+      ),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.dashboard,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _ParentRewardsHeader(),
+            const SizedBox(height: ZeniSpacing.spaceGroup),
+            ParentChildFilterChips(
+              children: widget.activeChildren,
+              selectedChildId: _selectedChildId,
+              onChanged: _changeSelectedChild,
+              useZeniV2: true,
             ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            body,
           ],
-          const SizedBox(height: ZeniSpacing.md),
-          if (pendingRequests.isEmpty)
-            const ParentEmptyStateCard(
-              emoji: '🎁',
-              title: 'Nenhum pedido por enquanto',
-              message: 'Quando uma criança pedir um mimo, ele aparecerá aqui.',
-            )
-          else
-            for (final request in pendingRequests) ...[
-              RewardRequestCard(
-                request: request,
-                reward: widget.rewardById(request.rewardId),
-                child: widget.childById(request.childId),
-                isSelectionMode: _isSelecting,
-                isSelected: _selectedRequestIds.contains(request.id),
-                onSelectionChanged: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _selectedRequestIds.add(request.id);
-                    } else {
-                      _selectedRequestIds.remove(request.id);
-                    }
-                  });
-                },
-                onReject: () => widget.onRejectRewardRequest(request),
-                onApprove: () => widget.onApproveRewardRequest(request),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-            ],
-          if (_isSelecting && _selectedRequestIds.isNotEmpty) ...[
-            const SizedBox(height: ZeniSpacing.md),
-            _RewardBatchActionBar(
-              selectedCount: _selectedRequestIds.length,
-              onRejectSelected: _rejectSelected,
-              onApproveSelected: _approveSelected,
-            ),
-          ],
-          const SizedBox(height: ZeniSpacing.xl),
-          Text(
-            'Catálogo de mimos',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: ZeniSpacing.md),
-          if (rewards.isEmpty)
-            const ParentEmptyStateCard(
-              emoji: '🎁',
-              title: 'Nenhum mimo',
-              message: 'Essa criança ainda não tem mimos disponíveis.',
-            )
-          else
-            for (final reward in rewards) ...[
-              ParentRewardCard(
-                reward: reward,
-                onEdit: () => widget.onEditReward(reward),
-                onDelete: () => widget.onArchiveReward(reward),
-              ),
-              const SizedBox(height: ZeniSpacing.md),
-            ],
-          const SizedBox(height: ZeniSpacing.xl),
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              setState(() {
-                _showArchivedRewards = !_showArchivedRewards;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Mimos arquivados (${archivedRewards.length})',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  Icon(
-                    _showArchivedRewards
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    color: ZeniColors.primaryDark,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showArchivedRewards) ...[
-            const SizedBox(height: ZeniSpacing.md),
-            if (archivedRewards.isEmpty)
-              const ParentEmptyStateCard(
-                emoji: '🗂️',
-                title: 'Nenhum mimo arquivado',
-                message: 'Os mimos arquivados aparecerão aqui.',
-              )
-            else
-              for (final reward in archivedRewards) ...[
-                _ArchivedRewardCard(
-                  reward: reward,
-                  onRestore: () => widget.onRestoreReward(reward),
-                ),
-                const SizedBox(height: ZeniSpacing.md),
-              ],
-          ],
-          const SizedBox(height: 96),
-        ],
+        ),
       ),
     );
 
@@ -346,6 +270,345 @@ class _ParentRewardsTabState extends State<ParentRewardsTab> {
   }
 }
 
+class _ParentRewardsHeader extends StatelessWidget {
+  const _ParentRewardsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mimos', style: typography.pageTitle),
+        const SizedBox(height: ZeniSpacing.spaceInline),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Text(
+            'Filtre por criança para acompanhar pedidos e recompensas.',
+            style: typography.body,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingRewardsSection extends StatelessWidget {
+  const _PendingRewardsSection({
+    required this.requests,
+    required this.childById,
+    required this.rewardById,
+    required this.isSelecting,
+    required this.selectedRequestIds,
+    required this.onToggleSelectionMode,
+    required this.onSelectAll,
+    required this.onSelectionChanged,
+    required this.onApprove,
+    required this.onReject,
+    required this.onApproveSelected,
+    required this.onRejectSelected,
+  });
+
+  final List<RewardRequest> requests;
+  final ChildProfile? Function(String childId) childById;
+  final Reward? Function(String rewardId) rewardById;
+  final bool isSelecting;
+  final Set<String> selectedRequestIds;
+  final VoidCallback onToggleSelectionMode;
+  final VoidCallback onSelectAll;
+  final void Function(String requestId, bool selected) onSelectionChanged;
+  final ValueChanged<RewardRequest> onApprove;
+  final ValueChanged<RewardRequest> onReject;
+  final VoidCallback onApproveSelected;
+  final VoidCallback onRejectSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Column(
+      key: const Key('parent-rewards-pending-panel'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pedidos pendentes', style: typography.sectionTitle),
+                  if (requests.isNotEmpty) ...[
+                    const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                    Text(
+                      '${requests.length} ${requests.length == 1 ? 'pedido aguarda' : 'pedidos aguardam'} sua decisão.',
+                      style: typography.metadata,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (requests.isNotEmpty) ...[
+              const SizedBox(width: ZeniSpacing.spaceInline),
+              ZeniButton(
+                label: isSelecting ? 'Cancelar' : 'Selecionar',
+                icon: isSelecting
+                    ? Icons.close_rounded
+                    : Icons.checklist_rounded,
+                role: ZeniButtonRole.tertiary,
+                mode: ZeniVisualMode.parent,
+                fullWidth: false,
+                onPressed: onToggleSelectionMode,
+              ),
+            ],
+          ],
+        ),
+        SizedBox(
+          height: requests.isEmpty
+              ? ZeniSpacing.spaceInline
+              : ZeniSpacing.spaceCard,
+        ),
+        if (requests.isEmpty)
+          const _RewardEmptyState(
+            icon: Icons.hourglass_empty_rounded,
+            title: 'Nada pendente agora',
+            message: 'Quando uma criança pedir um mimo, ele aparecerá aqui.',
+            compact: true,
+          )
+        else
+          ZeniSurface(
+            key: const Key('parent-rewards-pending-list'),
+            role: ZeniSurfaceRole.highlight,
+            mode: ZeniVisualMode.parent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                if (isSelecting)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ZeniSpacing.spaceCard,
+                      ZeniSpacing.spaceInline,
+                      ZeniSpacing.spaceCard,
+                      ZeniSpacing.spaceInline,
+                    ),
+                    child: Wrap(
+                      spacing: ZeniSpacing.spaceControl,
+                      runSpacing: ZeniSpacing.spaceInline,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ZeniButton(
+                          label: 'Selecionar todos',
+                          role: ZeniButtonRole.tertiary,
+                          mode: ZeniVisualMode.parent,
+                          fullWidth: false,
+                          onPressed: onSelectAll,
+                        ),
+                        Text(
+                          '${selectedRequestIds.length} selecionados',
+                          style: typography.metadata,
+                        ),
+                      ],
+                    ),
+                  ),
+                for (var index = 0; index < requests.length; index++) ...[
+                  RewardRequestCard(
+                    request: requests[index],
+                    reward: rewardById(requests[index].rewardId),
+                    child: childById(requests[index].childId),
+                    embedded: true,
+                    isSelectionMode: isSelecting,
+                    isSelected: selectedRequestIds.contains(requests[index].id),
+                    onSelectionChanged: (selected) =>
+                        onSelectionChanged(requests[index].id, selected),
+                    onApprove: () => onApprove(requests[index]),
+                    onReject: () => onReject(requests[index]),
+                  ),
+                  if (index < requests.length - 1)
+                    Divider(height: 1, color: colors.borderSubtle),
+                ],
+                if (isSelecting && selectedRequestIds.isNotEmpty) ...[
+                  Divider(height: 1, color: colors.borderSubtle),
+                  _RewardBatchActionBar(
+                    selectedCount: selectedRequestIds.length,
+                    onRejectSelected: onRejectSelected,
+                    onApproveSelected: onApproveSelected,
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RewardCatalogSection extends StatelessWidget {
+  const _RewardCatalogSection({
+    required this.rewards,
+    required this.archivedRewards,
+    required this.showArchivedRewards,
+    required this.onEditReward,
+    required this.onArchiveReward,
+    required this.onRestoreReward,
+    required this.onToggleArchived,
+  });
+
+  final List<Reward> rewards;
+  final List<Reward> archivedRewards;
+  final bool showArchivedRewards;
+  final ValueChanged<Reward> onEditReward;
+  final ValueChanged<Reward> onArchiveReward;
+  final ValueChanged<Reward> onRestoreReward;
+  final VoidCallback onToggleArchived;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Column(
+      key: const Key('parent-rewards-catalog-panel'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Catálogo de mimos', style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+        Text(
+          '${rewards.length} ${rewards.length == 1 ? 'mimo ativo' : 'mimos ativos'}',
+          style: typography.metadata,
+        ),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        if (rewards.isEmpty)
+          const _RewardEmptyState(
+            icon: Icons.card_giftcard_outlined,
+            title: 'Nenhum mimo',
+            message: 'Essa criança ainda não tem mimos disponíveis.',
+          )
+        else
+          ZeniSurface(
+            key: const Key('parent-rewards-active-list'),
+            role: ZeniSurfaceRole.grouped,
+            mode: ZeniVisualMode.parent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var index = 0; index < rewards.length; index++) ...[
+                  ParentRewardCard(
+                    reward: rewards[index],
+                    onEdit: () => onEditReward(rewards[index]),
+                    onDelete: () => onArchiveReward(rewards[index]),
+                  ),
+                  if (index < rewards.length - 1)
+                    Divider(height: 1, color: colors.borderSubtle),
+                ],
+              ],
+            ),
+          ),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        Semantics(
+          button: true,
+          expanded: showArchivedRewards,
+          child: InkWell(
+            key: const Key('parent-rewards-archived-toggle'),
+            onTap: onToggleArchived,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Mimos arquivados (${archivedRewards.length})',
+                      style: typography.cardTitle,
+                    ),
+                  ),
+                  const SizedBox(width: ZeniSpacing.spaceInline),
+                  Icon(
+                    showArchivedRewards
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: colors.actionPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (showArchivedRewards) ...[
+          const SizedBox(height: ZeniSpacing.spaceCard),
+          if (archivedRewards.isEmpty)
+            const _RewardEmptyState(
+              icon: Icons.archive_outlined,
+              title: 'Nenhum mimo arquivado',
+              message: 'Os mimos arquivados aparecerão aqui.',
+            )
+          else
+            ZeniSurface(
+              key: const Key('parent-rewards-archived-list'),
+              role: ZeniSurfaceRole.grouped,
+              mode: ZeniVisualMode.parent,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (
+                    var index = 0;
+                    index < archivedRewards.length;
+                    index++
+                  ) ...[
+                    _ArchivedRewardCard(
+                      reward: archivedRewards[index],
+                      onRestore: () => onRestoreReward(archivedRewards[index]),
+                    ),
+                    if (index < archivedRewards.length - 1)
+                      Divider(height: 1, color: colors.borderSubtle),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RewardEmptyState extends StatelessWidget {
+  const _RewardEmptyState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.compact = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return ZeniSurface(
+      role: ZeniSurfaceRole.plain,
+      mode: ZeniVisualMode.parent,
+      child: Row(
+        children: [
+          Icon(icon, color: colors.textSecondary),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: typography.cardTitle),
+                if (!compact) ...[
+                  const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                  Text(message, style: typography.metadata),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RewardBatchActionBar extends StatelessWidget {
   const _RewardBatchActionBar({
     required this.selectedCount,
@@ -359,43 +622,33 @@ class _RewardBatchActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: ZeniColors.border),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(ZeniSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$selectedCount selecionados',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: ZeniSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onRejectSelected,
-                    icon: const Icon(Icons.close_rounded),
-                    label: const Text('Rejeitar'),
-                  ),
-                ),
-                const SizedBox(width: ZeniSpacing.md),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onApproveSelected,
-                    icon: const Icon(Icons.check_rounded),
-                    label: const Text('Aprovar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+    final typography = ZeniTypography.of(context);
+    return Padding(
+      key: const Key('parent-rewards-batch-actions'),
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+      child: Wrap(
+        spacing: ZeniSpacing.spaceControl,
+        runSpacing: ZeniSpacing.spaceInline,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text('$selectedCount selecionados', style: typography.bodyEmphasis),
+          ZeniButton(
+            label: 'Rejeitar',
+            icon: Icons.close_rounded,
+            role: ZeniButtonRole.secondary,
+            mode: ZeniVisualMode.parent,
+            fullWidth: false,
+            onPressed: onRejectSelected,
+          ),
+          ZeniButton(
+            label: 'Aprovar',
+            icon: Icons.check_rounded,
+            role: ZeniButtonRole.primary,
+            mode: ZeniVisualMode.parent,
+            fullWidth: false,
+            onPressed: onApproveSelected,
+          ),
+        ],
       ),
     );
   }
@@ -409,42 +662,54 @@ class _ArchivedRewardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ZeniCard(
-      child: Row(
-        children: [
-          Text(reward.emoji, style: const TextStyle(fontSize: 34)),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reward.title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  '${reward.cost} estrelas · ${reward.renewal.label}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-                ),
-                const SizedBox(height: ZeniSpacing.sm),
-                const StatusBadge(
-                  label: 'Arquivado',
-                  icon: Icons.archive_outlined,
-                  tone: StatusBadgeTone.neutral,
-                ),
-              ],
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Semantics(
+      container: true,
+      label: '${reward.title}, ${reward.cost} estrelas, arquivado',
+      child: Padding(
+        key: Key('parent-archived-reward-${reward.id}'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: ZeniSpacing.spaceCard,
+          vertical: ZeniSpacing.spaceControl,
+        ),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 32,
+              child: Center(
+                child: Text(reward.emoji, style: const TextStyle(fontSize: 24)),
+              ),
             ),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          TextButton.icon(
-            onPressed: onRestore,
-            icon: const Icon(Icons.restore_rounded),
-            label: const Text('Restaurar'),
-          ),
-        ],
+            const SizedBox(width: ZeniSpacing.spaceControl),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(reward.title, style: typography.cardTitle),
+                  const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                  Text(
+                    '${reward.cost} estrelas · ${reward.renewal.label}',
+                    style: typography.metadata,
+                  ),
+                  const SizedBox(height: ZeniSpacing.spaceInline),
+                  const StatusBadge(
+                    label: 'Arquivado',
+                    icon: Icons.archive_outlined,
+                    tone: StatusBadgeTone.neutral,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: ZeniSpacing.spaceInline),
+            IconButton(
+              tooltip: 'Restaurar mimo',
+              onPressed: onRestore,
+              color: colors.actionPrimary,
+              icon: const Icon(Icons.restore_rounded),
+            ),
+          ],
+        ),
       ),
     );
   }
