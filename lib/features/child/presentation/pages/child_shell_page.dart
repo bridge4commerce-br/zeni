@@ -15,6 +15,7 @@ import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_icon_action_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/feedback/zeni_confirm_action_sheet.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
@@ -718,11 +719,13 @@ class _ChildIdentityHeader extends StatelessWidget
         ],
       ),
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: ZeniSpacing.md),
-          child: IconButton(
+        Semantics(
+          button: true,
+          label: 'Trocar perfil',
+          child: ZeniIconActionButton(
+            icon: Icons.swap_horiz_rounded,
             tooltip: 'Trocar perfil',
-            icon: const Icon(Icons.swap_horiz_rounded),
+            tone: ZeniIconActionTone.neutral,
             onPressed: onSwitchProfile,
           ),
         ),

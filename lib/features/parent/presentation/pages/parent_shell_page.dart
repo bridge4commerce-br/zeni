@@ -1316,13 +1316,18 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             title: 'Responsável',
             subtitle: data.family.name,
             actions: [
-              IconButton(
-                tooltip: 'Trocar perfil',
-                icon: const Icon(Icons.swap_horiz_rounded),
-                onPressed: () {
-                  ref.read(zeniHapticsProvider).selection();
-                  context.go('/');
-                },
+              Semantics(
+                button: true,
+                label: 'Trocar perfil',
+                child: ZeniIconActionButton(
+                  icon: Icons.swap_horiz_rounded,
+                  tooltip: 'Trocar perfil',
+                  tone: ZeniIconActionTone.neutral,
+                  onPressed: () {
+                    ref.read(zeniHapticsProvider).selection();
+                    context.go('/');
+                  },
+                ),
               ),
               const SizedBox(width: ZeniSpacing.sm),
               Stack(
