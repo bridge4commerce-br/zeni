@@ -37,7 +37,6 @@ import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/domain/mission_undo_policy.dart';
 import '../../../tts/domain/zeni_speech_text_builders.dart';
 import '../../../tts/presentation/providers/zeni_tts_service.dart';
-import '../../../tasks/presentation/widgets/task_completion_sheet.dart';
 import '../widgets/child_home_tab.dart';
 import '../widgets/child_missions_tab.dart';
 import '../widgets/child_rewards_tab.dart';
@@ -73,28 +72,6 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         value.day == other.day;
   }
 
-  Future<void> _listenToMission(Mission mission) async {
-    final appState = _currentAppState;
-    if (appState == null) return;
-    final data = _buildChildModeData(appState);
-    if (data == null) return;
-
-    ref.read(zeniHapticsProvider).selection();
-    final result = await ref
-        .read(zeniTtsServiceProvider)
-        .speakTextForChild(
-          child: data.child,
-          text: ZeniMissionSpeechTextBuilder.buildMissionShortSpeech(mission),
-        );
-    if (!mounted || result.didSpeak) return;
-
-    ZeniInfoPopup.show(
-      context,
-      title: 'Leitura em voz alta',
-      message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
-    );
-  }
-
   Future<void> _listenToReward(Reward reward) async {
     final appState = _currentAppState;
     if (appState == null) return;
@@ -106,6 +83,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         .read(zeniTtsServiceProvider)
         .speakTextForChild(
           child: data.child,
+          locale: Localizations.localeOf(context).toLanguageTag(),
           text: ZeniRewardSpeechTextBuilder.buildRewardShortSpeech(reward),
         );
     if (!mounted || result.didSpeak) return;
@@ -128,8 +106,10 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         .read(zeniTtsServiceProvider)
         .speakTextForChild(
           child: data.child,
+          locale: Localizations.localeOf(context).toLanguageTag(),
           text: ZeniMissionSpeechTextBuilder.buildMissionDetailsSpeech(
             mission: mission,
+            locale: Localizations.localeOf(context).toLanguageTag(),
             log: log,
           ),
         );
@@ -141,6 +121,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
       message: result.message ?? 'Não foi possível reproduzir o áudio agora.',
     );
   }
+
+  Future<void> _stopMissionSpeech() => ref.read(zeniTtsServiceProvider).stop();
 
   Future<void> _listenToRewardDetails(
     Reward reward,
@@ -156,6 +138,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
         .read(zeniTtsServiceProvider)
         .speakTextForChild(
           child: data.child,
+          locale: Localizations.localeOf(context).toLanguageTag(),
           text: ZeniRewardSpeechTextBuilder.buildRewardDetailsSpeech(
             reward: reward,
             childBalance: data.child.starBalance,
@@ -249,16 +232,9 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
   Future<void> _completeMission(
     Mission mission,
     MissionLog? currentLog,
-    GlobalKey? sourceKey,
-  ) async {
-    final result = await showTaskCompletionModal(
-      context: context,
-      mission: mission,
-    );
-
-    if (result == null) return;
-    if (!mounted) return;
-
+    GlobalKey? sourceKey, {
+    String? note,
+  }) async {
     final appState = _currentAppState;
     if (appState == null) return;
     final data = _buildChildModeData(appState);
@@ -270,7 +246,7 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
           childId: data.child.id,
           mission: mission,
           currentLog: currentLog,
-          note: result.note,
+          note: note,
         );
     if (!mounted) return;
 
@@ -493,8 +469,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onCompleteMission: _completeMission,
             onCancelMissionSubmission: _cancelMissionSubmission,
             onUndoMissionCompletion: _undoMissionCompletion,
-            onListenToMission: _listenToMission,
             onListenToMissionDetails: _listenToMissionDetails,
+            onStopMissionSpeech: _stopMissionSpeech,
             canListenToMission: canUseReadAloud,
             isCelebrating: _isMascotCelebrating,
             balanceAnchorKey: _balanceAnchorKey,
@@ -512,8 +488,8 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             onCompleteMission: _completeMission,
             onCancelMissionSubmission: _cancelMissionSubmission,
             onUndoMissionCompletion: _undoMissionCompletion,
-            onListenToMission: _listenToMission,
             onListenToMissionDetails: _listenToMissionDetails,
+            onStopMissionSpeech: _stopMissionSpeech,
             canListenToMission: canUseReadAloud,
             onRefresh: _refreshPrimaryLists,
           ),

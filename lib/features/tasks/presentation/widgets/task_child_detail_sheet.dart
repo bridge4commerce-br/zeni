@@ -1,39 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
 import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/status_badge.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
-import '../../../../core/widgets/base/zeni_primary_button.dart';
-import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
+import '../../../../core/widgets/inputs/zeni_multiline_input.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/mission.dart';
 import '../../data/models/mission_log.dart';
 
 enum TaskChildDetailAction { complete, cancelSubmission, undoCompletion }
 
-Future<TaskChildDetailAction?> showTaskChildDetailModal({
+class TaskChildDetailResult {
+  const TaskChildDetailResult({required this.action, this.note});
+
+  final TaskChildDetailAction action;
+  final String? note;
+}
+
+Future<TaskChildDetailResult?> showTaskChildDetailModal({
   required BuildContext context,
   required Mission mission,
-  required VoidCallback onListenToMission,
   required VoidCallback onListenToMissionDetails,
   MissionLog? log,
   bool canUndoCompletion = false,
   bool showListenActions = true,
+  Future<void> Function()? onDismiss,
 }) {
   final content = TaskChildDetailSheet(
     mission: mission,
-    onListenToMission: onListenToMission,
     onListenToMissionDetails: onListenToMissionDetails,
     log: log,
     canUndoCompletion: canUndoCompletion,
     showListenActions: showListenActions,
   );
 
+  final Future<TaskChildDetailResult?> modal;
   if (ZeniAdaptiveModal.usesDialog(context)) {
-    return showDialog<TaskChildDetailAction>(
+    modal = showDialog<TaskChildDetailResult>(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
@@ -41,24 +51,30 @@ Future<TaskChildDetailAction?> showTaskChildDetailModal({
         child: ZeniAdaptiveModalFrame(child: content),
       ),
     );
+  } else {
+    modal = showModalBottomSheet<TaskChildDetailResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: content,
+      ),
+    );
   }
 
-  return showModalBottomSheet<TaskChildDetailAction>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (context) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: content,
-    ),
-  );
+  if (onDismiss == null) return modal;
+  return modal.whenComplete(() {
+    unawaited(onDismiss());
+  });
 }
 
-class TaskChildDetailSheet extends StatelessWidget {
+class TaskChildDetailSheet extends StatefulWidget {
   const TaskChildDetailSheet({
     super.key,
     required this.mission,
-    required this.onListenToMission,
     required this.onListenToMissionDetails,
     this.log,
     this.canUndoCompletion = false,
@@ -66,14 +82,29 @@ class TaskChildDetailSheet extends StatelessWidget {
   });
 
   final Mission mission;
-  final VoidCallback onListenToMission;
   final VoidCallback onListenToMissionDetails;
   final MissionLog? log;
   final bool canUndoCompletion;
   final bool showListenActions;
 
   @override
+  State<TaskChildDetailSheet> createState() => _TaskChildDetailSheetState();
+}
+
+class _TaskChildDetailSheetState extends State<TaskChildDetailSheet> {
+  final _noteController = TextEditingController();
+  bool _isNoteFieldVisible = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final mission = widget.mission;
+    final log = widget.log;
     final status = log?.status ?? MissionLogStatus.pending;
 
     return ZeniModalSheetContainer(
@@ -82,7 +113,9 @@ class TaskChildDetailSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ZeniCard(
+            ZeniSurface(
+              role: ZeniSurfaceRole.highlight,
+              mode: ZeniVisualMode.kids,
               child: Row(
                 children: [
                   Text(mission.emoji, style: const TextStyle(fontSize: 42)),
@@ -93,7 +126,7 @@ class TaskChildDetailSheet extends StatelessWidget {
                       children: [
                         Text(
                           mission.title,
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style: ZeniTypography.of(context).cardTitle,
                         ),
                         const SizedBox(height: ZeniSpacing.xs),
                         Text(
@@ -109,33 +142,36 @@ class TaskChildDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: ZeniSpacing.lg),
             Text(
-              mission.description,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+              'Sobre a missão',
+              style: ZeniTypography.of(context).sectionTitle,
             ),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(mission.description, style: ZeniTypography.of(context).body),
             const SizedBox(height: ZeniSpacing.lg),
-            Wrap(
-              spacing: ZeniSpacing.sm,
-              runSpacing: ZeniSpacing.sm,
-              children: [
-                StatusBadge(
-                  label: '${mission.stars} estrelas',
-                  icon: Icons.star_rounded,
-                  tone: StatusBadgeTone.info,
-                ),
-                StatusBadge(
-                  label: mission.timeGroup.label,
-                  icon: Icons.schedule_rounded,
-                  tone: StatusBadgeTone.neutral,
-                ),
-                if (mission.approvalMode == MissionApprovalMode.parentApproval)
-                  const StatusBadge(
-                    label: 'Aprovação',
-                    icon: Icons.verified_user_rounded,
-                    tone: StatusBadgeTone.warning,
+            ZeniSurface(
+              role: ZeniSurfaceRole.grouped,
+              mode: ZeniVisualMode.kids,
+              child: Wrap(
+                spacing: ZeniSpacing.spaceGroup,
+                runSpacing: ZeniSpacing.spaceControl,
+                children: [
+                  _TaskMetadata(
+                    icon: Icons.star_rounded,
+                    label: '${mission.stars} estrelas',
+                    color: context.zeniColors.accentStar,
                   ),
-              ],
+                  _TaskMetadata(
+                    icon: Icons.schedule_rounded,
+                    label: mission.timeGroup.label,
+                  ),
+                  if (mission.approvalMode ==
+                      MissionApprovalMode.parentApproval)
+                    const _TaskMetadata(
+                      icon: Icons.verified_user_rounded,
+                      label: 'Precisa de aprovação',
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: ZeniSpacing.xl),
             if (status == MissionLogStatus.awaitingApproval &&
@@ -148,60 +184,83 @@ class TaskChildDetailSheet extends StatelessWidget {
               Text(log!.note!, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: ZeniSpacing.xl),
             ],
-            if (showListenActions) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _TaskSpeechActionButton(
-                      label: 'Missão',
-                      semanticLabel: 'Ouvir missão',
-                      onPressed: onListenToMission,
-                    ),
-                  ),
-                  const SizedBox(width: ZeniSpacing.sm),
-                  Expanded(
-                    child: _TaskSpeechActionButton(
-                      label: 'Completo',
-                      semanticLabel: 'Ouvir completo',
-                      onPressed: onListenToMissionDetails,
-                    ),
-                  ),
-                ],
+            if (widget.showListenActions) ...[
+              _TaskSpeechActionButton(
+                label: 'Ouvir missão',
+                semanticLabel: 'Ouvir missão',
+                onPressed: widget.onListenToMissionDetails,
               ),
               const SizedBox(height: ZeniSpacing.md),
             ],
-            if (status == MissionLogStatus.pending)
-              SizedBox(
-                height: ZeniTouchTargets.childPriority,
-                child: ZeniPrimaryButton(
-                  label: 'Concluir missão',
-                  icon: Icons.check_rounded,
+            if (status == MissionLogStatus.pending) ...[
+              if (!_isNoteFieldVisible)
+                ZeniButton(
+                  label: 'Adicionar observação',
+                  icon: Icons.add_comment_outlined,
                   onPressed: () {
-                    Navigator.of(context).pop(TaskChildDetailAction.complete);
+                    setState(() => _isNoteFieldVisible = true);
                   },
+                  role: ZeniButtonRole.tertiary,
+                  mode: ZeniVisualMode.kids,
+                )
+              else
+                ZeniMultilineInput(
+                  controller: _noteController,
+                  label: 'Observação opcional',
+                  hint: 'Ex.: fiz antes da escola, li meu livro favorito...',
+                  minLines: 2,
+                  maxLines: 4,
+                  maxLength: 120,
                 ),
+              const SizedBox(height: ZeniSpacing.spaceControl),
+              ZeniButton(
+                label:
+                    mission.approvalMode == MissionApprovalMode.parentApproval
+                    ? 'Enviar para aprovação'
+                    : 'Concluir missão',
+                icon: mission.approvalMode == MissionApprovalMode.parentApproval
+                    ? Icons.send_rounded
+                    : Icons.check_rounded,
+                onPressed: () {
+                  final note = _noteController.text.trim();
+                  Navigator.of(context).pop(
+                    TaskChildDetailResult(
+                      action: TaskChildDetailAction.complete,
+                      note: note.isEmpty ? null : note,
+                    ),
+                  );
+                },
+                role: ZeniButtonRole.primary,
+                mode: ZeniVisualMode.kids,
               ),
+            ],
             if (status == MissionLogStatus.approved)
               Column(
                 children: [
-                  if (canUndoCompletion) ...[
-                    ZeniSecondaryButton(
+                  if (widget.canUndoCompletion) ...[
+                    ZeniButton(
                       label: 'Desfazer conclusão',
                       icon: Icons.undo_rounded,
                       onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).pop(TaskChildDetailAction.undoCompletion);
+                        Navigator.of(context).pop(
+                          const TaskChildDetailResult(
+                            action: TaskChildDetailAction.undoCompletion,
+                          ),
+                        );
                       },
+                      role: ZeniButtonRole.secondary,
+                      mode: ZeniVisualMode.kids,
                     ),
                     const SizedBox(height: ZeniSpacing.md),
                   ],
-                  ZeniSecondaryButton(
+                  ZeniButton(
                     label: 'Fechar',
                     icon: Icons.check_circle_rounded,
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
+                    role: ZeniButtonRole.secondary,
+                    mode: ZeniVisualMode.kids,
                   ),
                 ],
               ),
@@ -236,51 +295,41 @@ class _TaskSpeechActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final useVerticalLayout = constraints.maxWidth < 150;
-          final icon = const Icon(Icons.volume_up_rounded);
-          final text = FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              softWrap: false,
-            ),
-          );
-
-          return OutlinedButton(
+    return Tooltip(
+      message: semanticLabel,
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        child: ExcludeSemantics(
+          child: ZeniButton(
+            label: label,
+            icon: Icons.volume_up_rounded,
             onPressed: onPressed,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: useVerticalLayout
-                  ? Column(
-                      key: const ValueKey('vertical'),
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        icon,
-                        const SizedBox(height: ZeniSpacing.xs),
-                        text,
-                      ],
-                    )
-                  : Row(
-                      key: const ValueKey('horizontal'),
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        icon,
-                        const SizedBox(width: ZeniSpacing.sm),
-                        Flexible(child: text),
-                      ],
-                    ),
-            ),
-          );
-        },
+            role: ZeniButtonRole.tertiary,
+            mode: ZeniVisualMode.kids,
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _TaskMetadata extends StatelessWidget {
+  const _TaskMetadata({required this.icon, required this.label, this.color});
+
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color ?? context.zeniColors.textSecondary),
+        const SizedBox(width: ZeniSpacing.spaceInline),
+        Text(label, style: ZeniTypography.of(context).metadata),
+      ],
     );
   }
 }

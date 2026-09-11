@@ -1857,8 +1857,6 @@ void main() {
       await tester.tap(automaticMissionCard, warnIfMissed: false);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Concluir missão'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Concluir agora'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 900));
       await tester.pumpAndSettle();
@@ -1905,8 +1903,6 @@ void main() {
       );
       await tester.ensureVisible(manualMissionCard);
       await tester.tap(manualMissionCard, warnIfMissed: false);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Concluir missão'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Enviar para aprovação'));
       await tester.pumpAndSettle();
@@ -1959,8 +1955,6 @@ void main() {
       await tester.tap(automaticMissionCard, warnIfMissed: false);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Concluir missão'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Concluir agora'));
       await tester.pumpAndSettle();
 
       expect(find.text('Missão concluída!'), findsOneWidget);
@@ -2870,16 +2864,8 @@ void main() {
         tester.widget<Switch>(settingsSwitch('Notificações')).value,
         isFalse,
       );
-      expect(
-        tester.widget<Switch>(settingsSwitch('Leitura em voz alta')).value,
-        isTrue,
-      );
-      expect(
-        tester
-            .widget<Switch>(settingsSwitch('Leitura por perfil da criança'))
-            .value,
-        isTrue,
-      );
+      expect(find.text('Leitura em voz alta'), findsNothing);
+      expect(find.text('Leitura por perfil da criança'), findsNothing);
 
       final sharedPreferences = await SharedPreferences.getInstance();
       final persistedState =

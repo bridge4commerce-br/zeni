@@ -65,8 +65,8 @@ class ChildHomeTab extends StatelessWidget {
     required this.onCompleteMission,
     required this.onCancelMissionSubmission,
     required this.onUndoMissionCompletion,
-    required this.onListenToMission,
     required this.onListenToMissionDetails,
+    required this.onStopMissionSpeech,
     required this.canListenToMission,
     required this.onOpenRewards,
     this.isCelebrating = false,
@@ -80,10 +80,11 @@ class ChildHomeTab extends StatelessWidget {
   final List<RewardRequest> pendingRewardRequests;
   final MissionLog? Function(String missionId) logForMission;
   final GlobalKey Function(String missionId) missionAnchorKeyFor;
-  final void Function(Mission, MissionLog?, GlobalKey?) onCompleteMission;
+  final void Function(Mission, MissionLog?, GlobalKey?, {String? note})
+  onCompleteMission;
   final void Function(Mission, MissionLog?) onCancelMissionSubmission;
-  final void Function(Mission) onListenToMission;
   final void Function(Mission, MissionLog?) onListenToMissionDetails;
+  final Future<void> Function() onStopMissionSpeech;
   final void Function(Mission, MissionLog) onUndoMissionCompletion;
   final VoidCallback onOpenRewards;
   final bool canListenToMission;
@@ -317,12 +318,12 @@ class ChildHomeTab extends StatelessWidget {
     Mission mission,
   ) async {
     final log = logForMission(mission.id);
-    final action = await showTaskChildDetailModal(
+    final result = await showTaskChildDetailModal(
       context: context,
       mission: mission,
-      onListenToMission: () => onListenToMission(mission),
       onListenToMissionDetails: () =>
           onListenToMissionDetails(mission, logForMission(mission.id)),
+      onDismiss: onStopMissionSpeech,
       log: log,
       showListenActions: canListenToMission,
       canUndoCompletion: canUndoAutomaticMissionCompletion(
@@ -331,12 +332,13 @@ class ChildHomeTab extends StatelessWidget {
       ),
     );
     if (!context.mounted) return;
-    switch (action) {
+    switch (result?.action) {
       case TaskChildDetailAction.complete:
         onCompleteMission(
           mission,
           logForMission(mission.id),
           missionAnchorKeyFor('home:${mission.id}'),
+          note: result?.note,
         );
       case TaskChildDetailAction.cancelSubmission:
         onCancelMissionSubmission(mission, logForMission(mission.id));

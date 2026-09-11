@@ -22,8 +22,8 @@ class ChildMissionsTab extends StatelessWidget {
     required this.onCompleteMission,
     required this.onCancelMissionSubmission,
     required this.onUndoMissionCompletion,
-    required this.onListenToMission,
     required this.onListenToMissionDetails,
+    required this.onStopMissionSpeech,
     required this.canListenToMission,
     this.onRefresh,
   });
@@ -31,13 +31,18 @@ class ChildMissionsTab extends StatelessWidget {
   final List<Mission> missions;
   final MissionLog? Function(String missionId) logForMission;
   final GlobalKey Function(String missionId) missionAnchorKeyFor;
-  final void Function(Mission mission, MissionLog? log, GlobalKey? sourceKey)
+  final void Function(
+    Mission mission,
+    MissionLog? log,
+    GlobalKey? sourceKey, {
+    String? note,
+  })
   onCompleteMission;
   final void Function(Mission mission, MissionLog? log)
   onCancelMissionSubmission;
-  final void Function(Mission mission) onListenToMission;
   final void Function(Mission mission, MissionLog? log)
   onListenToMissionDetails;
+  final Future<void> Function() onStopMissionSpeech;
   final void Function(Mission mission, MissionLog log) onUndoMissionCompletion;
   final bool canListenToMission;
   final Future<void> Function()? onRefresh;
@@ -86,16 +91,15 @@ class ChildMissionsTab extends StatelessWidget {
                           onTap: () async {
                             final log = logForMission(mission.id);
 
-                            final action = await showTaskChildDetailModal(
+                            final result = await showTaskChildDetailModal(
                               context: context,
                               mission: mission,
-                              onListenToMission: () =>
-                                  onListenToMission(mission),
                               onListenToMissionDetails: () =>
                                   onListenToMissionDetails(
                                     mission,
                                     logForMission(mission.id),
                                   ),
+                              onDismiss: onStopMissionSpeech,
                               log: log,
                               showListenActions: canListenToMission,
                               canUndoCompletion:
@@ -107,12 +111,13 @@ class ChildMissionsTab extends StatelessWidget {
 
                             if (!context.mounted) return;
 
-                            switch (action) {
+                            switch (result?.action) {
                               case TaskChildDetailAction.complete:
                                 onCompleteMission(
                                   mission,
                                   logForMission(mission.id),
                                   missionAnchorKeyFor('missions:${mission.id}'),
+                                  note: result?.note,
                                 );
                               case TaskChildDetailAction.cancelSubmission:
                                 onCancelMissionSubmission(

@@ -38,11 +38,11 @@ void main() {
               missions: [mission],
               logForMission: (missionId) => null,
               missionAnchorKeyFor: (missionId) => GlobalKey(),
-              onCompleteMission: (mission, log, sourceKey) {},
+              onCompleteMission: (mission, log, sourceKey, {note}) {},
               onCancelMissionSubmission: (mission, log) {},
               onUndoMissionCompletion: (mission, log) {},
-              onListenToMission: (mission) {},
               onListenToMissionDetails: (mission, log) {},
+              onStopMissionSpeech: () async {},
               canListenToMission: false,
               onRefresh: () async {
                 refreshCalls += 1;

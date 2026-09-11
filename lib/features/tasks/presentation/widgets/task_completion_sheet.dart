@@ -4,10 +4,10 @@ import '../../../../core/domain/zeni_enums.dart';
 import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/status_badge.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
-import '../../../../core/widgets/base/zeni_primary_button.dart';
-import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/inputs/zeni_multiline_input.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../data/models/mission.dart';
@@ -68,6 +68,7 @@ class _TaskCompletionSheetState extends State<TaskCompletionSheet> {
     final mission = widget.mission;
     final needsApproval =
         mission.approvalMode == MissionApprovalMode.parentApproval;
+    final typography = ZeniTypography.of(context);
 
     return ZeniModalSheetContainer(
       title: 'Concluir missão',
@@ -78,7 +79,9 @@ class _TaskCompletionSheetState extends State<TaskCompletionSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ZeniCard(
+            ZeniSurface(
+              role: ZeniSurfaceRole.highlight,
+              mode: ZeniVisualMode.kids,
               child: Row(
                 children: [
                   Text(mission.emoji, style: const TextStyle(fontSize: 36)),
@@ -87,16 +90,9 @@ class _TaskCompletionSheetState extends State<TaskCompletionSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          mission.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
+                        Text(mission.title, style: typography.cardTitle),
                         const SizedBox(height: ZeniSpacing.xs),
-                        Text(
-                          mission.description,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: ZeniColors.mutedText),
-                        ),
+                        Text(mission.description, style: typography.metadata),
                       ],
                     ),
                   ),
@@ -104,25 +100,28 @@ class _TaskCompletionSheetState extends State<TaskCompletionSheet> {
               ),
             ),
             const SizedBox(height: ZeniSpacing.lg),
-            Wrap(
-              spacing: ZeniSpacing.sm,
-              runSpacing: ZeniSpacing.sm,
-              children: [
-                StatusBadge(
-                  label: '${mission.stars} estrelas',
-                  icon: Icons.star_rounded,
-                  tone: StatusBadgeTone.info,
-                ),
-                StatusBadge(
-                  label: needsApproval ? 'Aprovação' : 'Automática',
-                  icon: needsApproval
-                      ? Icons.verified_user_rounded
-                      : Icons.flash_on_rounded,
-                  tone: needsApproval
-                      ? StatusBadgeTone.warning
-                      : StatusBadgeTone.success,
-                ),
-              ],
+            ZeniSurface(
+              role: ZeniSurfaceRole.grouped,
+              mode: ZeniVisualMode.kids,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _CompletionMetadata(
+                    icon: Icons.star_rounded,
+                    label: '${mission.stars} estrelas',
+                    color: context.zeniColors.accentStar,
+                  ),
+                  const SizedBox(height: ZeniSpacing.spaceControl),
+                  _CompletionMetadata(
+                    icon: needsApproval
+                        ? Icons.verified_user_rounded
+                        : Icons.flash_on_rounded,
+                    label: needsApproval
+                        ? 'Precisa de aprovação'
+                        : 'Automática',
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: ZeniSpacing.lg),
             ZeniMultilineInput(
@@ -138,49 +137,69 @@ class _TaskCompletionSheetState extends State<TaskCompletionSheet> {
               needsApproval
                   ? 'Essa missão será enviada para aprovação do responsável.'
                   : 'Essa missão será concluída automaticamente.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
+              style: typography.metadata,
             ),
             if (mission.requiresPhoto) ...[
               const SizedBox(height: ZeniSpacing.sm),
               Text(
                 'Foto ainda não disponível nesta versão. Você pode concluir a missão normalmente.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: ZeniColors.mutedText),
+                style: typography.metadata,
               ),
             ],
             const SizedBox(height: ZeniSpacing.xl),
-            SizedBox(
-              height: ZeniTouchTargets.childPriority,
-              child: ZeniPrimaryButton(
-                label: needsApproval
-                    ? 'Enviar para aprovação'
-                    : 'Concluir agora',
-                icon: needsApproval
-                    ? Icons.send_rounded
-                    : Icons.check_circle_rounded,
-                onPressed: () {
-                  final note = _noteController.text.trim();
+            ZeniButton(
+              label: needsApproval ? 'Enviar para aprovação' : 'Concluir agora',
+              icon: needsApproval
+                  ? Icons.send_rounded
+                  : Icons.check_circle_rounded,
+              onPressed: () {
+                final note = _noteController.text.trim();
 
-                  Navigator.of(
-                    context,
-                  ).pop(TaskCompletionResult(note: note.isEmpty ? null : note));
-                },
-              ),
+                Navigator.of(
+                  context,
+                ).pop(TaskCompletionResult(note: note.isEmpty ? null : note));
+              },
+              role: ZeniButtonRole.primary,
+              mode: ZeniVisualMode.kids,
             ),
             const SizedBox(height: ZeniSpacing.md),
-            ZeniSecondaryButton(
+            ZeniButton(
               label: 'Cancelar',
               icon: Icons.close_rounded,
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              role: ZeniButtonRole.secondary,
+              mode: ZeniVisualMode.kids,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CompletionMetadata extends StatelessWidget {
+  const _CompletionMetadata({
+    required this.icon,
+    required this.label,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: color ?? context.zeniColors.textSecondary),
+        const SizedBox(width: ZeniSpacing.spaceInline),
+        Expanded(
+          child: Text(label, style: ZeniTypography.of(context).metadata),
+        ),
+      ],
     );
   }
 }

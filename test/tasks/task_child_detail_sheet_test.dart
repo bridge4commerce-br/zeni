@@ -54,7 +54,6 @@ void main() {
             mission: automaticMission,
             log: log,
             canUndoCompletion: canUndoCompletion,
-            onListenToMission: () {},
             onListenToMissionDetails: () {},
           ),
         ),
@@ -80,7 +79,6 @@ void main() {
                 context: context,
                 mission: automaticMission,
                 log: log,
-                onListenToMission: () {},
                 onListenToMissionDetails: () {},
               ),
               child: const Text('Abrir'),
@@ -120,7 +118,6 @@ void main() {
         home: Scaffold(
           body: TaskChildDetailSheet(
             mission: automaticMission.copyWith(requiresPhoto: true),
-            onListenToMission: () {},
             onListenToMissionDetails: () {},
           ),
         ),
@@ -131,6 +128,182 @@ void main() {
     expect(find.text('Manhã'), findsOneWidget);
     expect(find.text('Todos os dias'), findsNothing);
     expect(find.text('Pode pedir foto'), findsNothing);
+  });
+
+  testWidgets('automatic mission completes directly from its detail', (
+    tester,
+  ) async {
+    TaskChildDetailResult? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showTaskChildDetailModal(
+                  context: context,
+                  mission: automaticMission,
+                  onListenToMissionDetails: () {},
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    final completeMission = find.text('Concluir missão');
+    await tester.ensureVisible(completeMission);
+    await tester.pumpAndSettle();
+    await tester.tap(completeMission);
+    await tester.pumpAndSettle();
+
+    expect(result?.action, TaskChildDetailAction.complete);
+    expect(result?.note, isNull);
+  });
+
+  testWidgets('approval mission sends an expanded optional note directly', (
+    tester,
+  ) async {
+    TaskChildDetailResult? result;
+    final approvalMission = automaticMission.copyWith(
+      approvalMode: MissionApprovalMode.parentApproval,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showTaskChildDetailModal(
+                  context: context,
+                  mission: approvalMission,
+                  onListenToMissionDetails: () {},
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    final addNote = find.text('Adicionar observação');
+    await tester.ensureVisible(addNote);
+    await tester.pumpAndSettle();
+    await tester.tap(addNote);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Fiz antes da escola.');
+    await tester.ensureVisible(find.text('Enviar para aprovação'));
+    await tester.tap(find.text('Enviar para aprovação'));
+    await tester.pumpAndSettle();
+
+    expect(result?.action, TaskChildDetailAction.complete);
+    expect(result?.note, 'Fiz antes da escola.');
+  });
+
+  testWidgets('dismissing the detail does not request completion', (
+    tester,
+  ) async {
+    TaskChildDetailResult? result;
+    var dismissCalls = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showTaskChildDetailModal(
+                  context: context,
+                  mission: automaticMission,
+                  onListenToMissionDetails: () {},
+                  onDismiss: () async => dismissCalls++,
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(dismissCalls, 1);
+  });
+
+  testWidgets('listen action exposes semantics and keeps its callback', (
+    tester,
+  ) async {
+    var detailSpeechCalls = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TaskChildDetailSheet(
+            mission: automaticMission,
+            onListenToMissionDetails: () => detailSpeechCalls++,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Ouvir missão'), findsOneWidget);
+    await tester.tap(find.text('Ouvir missão'));
+
+    expect(detailSpeechCalls, 1);
+    expect(find.text('Ouvir resumo'), findsNothing);
+  });
+
+  testWidgets('long titles remain scrollable with larger OpenDyslexic text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final longTitle =
+        'Organizar todos os brinquedos e livros antes de dormir hoje';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          textTheme: ThemeData.light().textTheme.apply(
+            fontFamily: 'OpenDyslexic',
+          ),
+        ),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.3)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: TaskChildDetailSheet(
+            mission: automaticMission.copyWith(title: longTitle),
+            onListenToMissionDetails: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Concluir missão'),
+      240,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text(longTitle), findsOneWidget);
+    expect(find.text('Concluir missão'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('uses a bottom sheet in compact windows', (tester) async {

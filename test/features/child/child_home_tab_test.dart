@@ -77,11 +77,11 @@ void main() {
         logForMission: (id) =>
             logs.where((log) => log.missionId == id).firstOrNull,
         missionAnchorKeyFor: (_) => GlobalKey(),
-        onCompleteMission: (_, _, _) {},
+        onCompleteMission: (_, _, _, {note}) {},
         onCancelMissionSubmission: (_, _) {},
         onUndoMissionCompletion: (_, _) {},
-        onListenToMission: (_) {},
         onListenToMissionDetails: (_, _) {},
+        onStopMissionSpeech: () async {},
         canListenToMission: false,
         onOpenRewards: () {},
       ),

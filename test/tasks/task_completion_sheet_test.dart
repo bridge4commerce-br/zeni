@@ -128,4 +128,71 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('automatic completion returns the optional note', (tester) async {
+    TaskCompletionResult? result;
+    final automaticMission = mission.copyWith(
+      approvalMode: MissionApprovalMode.automatic,
+      requiresPhoto: false,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showTaskCompletionModal(
+                  context: context,
+                  mission: automaticMission,
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField),
+      'Guardei tudo no lugar certo.',
+    );
+    await tester.ensureVisible(find.text('Concluir agora'));
+    await tester.tap(find.text('Concluir agora'));
+    await tester.pumpAndSettle();
+
+    expect(result?.note, 'Guardei tudo no lugar certo.');
+  });
+
+  testWidgets('approval completion returns the optional note', (tester) async {
+    TaskCompletionResult? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showTaskCompletionModal(
+                  context: context,
+                  mission: mission,
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Enviar para aprovação'));
+    await tester.tap(find.text('Enviar para aprovação'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result?.note, isNull);
+  });
 }

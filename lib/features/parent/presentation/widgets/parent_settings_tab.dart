@@ -461,20 +461,6 @@ class _ParentSettingsGroup extends StatelessWidget {
             value: accessibilitySettings.notificationsEnabled,
             onChanged: onNotificationsChanged,
           ),
-          ZeniSwitch(
-            title: 'Leitura em voz alta',
-            subtitle: 'Usar a voz do dispositivo quando disponível',
-            icon: Icons.record_voice_over_rounded,
-            value: accessibilitySettings.ttsEnabled,
-            onChanged: onTtsChanged,
-          ),
-          ZeniSwitch(
-            title: 'Leitura por perfil da criança',
-            subtitle: 'Permitir configuração individual de leitura em voz alta',
-            icon: Icons.child_care_rounded,
-            value: accessibilitySettings.readAloudByChildProfile,
-            onChanged: onReadAloudByChildProfileChanged,
-          ),
           const SizedBox(height: ZeniSpacing.xl),
           _SectionTitle(title: 'Sincronização e backup'),
           if (authState.isAuthenticated && remoteFamilySummary != null) ...[
