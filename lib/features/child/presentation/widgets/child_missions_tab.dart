@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
-import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/layout/zeni_responsive.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/domain/mission_undo_policy.dart';
@@ -47,82 +50,99 @@ class ChildMissionsTab extends StatelessWidget {
 
     final content = SingleChildScrollView(
       physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Minhas missões',
-            style: Theme.of(context).textTheme.displayLarge,
-          ),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Toque em uma missão para ver detalhes.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          for (final group in groups) ...[
-            TaskTimeGroupHeader(group: group),
-            const SizedBox(height: ZeniSpacing.md),
-            for (final mission in missions.where(
-              (mission) => mission.timeGroup == group,
-            )) ...[
-              KeyedSubtree(
-                key: missionAnchorKeyFor('missions:${mission.id}'),
-                child: TaskCompactChildCard(
-                  mission: mission,
-                  log: logForMission(mission.id),
-                  onTap: () async {
-                    final log = logForMission(mission.id);
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceSection,
+        bottom: ZeniSpacing.spaceCanvas + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.main,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Minhas missões', style: ZeniTypography.of(context).pageTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(
+              'Toque em uma missão para ver detalhes.',
+              style: ZeniTypography.of(context).body,
+            ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            for (final group in groups) ...[
+              TaskTimeGroupHeader(group: group),
+              const SizedBox(height: ZeniSpacing.spaceCard),
+              ZeniSurface(
+                role: ZeniSurfaceRole.grouped,
+                mode: ZeniVisualMode.kids,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (final mission in missions.where(
+                      (mission) => mission.timeGroup == group,
+                    )) ...[
+                      KeyedSubtree(
+                        key: missionAnchorKeyFor('missions:${mission.id}'),
+                        child: TaskCompactChildCard(
+                          mission: mission,
+                          log: logForMission(mission.id),
+                          onTap: () async {
+                            final log = logForMission(mission.id);
 
-                    final action = await showTaskChildDetailModal(
-                      context: context,
-                      mission: mission,
-                      onListenToMission: () => onListenToMission(mission),
-                      onListenToMissionDetails: () => onListenToMissionDetails(
-                        mission,
-                        logForMission(mission.id),
+                            final action = await showTaskChildDetailModal(
+                              context: context,
+                              mission: mission,
+                              onListenToMission: () =>
+                                  onListenToMission(mission),
+                              onListenToMissionDetails: () =>
+                                  onListenToMissionDetails(
+                                    mission,
+                                    logForMission(mission.id),
+                                  ),
+                              log: log,
+                              showListenActions: canListenToMission,
+                              canUndoCompletion:
+                                  canUndoAutomaticMissionCompletion(
+                                    mission: mission,
+                                    log: log,
+                                  ),
+                            );
+
+                            if (!context.mounted) return;
+
+                            switch (action) {
+                              case TaskChildDetailAction.complete:
+                                onCompleteMission(
+                                  mission,
+                                  logForMission(mission.id),
+                                  missionAnchorKeyFor('missions:${mission.id}'),
+                                );
+                              case TaskChildDetailAction.cancelSubmission:
+                                onCancelMissionSubmission(
+                                  mission,
+                                  logForMission(mission.id),
+                                );
+                              case TaskChildDetailAction.undoCompletion:
+                                final approvedLog = logForMission(mission.id);
+                                if (approvedLog != null) {
+                                  onUndoMissionCompletion(mission, approvedLog);
+                                }
+                              case null:
+                                break;
+                            }
+                          },
+                        ),
                       ),
-                      log: log,
-                      showListenActions: canListenToMission,
-                      canUndoCompletion: canUndoAutomaticMissionCompletion(
-                        mission: mission,
-                        log: log,
-                      ),
-                    );
-
-                    if (!context.mounted) return;
-
-                    switch (action) {
-                      case TaskChildDetailAction.complete:
-                        onCompleteMission(
-                          mission,
-                          logForMission(mission.id),
-                          missionAnchorKeyFor('missions:${mission.id}'),
-                        );
-                      case TaskChildDetailAction.cancelSubmission:
-                        onCancelMissionSubmission(
-                          mission,
-                          logForMission(mission.id),
-                        );
-                      case TaskChildDetailAction.undoCompletion:
-                        final approvedLog = logForMission(mission.id);
-                        if (approvedLog != null) {
-                          onUndoMissionCompletion(mission, approvedLog);
-                        }
-                      case null:
-                        break;
-                    }
-                  },
+                      if (mission !=
+                          missions
+                              .where((item) => item.timeGroup == group)
+                              .last)
+                        const Divider(height: 1),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: ZeniSpacing.sm),
+              const SizedBox(height: ZeniSpacing.spaceSection),
             ],
-            const SizedBox(height: ZeniSpacing.lg),
           ],
-        ],
+        ),
       ),
     );
 
