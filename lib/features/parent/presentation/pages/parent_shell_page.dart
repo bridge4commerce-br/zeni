@@ -79,6 +79,7 @@ class ParentShellPage extends ConsumerStatefulWidget {
 
 class _ParentShellPageState extends ConsumerState<ParentShellPage> {
   int _currentIndex = 0;
+  bool _isDiscoveringMissions = false;
 
   ZeniAppState? get _currentAppState =>
       ref.read(zeniAppStateControllerProvider).asData?.value;
@@ -160,19 +161,6 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
       title: 'Missão criada!',
       message:
           '${mission.title} foi adicionada para ${data.childById(mission.childId)?.name ?? 'a criança'}.',
-    );
-  }
-
-  Future<void> _openSmartSuggestions(_ParentModeData data) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => SmartSuggestionsPage(
-          children: data.activeChildren,
-          activeMissions: data.activeMissions,
-          onConfirmBatch: (drafts, children) =>
-              _createSuggestedMissions(data.family.id, drafts, children),
-        ),
-      ),
     );
   }
 
@@ -1194,7 +1182,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onEditMission: _openEditMissionSheet,
             onArchiveMission: _archiveMission,
             onRestoreMission: _restoreMission,
-            onOpenSuggestions: () => _openSmartSuggestions(data),
+            onConfirmSuggestedMissions: (drafts, children) =>
+                _createSuggestedMissions(data.family.id, drafts, children),
+            onDiscoveringChanged: (isDiscovering) {
+              setState(() => _isDiscoveringMissions = isDiscovering);
+            },
             onRefresh: _refreshPrimaryLists,
           ),
           ParentRewardsTab(
@@ -1360,7 +1352,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               const SizedBox(width: ZeniSpacing.sm),
             ],
           ),
-          floatingActionButton: _currentIndex == 1 || _currentIndex == 2
+          floatingActionButton:
+              (_currentIndex == 1 && !_isDiscoveringMissions) ||
+                  _currentIndex == 2
               ? ZeniFab(
                   icon: Icons.add_rounded,
                   label: _currentIndex == 1 ? 'Missão' : 'Mimo',
@@ -1376,6 +1370,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               ref.read(zeniHapticsProvider).selection();
               setState(() {
                 _currentIndex = index;
+                if (index != 1) _isDiscoveringMissions = false;
               });
             },
             items: [

@@ -96,6 +96,47 @@ class SmartSuggestionsPage extends StatefulWidget {
 }
 
 class _SmartSuggestionsPageState extends State<SmartSuggestionsPage> {
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Sugestões para sua família')),
+    body: SmartSuggestionsContent(
+      children: widget.children,
+      activeMissions: widget.activeMissions,
+      onConfirmBatch: widget.onConfirmBatch,
+      repository: widget.repository,
+    ),
+  );
+}
+
+/// Reuses the Smart Content selection and review flow inside Parent Missions.
+class SmartSuggestionsContent extends StatefulWidget {
+  const SmartSuggestionsContent({
+    super.key,
+    required this.children,
+    required this.activeMissions,
+    required this.onConfirmBatch,
+    this.repository,
+    this.embedded = false,
+    this.header,
+  });
+
+  final List<ChildProfile> children;
+  final List<Mission> activeMissions;
+  final Future<SmartBatchCreationResult> Function(
+    List<SmartBatchMissionDraft>,
+    List<ChildProfile>,
+  )
+  onConfirmBatch;
+  final SmartContentRepository? repository;
+  final bool embedded;
+  final Widget? header;
+
+  @override
+  State<SmartSuggestionsContent> createState() =>
+      _SmartSuggestionsContentState();
+}
+
+class _SmartSuggestionsContentState extends State<SmartSuggestionsContent> {
   late final SmartContentRepository _repository =
       widget.repository ?? AssetSmartContentRepository();
   final _selectedChildren = <String>{};
@@ -121,21 +162,31 @@ class _SmartSuggestionsPageState extends State<SmartSuggestionsPage> {
       _locale = locale;
       _future = _load(locale);
     }
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sugestões para sua família')),
-      body: ZeniPageFrame(
-        width: ZeniPageWidth.main,
-        child: FutureBuilder<_Data>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData)
+    return ZeniPageFrame(
+      width: ZeniPageWidth.main,
+      child: FutureBuilder<_Data>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData)
+            if (snapshot.hasError)
+              return const Center(
+                child: Text(
+                  'Não foi possível carregar sugestões agora. Tente novamente mais tarde.',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            else
               return const Center(child: CircularProgressIndicator());
-            final data = snapshot.data!;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          final data = snapshot.data!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: ZeniSpacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.header != null) ...[
+                  widget.header!,
+                  const SizedBox(height: ZeniSpacing.xl),
+                ] else ...[
                   Text(
                     'Sugestões para sua família',
                     style: Theme.of(context).textTheme.displayLarge,
@@ -147,146 +198,145 @@ class _SmartSuggestionsPageState extends State<SmartSuggestionsPage> {
                       color: ZeniColors.mutedText,
                     ),
                   ),
-                  if (widget.children.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: ZeniSpacing.xl),
-                      child: Text('Adicione uma criança para ver sugestões.'),
-                    )
-                  else ...[
-                    if (widget.children.length > 1) ...[
-                      const SizedBox(height: ZeniSpacing.xl),
-                      Text(
-                        'Para quem?',
-                        key: _recipientSectionKey,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      for (final child in widget.children)
-                        CheckboxListTile(
-                          key: Key('smart-content-child-${child.id}'),
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(child.name),
-                          value: _selectedChildren.contains(child.id),
-                          onChanged: (value) => setState(() {
-                            if (value ?? false)
-                              _selectedChildren.add(child.id);
-                            else
-                              _selectedChildren.remove(child.id);
-                            if (_selectedChildren.isNotEmpty) {
-                              _showChildSelectionError = false;
-                            }
-                          }),
-                        ),
-                      if (_showChildSelectionError)
-                        Semantics(
-                          liveRegion: true,
-                          child: Container(
-                            margin: const EdgeInsets.only(top: ZeniSpacing.xs),
-                            padding: const EdgeInsets.all(ZeniSpacing.md),
-                            decoration: BoxDecoration(
-                              color: ZeniColors.primary.withValues(alpha: .10),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Escolha pelo menos uma criança para usar esta rotina.',
-                            ),
-                          ),
-                        ),
-                    ],
-                    const SizedBox(height: ZeniSpacing.xl),
-                    Text(
-                      'Missões sugeridas',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: ZeniSpacing.md),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns = ZeniAdaptiveGrid.columnsForWidth(
-                          availableWidth: constraints.maxWidth,
-                          windowClass: ZeniResponsive.windowClass(context),
-                          minItemWidth: 280,
-                        );
-                        final itemWidth =
-                            (constraints.maxWidth -
-                                (columns - 1) * ZeniSpacing.sm) /
-                            columns;
-                        return Wrap(
-                          spacing: ZeniSpacing.sm,
-                          runSpacing: ZeniSpacing.sm,
-                          children: [
-                            for (final suggestion in data.suggestions)
-                              SizedBox(
-                                width: itemWidth,
-                                child: _MissionChoice(
-                                  mission: suggestion.mission,
-                                  selected: _selectedMissions.contains(
-                                    suggestion.mission.id,
-                                  ),
-                                  onTap: () => setState(() {
-                                    if (!_selectedMissions.add(
-                                      suggestion.mission.id,
-                                    ))
-                                      _selectedMissions.remove(
-                                        suggestion.mission.id,
-                                      );
-                                  }),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: ZeniSpacing.xl),
-                    Text(
-                      'Rotinas prontas',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: ZeniSpacing.md),
-                    for (final routine in data.routines.take(4)) ...[
-                      ZeniCard(
-                        onTap: () => _routine(routine, data.missions),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(routine.title),
-                          subtitle: Text(
-                            '${routine.description}\n${routine.steps.length} missões',
-                          ),
-                          isThreeLine: true,
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                        ),
-                      ),
-                      const SizedBox(height: ZeniSpacing.sm),
-                    ],
-                    TextButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => _AllRoutinesPage(
-                            routines: data.routines,
-                            missions: data.missions,
-                            onSelect: _routine,
-                          ),
-                        ),
-                      ),
-                      icon: const Icon(Icons.view_list_rounded),
-                      label: const Text('Ver todas as rotinas'),
-                    ),
-                    const SizedBox(height: ZeniSpacing.xl),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ZeniPrimaryButton(
-                        label: 'Revisar ${_selectedMissions.length} missões',
-                        icon: Icons.fact_check_rounded,
-                        onPressed:
-                            _selectedMissions.isEmpty || _children.isEmpty
-                            ? null
-                            : () => _review(data.missions),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
-            );
-          },
-        ),
+                if (widget.children.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: ZeniSpacing.xl),
+                    child: Text('Adicione uma criança para ver sugestões.'),
+                  )
+                else ...[
+                  if (widget.children.length > 1) ...[
+                    const SizedBox(height: ZeniSpacing.xl),
+                    Text(
+                      'Para quem?',
+                      key: _recipientSectionKey,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    for (final child in widget.children)
+                      CheckboxListTile(
+                        key: Key('smart-content-child-${child.id}'),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(child.name),
+                        value: _selectedChildren.contains(child.id),
+                        onChanged: (value) => setState(() {
+                          if (value ?? false)
+                            _selectedChildren.add(child.id);
+                          else
+                            _selectedChildren.remove(child.id);
+                          if (_selectedChildren.isNotEmpty) {
+                            _showChildSelectionError = false;
+                          }
+                        }),
+                      ),
+                    if (_showChildSelectionError)
+                      Semantics(
+                        liveRegion: true,
+                        child: Container(
+                          margin: const EdgeInsets.only(top: ZeniSpacing.xs),
+                          padding: const EdgeInsets.all(ZeniSpacing.md),
+                          decoration: BoxDecoration(
+                            color: ZeniColors.primary.withValues(alpha: .10),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Escolha pelo menos uma criança para usar esta rotina.',
+                          ),
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: ZeniSpacing.xl),
+                  Text(
+                    'Missões sugeridas',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: ZeniSpacing.md),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = ZeniAdaptiveGrid.columnsForWidth(
+                        availableWidth: constraints.maxWidth,
+                        windowClass: ZeniResponsive.windowClass(context),
+                        minItemWidth: 280,
+                      );
+                      final itemWidth =
+                          (constraints.maxWidth -
+                              (columns - 1) * ZeniSpacing.sm) /
+                          columns;
+                      return Wrap(
+                        spacing: ZeniSpacing.sm,
+                        runSpacing: ZeniSpacing.sm,
+                        children: [
+                          for (final suggestion in data.suggestions)
+                            SizedBox(
+                              width: itemWidth,
+                              child: _MissionChoice(
+                                mission: suggestion.mission,
+                                selected: _selectedMissions.contains(
+                                  suggestion.mission.id,
+                                ),
+                                onTap: () => setState(() {
+                                  if (!_selectedMissions.add(
+                                    suggestion.mission.id,
+                                  ))
+                                    _selectedMissions.remove(
+                                      suggestion.mission.id,
+                                    );
+                                }),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: ZeniSpacing.xl),
+                  Text(
+                    'Rotinas prontas',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: ZeniSpacing.md),
+                  for (final routine in data.routines.take(4)) ...[
+                    ZeniCard(
+                      onTap: () => _routine(routine, data.missions),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(routine.title),
+                        subtitle: Text(
+                          '${routine.description}\n${routine.steps.length} missões',
+                        ),
+                        isThreeLine: true,
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: ZeniSpacing.sm),
+                  ],
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _AllRoutinesPage(
+                          routines: data.routines,
+                          missions: data.missions,
+                          onSelect: _routine,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.view_list_rounded),
+                    label: const Text('Ver todas as rotinas'),
+                  ),
+                  const SizedBox(height: ZeniSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ZeniPrimaryButton(
+                      label: 'Revisar ${_selectedMissions.length} missões',
+                      icon: Icons.fact_check_rounded,
+                      onPressed: _selectedMissions.isEmpty || _children.isEmpty
+                          ? null
+                          : () => _review(data.missions),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }

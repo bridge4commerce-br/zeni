@@ -9,6 +9,7 @@ import 'package:zeni/features/child/presentation/widgets/child_missions_tab.dart
 import 'package:zeni/features/child/presentation/widgets/child_rewards_tab.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_missions_tab.dart';
+import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
 import 'package:zeni/features/tasks/data/models/mission_log.dart';
 
 void main() {
@@ -158,7 +159,8 @@ void main() {
               onEditMission: (_) {},
               onArchiveMission: (_) {},
               onRestoreMission: (_) {},
-              onOpenSuggestions: () {},
+              onConfirmSuggestedMissions: (_, _) async =>
+                  const SmartBatchCreationResult(created: 0, skipped: 0),
               onRefresh: () async {
                 refreshCalls += 1;
               },

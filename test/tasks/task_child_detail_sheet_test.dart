@@ -130,6 +130,102 @@ void main() {
     expect(find.text('Pode pedir foto'), findsNothing);
   });
 
+  testWidgets(
+    'keeps stars and schedule side by side and approval full width on a phone',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final approvalMission = automaticMission.copyWith(
+        approvalMode: MissionApprovalMode.parentApproval,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            textTheme: ThemeData.light().textTheme.apply(
+              fontFamily: 'OpenDyslexic',
+            ),
+          ),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.35)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: TaskChildDetailSheet(
+              mission: approvalMission,
+              onListenToMissionDetails: () {},
+            ),
+          ),
+        ),
+      );
+
+      final stars = tester.getRect(
+        find.byKey(const Key('task-metadata-stars')),
+      );
+      final schedule = tester.getRect(
+        find.byKey(const Key('task-metadata-schedule')),
+      );
+      final approval = tester.getRect(
+        find.byKey(const Key('task-metadata-approval')),
+      );
+      final surface = tester.getRect(
+        find.byKey(const Key('task-metadata-surface')),
+      );
+
+      expect((stars.top - schedule.top).abs(), lessThan(1));
+      expect(schedule.left, greaterThan(stars.left));
+      expect(approval.top, greaterThan(stars.bottom));
+      expect(approval.width, greaterThan(surface.width * .8));
+      expect(find.bySemanticsLabel('Estrelas: 5 estrelas'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Aprovação: Precisa de aprovação'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('distributes all metadata in one row on expanded windows', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1024, 1366);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final approvalMission = automaticMission.copyWith(
+      approvalMode: MissionApprovalMode.parentApproval,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TaskChildDetailSheet(
+            mission: approvalMission,
+            onListenToMissionDetails: () {},
+          ),
+        ),
+      ),
+    );
+
+    final stars = tester.getRect(find.byKey(const Key('task-metadata-stars')));
+    final schedule = tester.getRect(
+      find.byKey(const Key('task-metadata-schedule')),
+    );
+    final approval = tester.getRect(
+      find.byKey(const Key('task-metadata-approval')),
+    );
+
+    expect((stars.top - schedule.top).abs(), lessThan(1));
+    expect((stars.top - approval.top).abs(), lessThan(1));
+    expect(schedule.left, greaterThan(stars.left));
+    expect(approval.left, greaterThan(schedule.left));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('automatic mission completes directly from its detail', (
     tester,
   ) async {

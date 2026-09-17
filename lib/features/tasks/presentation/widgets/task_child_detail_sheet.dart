@@ -148,31 +148,7 @@ class _TaskChildDetailSheetState extends State<TaskChildDetailSheet> {
             const SizedBox(height: ZeniSpacing.spaceInline),
             Text(mission.description, style: ZeniTypography.of(context).body),
             const SizedBox(height: ZeniSpacing.lg),
-            ZeniSurface(
-              role: ZeniSurfaceRole.grouped,
-              mode: ZeniVisualMode.kids,
-              child: Wrap(
-                spacing: ZeniSpacing.spaceGroup,
-                runSpacing: ZeniSpacing.spaceControl,
-                children: [
-                  _TaskMetadata(
-                    icon: Icons.star_rounded,
-                    label: '${mission.stars} estrelas',
-                    color: context.zeniColors.accentStar,
-                  ),
-                  _TaskMetadata(
-                    icon: Icons.schedule_rounded,
-                    label: mission.timeGroup.label,
-                  ),
-                  if (mission.approvalMode ==
-                      MissionApprovalMode.parentApproval)
-                    const _TaskMetadata(
-                      icon: Icons.verified_user_rounded,
-                      label: 'Precisa de aprovação',
-                    ),
-                ],
-              ),
-            ),
+            _TaskMetadataSurface(mission: mission),
             const SizedBox(height: ZeniSpacing.xl),
             if (status == MissionLogStatus.awaitingApproval &&
                 (log?.note?.trim().isNotEmpty ?? false)) ...[
@@ -314,22 +290,117 @@ class _TaskSpeechActionButton extends StatelessWidget {
   }
 }
 
+class _TaskMetadataSurface extends StatelessWidget {
+  const _TaskMetadataSurface({required this.mission});
+
+  final Mission mission;
+
+  @override
+  Widget build(BuildContext context) {
+    final approval = mission.approvalMode == MissionApprovalMode.parentApproval
+        ? const _TaskMetadata(
+            key: Key('task-metadata-approval'),
+            icon: Icons.verified_user_rounded,
+            label: 'Aprovação',
+            value: 'Precisa de aprovação',
+          )
+        : null;
+
+    final stars = _TaskMetadata(
+      key: const Key('task-metadata-stars'),
+      icon: Icons.star_rounded,
+      label: 'Estrelas',
+      value: '${mission.stars} estrelas',
+      color: context.zeniColors.accentStar,
+    );
+    final schedule = _TaskMetadata(
+      key: const Key('task-metadata-schedule'),
+      icon: Icons.schedule_rounded,
+      label: 'Horário',
+      value: mission.timeGroup.label,
+    );
+
+    return ZeniSurface(
+      key: const Key('task-metadata-surface'),
+      role: ZeniSurfaceRole.grouped,
+      mode: ZeniVisualMode.kids,
+      child: LayoutBuilder(
+        builder: (context, _) {
+          if (approval != null && ZeniResponsive.isTablet(context)) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: stars),
+                const SizedBox(width: ZeniSpacing.spaceControl),
+                Expanded(child: schedule),
+                const SizedBox(width: ZeniSpacing.spaceControl),
+                Expanded(child: approval),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: stars),
+                  const SizedBox(width: ZeniSpacing.spaceControl),
+                  Expanded(child: schedule),
+                ],
+              ),
+              if (approval != null) ...[
+                const SizedBox(height: ZeniSpacing.spaceControl),
+                approval,
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _TaskMetadata extends StatelessWidget {
-  const _TaskMetadata({required this.icon, required this.label, this.color});
+  const _TaskMetadata({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.color,
+  });
 
   final IconData icon;
   final String label;
+  final String value;
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color ?? context.zeniColors.textSecondary),
-        const SizedBox(width: ZeniSpacing.spaceInline),
-        Text(label, style: ZeniTypography.of(context).metadata),
-      ],
+    final colors = context.zeniColors;
+
+    return Semantics(
+      label: '$label: $value',
+      child: ExcludeSemantics(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color ?? colors.textSecondary, size: 22),
+            const SizedBox(width: ZeniSpacing.spaceInline),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: ZeniTypography.of(context).metadata),
+                  const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                  Text(value, style: ZeniTypography.of(context).bodyEmphasis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

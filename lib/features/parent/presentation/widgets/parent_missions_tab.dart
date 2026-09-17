@@ -6,8 +6,11 @@ import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_button.dart';
+import '../../../../core/widgets/base/zeni_choice_chip.dart';
 import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../family/data/models/child_profile.dart';
+import '../../../smart_content/presentation/pages/smart_suggestions_page.dart';
+import '../../../smart_content/data/repositories/smart_content_repository.dart';
 import '../../../tasks/data/models/mission.dart';
 import '../../../tasks/data/models/mission_log.dart';
 import 'mission_approval_card.dart';
@@ -30,7 +33,9 @@ class ParentMissionsTab extends StatefulWidget {
     required this.onEditMission,
     required this.onArchiveMission,
     required this.onRestoreMission,
-    required this.onOpenSuggestions,
+    required this.onConfirmSuggestedMissions,
+    this.onDiscoveringChanged,
+    this.smartContentRepository,
     this.onRefresh,
   });
 
@@ -47,7 +52,13 @@ class ParentMissionsTab extends StatefulWidget {
   final ValueChanged<Mission> onEditMission;
   final ValueChanged<Mission> onArchiveMission;
   final ValueChanged<Mission> onRestoreMission;
-  final VoidCallback onOpenSuggestions;
+  final Future<SmartBatchCreationResult> Function(
+    List<SmartBatchMissionDraft>,
+    List<ChildProfile>,
+  )
+  onConfirmSuggestedMissions;
+  final ValueChanged<bool>? onDiscoveringChanged;
+  final SmartContentRepository? smartContentRepository;
   final Future<void> Function()? onRefresh;
 
   @override
@@ -57,6 +68,7 @@ class ParentMissionsTab extends StatefulWidget {
 class _ParentMissionsTabState extends State<ParentMissionsTab> {
   bool _isSelecting = false;
   bool _showArchivedMissions = false;
+  bool _isDiscovering = false;
   String? _selectedChildId;
   final Set<String> _selectedLogIds = {};
 
@@ -74,6 +86,7 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isDiscovering) return _buildDiscovery(context);
     final windowClass = ZeniResponsive.windowClass(context);
     final awaitingLogs = _filteredAwaitingLogs();
     final missions = _filteredActiveMissions();
@@ -108,7 +121,6 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
       onArchiveMission: widget.onArchiveMission,
       onRestoreMission: widget.onRestoreMission,
       onToggleArchived: _toggleArchivedMissions,
-      onOpenSuggestions: widget.onOpenSuggestions,
     );
 
     final body = usesSplitLayout
@@ -147,13 +159,12 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _ParentMissionsHeader(),
-            const SizedBox(height: ZeniSpacing.spaceGroup),
-            ParentChildFilterChips(
+            _ParentMissionsContextHeader(
+              isDiscovering: false,
+              onContextChanged: _changeContext,
               children: widget.activeChildren,
               selectedChildId: _selectedChildId,
-              onChanged: _changeSelectedChild,
-              useZeniV2: true,
+              onChildChanged: _changeSelectedChild,
             ),
             const SizedBox(height: ZeniSpacing.spaceSection),
             body,
@@ -164,6 +175,37 @@ class _ParentMissionsTabState extends State<ParentMissionsTab> {
 
     if (widget.onRefresh == null) return content;
     return RefreshIndicator(onRefresh: widget.onRefresh!, child: content);
+  }
+
+  Widget _buildDiscovery(BuildContext context) => SmartSuggestionsContent(
+    children: widget.activeChildren,
+    activeMissions: widget.activeMissions,
+    onConfirmBatch: widget.onConfirmSuggestedMissions,
+    repository: widget.smartContentRepository,
+    embedded: true,
+    header: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ParentMissionsContextHeader(
+          isDiscovering: true,
+          onContextChanged: _changeContext,
+          children: widget.activeChildren,
+          selectedChildId: _selectedChildId,
+          onChildChanged: _changeSelectedChild,
+        ),
+        const SizedBox(height: ZeniSpacing.spaceControl),
+        Text(
+          'Escolha missões e rotinas para revisar antes de adicionar.',
+          style: ZeniTypography.of(context).body,
+        ),
+      ],
+    ),
+  );
+
+  void _changeContext(bool discovering) {
+    if (_isDiscovering == discovering) return;
+    setState(() => _isDiscovering = discovering);
+    widget.onDiscoveringChanged?.call(discovering);
   }
 
   List<MissionLog> _filteredAwaitingLogs() {
@@ -266,6 +308,7 @@ class _ParentMissionsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ZeniTypography.of(context);
     return Column(
+      key: const Key('parent-missions-page-header'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Missões', style: typography.pageTitle),
@@ -277,6 +320,53 @@ class _ParentMissionsHeader extends StatelessWidget {
             style: typography.body,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ParentMissionsContextHeader extends StatelessWidget {
+  const _ParentMissionsContextHeader({
+    required this.isDiscovering,
+    required this.onContextChanged,
+    required this.children,
+    required this.selectedChildId,
+    required this.onChildChanged,
+  });
+
+  final bool isDiscovering;
+  final ValueChanged<bool> onContextChanged;
+  final List<ChildProfile> children;
+  final String? selectedChildId;
+  final ValueChanged<String?> onChildChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('parent-missions-context-header'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _ParentMissionsHeader(),
+        const SizedBox(height: ZeniSpacing.spaceControl),
+        SizedBox(
+          width: double.infinity,
+          child: _MissionContextSelector(
+            isDiscovering: isDiscovering,
+            onChanged: onContextChanged,
+          ),
+        ),
+        if (!isDiscovering) ...[
+          const SizedBox(height: ZeniSpacing.spaceControl),
+          SizedBox(
+            width: double.infinity,
+            child: ParentChildFilterChips(
+              children: children,
+              selectedChildId: selectedChildId,
+              onChanged: onChildChanged,
+              useZeniV2: true,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -464,7 +554,6 @@ class _MissionCatalogSection extends StatelessWidget {
     required this.onArchiveMission,
     required this.onRestoreMission,
     required this.onToggleArchived,
-    required this.onOpenSuggestions,
   });
 
   final List<Mission> missions;
@@ -475,7 +564,6 @@ class _MissionCatalogSection extends StatelessWidget {
   final ValueChanged<Mission> onArchiveMission;
   final ValueChanged<Mission> onRestoreMission;
   final VoidCallback onToggleArchived;
-  final VoidCallback onOpenSuggestions;
 
   @override
   Widget build(BuildContext context) {
@@ -489,9 +577,6 @@ class _MissionCatalogSection extends StatelessWidget {
           onEditMission: onEditMission,
           onArchiveMission: onArchiveMission,
         ),
-        const SizedBox(height: ZeniSpacing.spaceSection),
-        _MissionSuggestions(onTap: onOpenSuggestions),
-        const SizedBox(height: ZeniSpacing.spaceSection),
         _ArchivedMissionsSection(
           missions: archivedMissions,
           childById: childById,
@@ -561,41 +646,58 @@ class _ActiveMissionsSection extends StatelessWidget {
   }
 }
 
-class _MissionSuggestions extends StatelessWidget {
-  const _MissionSuggestions({required this.onTap});
+class _MissionContextSelector extends StatelessWidget {
+  const _MissionContextSelector({
+    required this.isDiscovering,
+    required this.onChanged,
+  });
 
-  final VoidCallback onTap;
+  final bool isDiscovering;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final typography = ZeniTypography.of(context);
-    final colors = context.zeniColors;
-    return ZeniSurface(
-      key: const Key('parent-missions-suggestions'),
-      role: ZeniSurfaceRole.interactive,
+    final isCompact =
+        ZeniResponsive.windowClass(context) == ZeniWindowClass.compact;
+    final family = ZeniChoiceChip(
+      key: const Key('parent-missions-mode-family'),
+      label: 'Missões da família',
+      selected: !isDiscovering,
+      onSelected: (_) => onChanged(false),
       mode: ZeniVisualMode.parent,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(Icons.auto_awesome_rounded, color: colors.actionPrimary),
-          const SizedBox(width: ZeniSpacing.spaceControl),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Sugestões para sua família', style: typography.cardTitle),
-                const SizedBox(height: ZeniSpacing.spaceInlineTight),
-                Text(
-                  'Encontre missões e rotinas para facilitar o dia a dia.',
-                  style: typography.metadata,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: ZeniSpacing.spaceInline),
-          Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
-        ],
-      ),
+    );
+    final suggestions = ZeniChoiceChip(
+      key: const Key('parent-missions-mode-suggestions'),
+      label: 'Sugestões',
+      selected: isDiscovering,
+      onSelected: (_) => onChanged(true),
+      mode: ZeniVisualMode.parent,
+      icon: isCompact ? null : const Icon(Icons.auto_awesome_rounded),
+    );
+
+    if (isCompact) {
+      return SingleChildScrollView(
+        key: const Key('parent-missions-context-selector'),
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            family,
+            const SizedBox(width: ZeniSpacing.spaceInline),
+            suggestions,
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      key: const Key('parent-missions-context-selector'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        family,
+        const SizedBox(width: ZeniSpacing.spaceInline),
+        suggestions,
+      ],
     );
   }
 }

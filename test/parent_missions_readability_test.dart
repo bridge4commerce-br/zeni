@@ -1,13 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zeni/core/domain/zeni_enums.dart';
+import 'package:zeni/core/theme/zeni_spacing.dart';
 import 'package:zeni/core/theme/zeni_theme.dart';
 import 'package:zeni/core/theme/zeni_typography.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_mission_card.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_missions_tab.dart';
+import 'package:zeni/features/smart_content/data/models/smart_mission_template.dart';
+import 'package:zeni/features/smart_content/data/models/smart_routine_template.dart';
+import 'package:zeni/features/smart_content/data/repositories/smart_content_repository.dart';
+import 'package:zeni/features/smart_content/presentation/pages/smart_suggestions_page.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
 import 'package:zeni/features/tasks/data/models/mission_log.dart';
+
+class _EmptySmartContentRepository implements SmartContentRepository {
+  const _EmptySmartContentRepository();
+
+  @override
+  Future<List<SmartMissionTemplate>> getMissions(String localeTag) async =>
+      const [];
+
+  @override
+  Future<List<SmartRoutineTemplate>> getRoutines(String localeTag) async =>
+      const [];
+}
 
 void main() {
   final now = DateTime(2026, 9, 9);
@@ -105,7 +122,12 @@ void main() {
     ValueChanged<Mission>? onEditMission,
     ValueChanged<Mission>? onArchiveMission,
     ValueChanged<Mission>? onRestoreMission,
-    VoidCallback? onOpenSuggestions,
+    Future<SmartBatchCreationResult> Function(
+      List<SmartBatchMissionDraft>,
+      List<ChildProfile>,
+    )?
+    onConfirmSuggestedMissions,
+    SmartContentRepository? smartContentRepository,
   }) async {
     final resolvedChildren = children ?? [luna, theo];
     final resolvedActiveMissions = activeMissions ?? [lunaMission, theoMission];
@@ -145,7 +167,11 @@ void main() {
             onEditMission: onEditMission ?? (_) {},
             onArchiveMission: onArchiveMission ?? (_) {},
             onRestoreMission: onRestoreMission ?? (_) {},
-            onOpenSuggestions: onOpenSuggestions ?? () {},
+            onConfirmSuggestedMissions:
+                onConfirmSuggestedMissions ??
+                (_, _) async =>
+                    const SmartBatchCreationResult(created: 0, skipped: 0),
+            smartContentRepository: smartContentRepository,
           ),
         ),
       ),
@@ -156,7 +182,11 @@ void main() {
   testWidgets('compact keeps the operational sequence in one column', (
     tester,
   ) async {
-    await pumpMissions(tester, size: const Size(390, 844));
+    await pumpMissions(
+      tester,
+      size: const Size(390, 844),
+      smartContentRepository: const _EmptySmartContentRepository(),
+    );
 
     expect(
       find.byKey(const Key('parent-missions-single-layout')),
@@ -176,15 +206,43 @@ void main() {
     final active = tester.getTopLeft(
       find.byKey(const Key('parent-missions-active-list')),
     );
-    final suggestions = tester.getTopLeft(
-      find.byKey(const Key('parent-missions-suggestions')),
-    );
     final archived = tester.getTopLeft(
       find.byKey(const Key('parent-missions-archived-toggle')),
     );
     expect(active.dy, greaterThan(pending.dy));
-    expect(suggestions.dy, greaterThan(active.dy));
-    expect(archived.dy, greaterThan(suggestions.dy));
+    expect(archived.dy, greaterThan(active.dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('compact keeps mission modes together in a horizontal selector', (
+    tester,
+  ) async {
+    await pumpMissions(tester, size: const Size(390, 844));
+
+    final header = tester.getRect(
+      find.byKey(const Key('parent-missions-page-header')),
+    );
+    final family = tester.getRect(
+      find.byKey(const Key('parent-missions-mode-family')),
+    );
+    final suggestions = tester.getRect(
+      find.byKey(const Key('parent-missions-mode-suggestions')),
+    );
+
+    expect((family.left - header.left).abs(), lessThan(1));
+    expect((suggestions.top - family.top).abs(), lessThan(1));
+    expect(
+      (suggestions.left - family.right - ZeniSpacing.spaceInline).abs(),
+      lessThan(1),
+    );
+    expect(
+      tester
+          .widget<SingleChildScrollView>(
+            find.byKey(const Key('parent-missions-context-selector')),
+          )
+          .scrollDirection,
+      Axis.horizontal,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -252,6 +310,41 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('landscape anchors mission modes and filters to the header', (
+    tester,
+  ) async {
+    await pumpMissions(tester, size: const Size(1024, 800));
+
+    final header = tester.getRect(
+      find.byKey(const Key('parent-missions-page-header')),
+    );
+    final modes = tester.getRect(
+      find.byKey(const Key('parent-missions-context-selector')),
+    );
+    final filters = tester.getRect(
+      find.byKey(const Key('parent-missions-child-filters')),
+    );
+    final splitLayout = tester.getRect(
+      find.byKey(const Key('parent-missions-split-layout')),
+    );
+    final mine = tester.getRect(
+      find.byKey(const Key('parent-missions-mode-family')),
+    );
+    final discover = tester.getRect(
+      find.byKey(const Key('parent-missions-mode-suggestions')),
+    );
+
+    expect((header.left - modes.left).abs(), lessThan(1));
+    expect((header.left - filters.left).abs(), lessThan(1));
+    expect((header.left - mine.left).abs(), lessThan(1));
+    expect(modes.top, greaterThan(header.bottom));
+    expect(filters.top, greaterThan(modes.bottom));
+    expect(splitLayout.top, greaterThan(filters.bottom));
+    expect((mine.top - discover.top).abs(), lessThan(1));
+    expect(discover.left, greaterThan(mine.right));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('expanded gives the catalog full width without pending work', (
     tester,
@@ -337,7 +430,7 @@ void main() {
     expect(find.text('Nada pendente agora'), findsOneWidget);
     expect(find.text('Nenhuma missão aguardando você.'), findsNothing);
     expect(find.text('Nenhuma missão'), findsOneWidget);
-    expect(find.text('Sugestões para sua família'), findsOneWidget);
+    expect(find.text('Sugestões'), findsOneWidget);
     final pending = tester.getRect(
       find.byKey(const Key('parent-missions-pending-panel')),
     );
@@ -380,12 +473,14 @@ void main() {
     final actions = find.byKey(
       const Key('parent-mission-actions-mission-luna'),
     );
+    await tester.ensureVisible(actions);
     await tester.tap(actions);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Editar missão'));
     await tester.pumpAndSettle();
     expect(edited?.id, lunaMission.id);
 
+    await tester.ensureVisible(actions);
     await tester.tap(actions);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Arquivar missão'));
@@ -423,28 +518,33 @@ void main() {
       find.byKey(const Key('parent-missions-batch-actions')),
       findsOneWidget,
     );
-    await tester.tap(find.text('Aprovar'));
+    final approve = find.text('Aprovar');
+    await tester.ensureVisible(approve);
+    await tester.tap(approve);
     await tester.pumpAndSettle();
 
     expect(approved?.single.id, 'log-mission-luna');
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('suggestions entry preserves the Smart Content callback', (
+  testWidgets('discover context exposes the existing Smart Content flow', (
     tester,
   ) async {
-    var calls = 0;
     await pumpMissions(
       tester,
       size: const Size(390, 844),
-      onOpenSuggestions: () => calls += 1,
+      smartContentRepository: const _EmptySmartContentRepository(),
     );
 
-    await tester.ensureVisible(
-      find.byKey(const Key('parent-missions-suggestions')),
-    );
-    await tester.tap(find.byKey(const Key('parent-missions-suggestions')));
-    expect(calls, 1);
+    final suggestions = find.text('Sugestões');
+    await tester.ensureVisible(suggestions);
+    await tester.tap(suggestions);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Missões sugeridas'), findsOneWidget);
+    expect(find.text('Rotinas prontas'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('approval uses a dialog on expanded layouts', (tester) async {
