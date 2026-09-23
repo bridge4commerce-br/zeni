@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,10 +8,13 @@ import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_balance_pill.dart';
 import '../../../../core/widgets/base/zeni_brand_logo.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../auth/local/parent_biometric_auth.dart';
@@ -122,57 +125,109 @@ class _ProfileChoiceContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
+    final windowClass = ZeniResponsive.windowClass(context);
+    final usesTabletLayout = windowClass != ZeniWindowClass.compact;
+
+    final parentSection = _ParentSection(
+      onOpenParent: onOpenParent,
+      showHeading: usesTabletLayout,
+    );
+    final childrenSection = _ChildrenSection(children: data.children);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(0, ZeniSpacing.lg, 0, ZeniSpacing.xl),
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceGroup,
+        bottom: ZeniSpacing.spaceCanvas + MediaQuery.paddingOf(context).bottom,
+      ),
       child: ZeniPageFrame(
-        width: ZeniPageWidth.focus,
+        width: ZeniPageWidth.dashboard,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const ZeniBrandLogo(width: 88),
-            const SizedBox(height: ZeniSpacing.lg),
-            Text('Quem vai usar o Zeni agora?', style: textTheme.displayLarge),
-            const SizedBox(height: ZeniSpacing.sm),
+            const SizedBox(height: ZeniSpacing.spaceGroup),
+            Text('Quem vai usar o Zeni agora?', style: typography.pageTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
             Text(
               'Escolha um perfil para continuar.',
-              style: textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.68),
+              style: typography.body.copyWith(
+                color: context.zeniColors.textSecondary,
               ),
             ),
-            const SizedBox(height: ZeniSpacing.lg),
-            _ParentAccessButton(onTap: onOpenParent),
-            const SizedBox(height: ZeniSpacing.xl),
-            Text('Crianças', style: textTheme.titleLarge),
-            const SizedBox(height: ZeniSpacing.md),
-            _ChildProfilesGrid(children: data.children),
-            const SizedBox(height: ZeniSpacing.lg),
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  ZeniInfoPopup.show(
-                    context,
-                    title: 'Código da família',
-                    message: 'Este recurso estará disponível em breve.',
-                  );
-                },
-                icon: const Icon(Icons.qr_code_rounded),
-                label: const Text('Entrar com código da família'),
-                style: TextButton.styleFrom(
-                  foregroundColor: ZeniColors.primaryDark,
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: ZeniSpacing.md,
-                  ),
-                ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            if (usesTabletLayout)
+              Column(
+                key: const Key('profile-choice-tablet-layout'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  parentSection,
+                  const SizedBox(height: ZeniSpacing.spaceSection),
+                  childrenSection,
+                  const SizedBox(height: ZeniSpacing.spaceGroup),
+                  const _FamilyCodeAction(),
+                ],
+              )
+            else
+              Column(
+                key: const Key('profile-choice-single-layout'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  parentSection,
+                  const SizedBox(height: ZeniSpacing.spaceSection),
+                  childrenSection,
+                  const SizedBox(height: ZeniSpacing.spaceGroup),
+                  const _FamilyCodeAction(),
+                ],
               ),
-            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ParentSection extends StatelessWidget {
+  const _ParentSection({required this.onOpenParent, required this.showHeading});
+
+  final VoidCallback onOpenParent;
+  final bool showHeading;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+
+    return Column(
+      key: const Key('profile-choice-parent-section'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showHeading) ...[
+          Text('Responsável', style: typography.sectionTitle),
+          const SizedBox(height: ZeniSpacing.spaceCard),
+        ],
+        _ParentAccessButton(onTap: onOpenParent),
+      ],
+    );
+  }
+}
+
+class _ChildrenSection extends StatelessWidget {
+  const _ChildrenSection({required this.children});
+
+  final List<ChildProfile> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+
+    return Column(
+      key: const Key('profile-choice-children-section'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Crianças', style: typography.sectionTitle),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        _ChildProfilesGrid(children: children),
+      ],
     );
   }
 }
@@ -183,14 +238,35 @@ class _ChildProfilesGrid extends StatelessWidget {
   final List<ChildProfile> children;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      for (final child in children) ...[
-        _ChildProfileCard(child: child),
-        if (child != children.last) const SizedBox(height: ZeniSpacing.sm),
-      ],
-    ],
-  );
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = ZeniSpacing.spaceCard;
+        final availableWidth = constraints.maxWidth;
+        final columns = ZeniAdaptiveGrid.columnsForWidth(
+          availableWidth: availableWidth + spacing,
+          windowClass: ZeniResponsive.windowClass(context),
+          minItemWidth: 250 + spacing,
+        );
+        final itemWidth = (availableWidth - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          key: const Key('profile-choice-child-grid'),
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final child in children)
+              SizedBox(
+                width: itemWidth,
+                child: _ChildProfileCard(child: child),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _ParentAccessButton extends StatelessWidget {
@@ -200,57 +276,63 @@ class _ParentAccessButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: ZeniSpacing.md,
-            vertical: ZeniSpacing.sm,
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+
+    return ZeniSurface(
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.parent,
+      backgroundColor: colors.surfaceSubtle,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: ZeniTouchTargets.minimum,
+            height: ZeniTouchTargets.minimum,
+            decoration: BoxDecoration(
+              color: colors.surface,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(Icons.shield_outlined, color: colors.actionPrimary),
           ),
-          decoration: BoxDecoration(
-            color: ZeniColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ZeniColors.primary.withValues(alpha: 0.28),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Entrar como responsável', style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                Text('Gerencie sua família.', style: typography.metadata),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.shield_outlined, color: ZeniColors.primaryDark),
-              const SizedBox(width: ZeniSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Entrar como responsável',
-                      style: textTheme.titleMedium,
-                    ),
-                    Text(
-                      'Gerencie sua família.',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.68),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: ZeniSpacing.sm),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: ZeniColors.primary,
-              ),
-            ],
-          ),
-        ),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Icon(Icons.chevron_right_rounded, color: colors.actionPrimary),
+        ],
       ),
+    );
+  }
+}
+
+class _FamilyCodeAction extends StatelessWidget {
+  const _FamilyCodeAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniButton(
+      label: 'Entrar com código da família',
+      icon: Icons.qr_code_rounded,
+      role: ZeniButtonRole.tertiary,
+      mode: ZeniVisualMode.parent,
+      fullWidth: false,
+      onPressed: () {
+        ZeniInfoPopup.show(
+          context,
+          title: 'Código da família',
+          message: 'Este recurso estará disponível em breve.',
+        );
+      },
     );
   }
 }
@@ -262,45 +344,120 @@ class _ChildProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     final avatar = ZeniChildAvatarCatalog.byId(child.avatarId);
-    return ZeniCard(
+
+    return ZeniSurface(
       key: Key('profile-child-${child.id}'),
-      onTap: () {
-        context.go('/child/${child.id}');
-      },
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: ZeniColors.primary.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset(avatar.assetPath, fit: BoxFit.contain),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(child.name, style: textTheme.titleLarge),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  '${child.streakCount} dias de sequência',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: ZeniColors.mutedText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ZeniBalancePill(stars: child.starBalance),
-        ],
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.kids,
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
+      onTap: () => context.go('/child/${child.id}'),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final usesStackedMetadata = constraints.maxWidth < 300;
+
+          if (usesStackedMetadata) {
+            return _StackedChildProfileContent(child: child, avatar: avatar);
+          }
+
+          return _InlineChildProfileContent(child: child, avatar: avatar);
+        },
       ),
+    );
+  }
+}
+
+class _InlineChildProfileContent extends StatelessWidget {
+  const _InlineChildProfileContent({required this.child, required this.avatar});
+
+  final ChildProfile child;
+  final ZeniChildAvatar avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+
+    return Row(
+      children: [
+        _ChildAvatar(avatar: avatar),
+        const SizedBox(width: ZeniSpacing.spaceControl),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(child.name, style: typography.cardTitle),
+              const SizedBox(height: ZeniSpacing.spaceInlineTight),
+              Text(
+                '${child.streakCount} dias de sequência',
+                style: typography.metadata,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: ZeniSpacing.spaceControl),
+        ZeniBalancePill(stars: child.starBalance),
+      ],
+    );
+  }
+}
+
+class _StackedChildProfileContent extends StatelessWidget {
+  const _StackedChildProfileContent({
+    required this.child,
+    required this.avatar,
+  });
+
+  final ChildProfile child;
+  final ZeniChildAvatar avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _ChildAvatar(avatar: avatar),
+            const SizedBox(width: ZeniSpacing.spaceControl),
+            Expanded(child: Text(child.name, style: typography.cardTitle)),
+          ],
+        ),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${child.streakCount} dias de sequência',
+                style: typography.metadata,
+              ),
+            ),
+            const SizedBox(width: ZeniSpacing.spaceControl),
+            ZeniBalancePill(stars: child.starBalance),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ChildAvatar extends StatelessWidget {
+  const _ChildAvatar({required this.avatar});
+
+  final ZeniChildAvatar avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: ZeniTouchTargets.childPriority,
+      height: ZeniTouchTargets.childPriority,
+      decoration: BoxDecoration(
+        color: context.zeniColors.surfaceSubtle,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.asset(avatar.assetPath, fit: BoxFit.contain),
     );
   }
 }

@@ -89,6 +89,13 @@ void main() {
     });
   }
 
+  void setTestViewSize(WidgetTester tester, Size size) {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   Future<void> openParentDashboardAt(
     WidgetTester tester,
     Size size, {
@@ -517,6 +524,228 @@ void main() {
         280,
       );
       expect(find.text('Entrar com código da família'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('profile choice keeps a single-column flow on compact phones', (
+    tester,
+  ) async {
+    setTestViewSize(tester, const Size(390, 844));
+    seedMockAppState();
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('profile-choice-single-layout')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('profile-choice-tablet-layout')), findsNothing);
+
+    final firstChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-1')),
+    );
+    final secondChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-2')),
+    );
+    expect(secondChild.dy, greaterThan(firstChild.dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile choice uses tablet hierarchy at medium width', (
+    tester,
+  ) async {
+    setTestViewSize(tester, const Size(768, 1024));
+    seedMockAppState();
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('profile-choice-tablet-layout')),
+      findsOneWidget,
+    );
+    expect(find.text('Responsável'), findsOneWidget);
+
+    final firstChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-1')),
+    );
+    final secondChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-2')),
+    );
+    expect((secondChild.dy - firstChild.dy).abs(), lessThan(1));
+    expect(secondChild.dx, greaterThan(firstChild.dx));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile choice stacks sections on iPad portrait', (
+    tester,
+  ) async {
+    setTestViewSize(tester, const Size(1024, 1366));
+    seedMockAppState();
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('profile-choice-tablet-layout')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('profile-choice-single-layout')), findsNothing);
+
+    final parentSection = tester.getTopLeft(
+      find.byKey(const Key('profile-choice-parent-section')),
+    );
+    final childrenSection = tester.getTopLeft(
+      find.byKey(const Key('profile-choice-children-section')),
+    );
+    expect((childrenSection.dx - parentSection.dx).abs(), lessThan(1));
+    expect(
+      childrenSection.dy,
+      greaterThan(
+        tester
+            .getBottomLeft(
+              find.byKey(const Key('profile-choice-parent-section')),
+            )
+            .dy,
+      ),
+    );
+
+    final firstChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-1')),
+    );
+    final secondChild = tester.getTopLeft(
+      find.byKey(const Key('profile-child-child-2')),
+    );
+    expect((secondChild.dy - firstChild.dy).abs(), lessThan(1));
+    expect(secondChild.dx, greaterThan(firstChild.dx));
+    final familyCode = find.text('Entrar com código da família');
+    expect(familyCode, findsOneWidget);
+    expect(
+      tester.getTopLeft(familyCode).dy,
+      greaterThan(
+        tester
+            .getBottomRight(find.byKey(const Key('profile-child-child-2')))
+            .dy,
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile choice uses three child columns on large landscape', (
+    tester,
+  ) async {
+    setTestViewSize(tester, const Size(1366, 1024));
+    final seeded = ZeniAppState.seeded();
+    final children = List<ChildProfile>.generate(
+      7,
+      (index) => seeded.children[index % seeded.children.length].copyWith(
+        id: 'landscape-child-$index',
+        name: 'Criança ${index + 1}',
+      ),
+    );
+    seedMockAppStateWith(seeded.copyWith(children: children));
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('profile-choice-tablet-layout')),
+      findsOneWidget,
+    );
+    expect(find.text('Entrar como responsável'), findsOneWidget);
+    final firstChild = find.byKey(const Key('profile-child-landscape-child-0'));
+    final secondChild = find.byKey(
+      const Key('profile-child-landscape-child-1'),
+    );
+    final thirdChild = find.byKey(const Key('profile-child-landscape-child-2'));
+    final fourthChild = find.byKey(
+      const Key('profile-child-landscape-child-3'),
+    );
+    expect(
+      (tester.getTopLeft(secondChild).dy - tester.getTopLeft(firstChild).dy)
+          .abs(),
+      lessThan(1),
+    );
+    expect(
+      (tester.getTopLeft(thirdChild).dy - tester.getTopLeft(firstChild).dy)
+          .abs(),
+      lessThan(1),
+    );
+    expect(
+      tester.getTopLeft(secondChild).dx,
+      greaterThan(tester.getTopLeft(firstChild).dx),
+    );
+    expect(
+      tester.getTopLeft(thirdChild).dx,
+      greaterThan(tester.getTopLeft(secondChild).dx),
+    );
+    expect(
+      tester.getTopLeft(fourthChild).dy,
+      greaterThan(tester.getTopLeft(firstChild).dy),
+    );
+    final familyCode = find.text('Entrar com código da família');
+    expect(
+      tester.getTopLeft(familyCode).dy,
+      greaterThan(
+        tester
+            .getBottomRight(
+              find.byKey(const Key('profile-child-landscape-child-6')),
+            )
+            .dy,
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile choice keeps one tablet child card width bounded', (
+    tester,
+  ) async {
+    setTestViewSize(tester, const Size(1024, 1366));
+    final seeded = ZeniAppState.seeded();
+    seedMockAppStateWith(seeded.copyWith(children: [seeded.children.first]));
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+
+    final parentSection = find.byKey(
+      const Key('profile-choice-parent-section'),
+    );
+    final childCard = find.byKey(const Key('profile-child-child-1'));
+    expect(
+      tester.getSize(childCard).width,
+      lessThan(tester.getSize(parentSection).width),
+    );
+    expect(find.text('Entrar com código da família'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'profile choice supports OpenDyslexic with larger text on tablet',
+    (tester) async {
+      setTestViewSize(tester, const Size(1024, 1366));
+      final seeded = ZeniAppState.seeded();
+      seedMockAppStateWith(
+        seeded.copyWith(
+          appSettings: seeded.appSettings.copyWith(
+            dyslexiaFontEnabled: true,
+            textScale: 1.35,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+      await tester.pumpAndSettle();
+
+      final title = tester.widget<Text>(
+        find.text('Quem vai usar o Zeni agora?'),
+      );
+      expect(title.style?.fontFamily, ZeniTypography.openDyslexicFontFamily);
+      expect(
+        find.byKey(const Key('profile-choice-tablet-layout')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );
