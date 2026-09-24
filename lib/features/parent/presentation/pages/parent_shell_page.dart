@@ -765,19 +765,25 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (appState == null) return;
     final data = _buildParentModeData(appState);
 
-    final result = await showModalBottomSheet<ParentChildFormResult>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: const ParentChildFormSheet(),
-        );
-      },
+    final form = ParentChildFormSheet(
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
+    final result = ZeniAdaptiveModal.usesDialog(context)
+        ? await showDialog<ParentChildFormResult>(
+            context: context,
+            builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: form)),
+          )
+        : await showModalBottomSheet<ParentChildFormResult>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: form,
+            ),
+          );
 
     if (result == null) return;
     if (!mounted) return;
@@ -789,6 +795,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           name: result.name,
           emoji: result.emoji,
           birthDate: result.birthDate,
+          avatarId: result.avatarId,
           ttsEnabled: result.ttsEnabled,
         );
     if (!mounted) return;
@@ -810,26 +817,32 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     final appState = _currentAppState;
     if (appState == null) return;
 
-    final result = await showModalBottomSheet<ParentChildFormResult>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: ParentChildFormSheet(
-            initialName: child.name,
-            initialEmoji: child.emoji,
-            initialBirthDate: child.birthDate,
-            initialTtsEnabled: child.ttsEnabled,
-            title: 'Editar perfil',
-            submitLabel: 'Salvar perfil',
-          ),
-        );
-      },
+    final form = ParentChildFormSheet(
+      initialName: child.name,
+      initialEmoji: child.emoji,
+      initialBirthDate: child.birthDate,
+      initialAvatarId: child.avatarId,
+      initialTtsEnabled: child.ttsEnabled,
+      title: 'Editar perfil',
+      submitLabel: 'Salvar perfil',
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
+    final result = ZeniAdaptiveModal.usesDialog(context)
+        ? await showDialog<ParentChildFormResult>(
+            context: context,
+            builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: form)),
+          )
+        : await showModalBottomSheet<ParentChildFormResult>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: form,
+            ),
+          );
 
     if (result == null) return;
     if (!mounted) return;
@@ -841,6 +854,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           name: result.name,
           emoji: result.emoji,
           birthDate: result.birthDate,
+          avatarId: result.avatarId,
           ttsEnabled: result.ttsEnabled,
         );
     if (updatedChild == null) return;
@@ -1216,6 +1230,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             onEditChild: _openEditChildSheet,
             onArchiveChild: _archiveChild,
             onRestoreChild: _restoreChild,
+            onUpdateParentDisplayName: (name) {
+              return ref
+                  .read(zeniAppStateControllerProvider.notifier)
+                  .updateParentDisplayName(name);
+            },
           ),
           ParentSettingsTab(
             parentDisplayName: _parentDisplayName(data.members),
@@ -1223,7 +1242,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
             accessibilitySettings: accessibility.settings,
             onThemeModeChanged: accessibility.setThemeModeOption,
             onDyslexiaFontChanged: accessibility.setDyslexiaFontEnabled,
-            onTextScaleChanged: accessibility.setTextScale,
+            onTextScaleChanged: (value) => ref
+                .read(zeniAccessibilityControllerProvider)
+                .setTextScale(value),
             onVibrationChanged: accessibility.setVibrationEnabled,
             onNotificationsChanged: accessibility.setNotificationsEnabled,
             onTtsChanged: accessibility.setTtsEnabled,

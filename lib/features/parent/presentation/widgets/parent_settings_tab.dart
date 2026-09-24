@@ -6,11 +6,8 @@ import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/theme/zeni_typography.dart';
-import '../../../../core/theme/zeni_visual_mode.dart';
-import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
-import '../../../../core/widgets/inputs/counter_stepper.dart';
 import '../../../../core/widgets/inputs/zeni_option_row.dart';
 import '../../../../core/widgets/inputs/zeni_switch.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
@@ -163,7 +160,13 @@ class ParentSettingsTab extends StatelessWidget {
           key: const Key('parent-settings-v2-content'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ajustes', style: typography.pageTitle),
+            Text(
+              'Ajustes',
+              style: typography.pageTitle.copyWith(
+                fontSize: typography.pageTitle.fontSize! - 2,
+                height: 1.1,
+              ),
+            ),
             const SizedBox(height: ZeniSpacing.spaceInline),
             Text(
               'Preferências do app, acessibilidade e recursos da família.',
@@ -365,6 +368,128 @@ class _ParentSettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.zeniColors;
+    final themeLabel = accessibilitySettings.themeModeOption.label;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(title: 'Segurança'),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        _SettingsMenuSurface(
+          children: [
+            _SettingsMenuRow(
+              title: 'PIN do responsável',
+              subtitle: appSettings.hasParentPin
+                  ? 'Configurado'
+                  : 'Não configurado',
+              leading: const Icon(Icons.pin_rounded),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: onConfigurePin,
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            ZeniSwitch(
+              title: 'Biometria',
+              icon: Icons.fingerprint_rounded,
+              value: appSettings.parentBiometricsEnabled,
+              onChanged: appSettings.hasParentPin ? onBiometricsChanged : null,
+            ),
+          ],
+        ),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        const _SectionTitle(title: 'Aparência e acessibilidade'),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        _SettingsMenuSurface(
+          children: [
+            _SettingsMenuRow(
+              title: 'Tema',
+              leading: const Icon(Icons.palette_outlined),
+              trailing: _SettingsValueTrailing(value: themeLabel),
+              onTap: () => _openThemePicker(context),
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            ZeniSwitch(
+              title: 'Fonte OpenDyslexic',
+              icon: Icons.text_fields_rounded,
+              value: accessibilitySettings.dyslexiaFontEnabled,
+              onChanged: onDyslexiaFontChanged,
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            _SettingsMenuRow(
+              title: 'Tamanho da letra',
+              leading: const Icon(Icons.format_size_rounded),
+              trailing: _SettingsValueTrailing(
+                value: '${(accessibilitySettings.textScale * 100).round()}%',
+              ),
+              onTap: () => _openTextScalePicker(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        const _SectionTitle(title: 'Conta e dados'),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        _SettingsMenuSurface(
+          children: [
+            _SettingsMenuRow(
+              title: 'Conta, backup e restauração',
+              subtitle: authState.user?.email ?? 'Conta não conectada',
+              leading: const Icon(Icons.cloud_outlined),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openAccountAndDataSheet(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: ZeniSpacing.spaceSection),
+        const _SectionTitle(title: 'Ajuda e informações'),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        _SettingsMenuSurface(
+          children: [
+            _SettingsMenuRow(
+              title: 'Suporte',
+              leading: const Icon(Icons.help_outline_rounded),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openTechnicalDiagnosticsSheet(context),
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            _SettingsMenuRow(
+              title: 'Política de Privacidade',
+              leading: const Icon(Icons.privacy_tip_outlined),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Política de Privacidade',
+                message:
+                    'O Zeni mantém os dados neste aparelho e, quando você conecta uma conta, pode manter uma cópia na nuvem para recuperação.',
+              ),
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            _SettingsMenuRow(
+              title: 'Termos de Uso',
+              leading: const Icon(Icons.description_outlined),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Termos de Uso',
+                message:
+                    'O responsável gerencia a família, missões e aprovações.',
+              ),
+            ),
+            Divider(height: 1, color: colors.borderSubtle),
+            _SettingsMenuRow(
+              title: 'Dados locais e nuvem',
+              leading: const Icon(Icons.storage_outlined),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openInfoSheet(
+                context,
+                title: 'Dados locais e nuvem',
+                message:
+                    'Conecte uma conta para manter uma cópia dos seus dados na nuvem e recuperá-los quando precisar.',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+    /*
     return ZeniSurface(
       key: const Key('parent-settings-preferences-group'),
       role: ZeniSurfaceRole.grouped,
@@ -685,7 +810,113 @@ class _ParentSettingsGroup extends StatelessWidget {
           ),
         ],
       ),
+    );*/
+  }
+
+  Future<void> _openThemePicker(BuildContext context) async {
+    final content = ZeniModalSheetContainer(
+      title: 'Tema',
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in ZeniThemeModeOption.values)
+            ZeniOptionRow(
+              title: option.label,
+              selected: accessibilitySettings.themeModeOption == option,
+              onTap: () {
+                onThemeModeChanged(option);
+                Navigator.pop(context);
+              },
+            ),
+        ],
+      ),
     );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(context: context, builder: (_) => content);
+  }
+
+  Future<void> _openAccountAndDataSheet(BuildContext context) async {
+    final content = _AccountAndDataSheet(
+      authState: authState,
+      onOpenAccount: onOpenAccount,
+      onSignOut: onSignOut,
+      onClearLocalDeviceData: onClearLocalDeviceData,
+      localChildrenCount: localChildrenCount,
+      remoteChildrenCount: remoteChildrenCount,
+      localMissionsCount: localMissionsCount,
+      remoteMissionsCount: remoteMissionsCount,
+      localRewardsCount: localRewardsCount,
+      remoteRewardsCount: remoteRewardsCount,
+      localMissionLogsCount: localMissionLogsCount,
+      remoteMissionLogsCount: remoteMissionLogsCount,
+      localRewardRequestsCount: localRewardRequestsCount,
+      remoteRewardRequestsCount: remoteRewardRequestsCount,
+      localStarLedgerCount: localStarLedgerCount,
+      remoteStarLedgerCount: remoteStarLedgerCount,
+      childBalanceDiagnostics: childBalanceDiagnostics,
+      hasRemoteChildBalanceData: hasRemoteChildBalanceData,
+      cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
+      cloudConsistencyErrorText: cloudConsistencyErrorText,
+      lastChildrenSyncAt: lastChildrenSyncAt,
+      lastMissionsSyncAt: lastMissionsSyncAt,
+      lastRewardsSyncAt: lastRewardsSyncAt,
+      lastMissionLogsSyncAt: lastMissionLogsSyncAt,
+      lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
+      lastStarLedgerSyncAt: lastStarLedgerSyncAt,
+      lastFullSyncAt: lastFullSyncAt,
+      isSupabaseConfigured: isSupabaseConfigured,
+      showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+      showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+      showDeviceBootstrapAction: showDeviceBootstrapAction,
+      canRunDeviceBootstrap: canRunDeviceBootstrap,
+      deviceBootstrapMessage: deviceBootstrapMessage,
+      showHistoricalRestoreAction: showHistoricalRestoreAction,
+      canRunHistoricalRestore: canRunHistoricalRestore,
+      historicalRestoreMessage: historicalRestoreMessage,
+      onSyncCloudData: onSyncCloudData,
+      onDeviceBootstrap: onDeviceBootstrap,
+      onHistoricalRestore: onHistoricalRestore,
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => content,
+    );
+  }
+
+  Future<void> _openTextScalePicker(BuildContext context) async {
+    final content = ZeniModalSheetContainer(
+      title: 'Tamanho da letra',
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
+      child: _TextScalePicker(
+        value: (accessibilitySettings.textScale * 100).round(),
+        onChanged: (value) => onTextScaleChanged(value / 100),
+      ),
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(context: context, builder: (_) => content);
   }
 
   Future<void> _openInfoSheet(
@@ -716,6 +947,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _openRemoteFamilyNameSheet(
     BuildContext context,
     RemoteFamilySummary summary,
@@ -737,6 +969,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _openParentProfileNameSheet(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -746,7 +979,7 @@ class _ParentSettingsGroup extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: _ParentProfileNameSheet(
+        child: ParentProfileNameSheet(
           initialName: parentDisplayName,
           onSubmit: onUpdateParentDisplayName,
         ),
@@ -754,6 +987,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _openCloudDataSheet(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -761,6 +995,212 @@ class _ParentSettingsGroup extends StatelessWidget {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _CloudDataSheet(onSyncCloudData: onSyncCloudData),
+    );
+  }
+}
+
+class _AccountAndDataSheet extends StatelessWidget {
+  const _AccountAndDataSheet({
+    required this.authState,
+    required this.onOpenAccount,
+    required this.onSignOut,
+    required this.onClearLocalDeviceData,
+    required this.localChildrenCount,
+    required this.remoteChildrenCount,
+    required this.localMissionsCount,
+    required this.remoteMissionsCount,
+    required this.localRewardsCount,
+    required this.remoteRewardsCount,
+    required this.localMissionLogsCount,
+    required this.remoteMissionLogsCount,
+    required this.localRewardRequestsCount,
+    required this.remoteRewardRequestsCount,
+    required this.localStarLedgerCount,
+    required this.remoteStarLedgerCount,
+    required this.childBalanceDiagnostics,
+    required this.hasRemoteChildBalanceData,
+    required this.cloudConsistencyDiagnostic,
+    required this.cloudConsistencyErrorText,
+    required this.lastChildrenSyncAt,
+    required this.lastMissionsSyncAt,
+    required this.lastRewardsSyncAt,
+    required this.lastMissionLogsSyncAt,
+    required this.lastRewardRequestsSyncAt,
+    required this.lastStarLedgerSyncAt,
+    required this.lastFullSyncAt,
+    required this.isSupabaseConfigured,
+    required this.showDeviceBootstrapStatus,
+    required this.showHistoricalRestoreStatus,
+    required this.showDeviceBootstrapAction,
+    required this.canRunDeviceBootstrap,
+    required this.deviceBootstrapMessage,
+    required this.showHistoricalRestoreAction,
+    required this.canRunHistoricalRestore,
+    required this.historicalRestoreMessage,
+    required this.onSyncCloudData,
+    required this.onDeviceBootstrap,
+    required this.onHistoricalRestore,
+    required this.showDragHandle,
+  });
+
+  final ZeniAuthState authState;
+  final VoidCallback onOpenAccount;
+  final VoidCallback onSignOut;
+  final Future<void> Function() onClearLocalDeviceData;
+  final int localChildrenCount;
+  final int? remoteChildrenCount;
+  final int localMissionsCount;
+  final int? remoteMissionsCount;
+  final int localRewardsCount;
+  final int? remoteRewardsCount;
+  final int localMissionLogsCount;
+  final int? remoteMissionLogsCount;
+  final int localRewardRequestsCount;
+  final int? remoteRewardRequestsCount;
+  final int localStarLedgerCount;
+  final int? remoteStarLedgerCount;
+  final List<ChildBalanceDiagnostic> childBalanceDiagnostics;
+  final bool hasRemoteChildBalanceData;
+  final CloudConsistencyDiagnostic? cloudConsistencyDiagnostic;
+  final String? cloudConsistencyErrorText;
+  final DateTime? lastChildrenSyncAt;
+  final DateTime? lastMissionsSyncAt;
+  final DateTime? lastRewardsSyncAt;
+  final DateTime? lastMissionLogsSyncAt;
+  final DateTime? lastRewardRequestsSyncAt;
+  final DateTime? lastStarLedgerSyncAt;
+  final DateTime? lastFullSyncAt;
+  final bool isSupabaseConfigured;
+  final bool showDeviceBootstrapStatus;
+  final bool showHistoricalRestoreStatus;
+  final bool showDeviceBootstrapAction;
+  final bool canRunDeviceBootstrap;
+  final String? deviceBootstrapMessage;
+  final bool showHistoricalRestoreAction;
+  final bool canRunHistoricalRestore;
+  final String? historicalRestoreMessage;
+  final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
+  final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
+  final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
+  final bool showDragHandle;
+
+  bool get _isAuthenticated => authState.isAuthenticated;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return ZeniModalSheetContainer(
+      title: 'Conta, backup e restauração',
+      showDragHandle: showDragHandle,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Conta', style: typography.cardTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            if (_isAuthenticated)
+              _SettingsMenuRow(
+                title: authState.user!.email ?? 'Conta conectada',
+                subtitle: 'Conta conectada',
+                leading: const Icon(Icons.account_circle_outlined),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSignOut();
+                },
+              )
+            else
+              _SettingsMenuRow(
+                title: 'Conta não conectada',
+                subtitle:
+                    'Conecte uma conta para manter uma cópia dos seus dados na nuvem e recuperá-los quando precisar.',
+                leading: const Icon(Icons.cloud_outlined),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenAccount();
+                },
+              ),
+            if (_isAuthenticated) ...[
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              Text('Backup e restauração', style: typography.cardTitle),
+              const SizedBox(height: ZeniSpacing.spaceInline),
+              _CloudSyncSection(
+                localChildrenCount: localChildrenCount,
+                remoteChildrenCount: remoteChildrenCount,
+                localMissionsCount: localMissionsCount,
+                remoteMissionsCount: remoteMissionsCount,
+                localRewardsCount: localRewardsCount,
+                remoteRewardsCount: remoteRewardsCount,
+                localMissionLogsCount: localMissionLogsCount,
+                remoteMissionLogsCount: remoteMissionLogsCount,
+                localRewardRequestsCount: localRewardRequestsCount,
+                remoteRewardRequestsCount: remoteRewardRequestsCount,
+                localStarLedgerCount: localStarLedgerCount,
+                remoteStarLedgerCount: remoteStarLedgerCount,
+                childBalanceDiagnostics: childBalanceDiagnostics,
+                hasRemoteChildBalanceData: hasRemoteChildBalanceData,
+                cloudConsistencyDiagnostic: cloudConsistencyDiagnostic,
+                cloudConsistencyErrorText: cloudConsistencyErrorText,
+                lastChildrenSyncAt: lastChildrenSyncAt,
+                lastMissionsSyncAt: lastMissionsSyncAt,
+                lastRewardsSyncAt: lastRewardsSyncAt,
+                lastMissionLogsSyncAt: lastMissionLogsSyncAt,
+                lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
+                lastStarLedgerSyncAt: lastStarLedgerSyncAt,
+                lastFullSyncAt: lastFullSyncAt,
+                onSyncCloudData: onSyncCloudData,
+              ),
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              _BackupRestoreSection(
+                isAvailable: isSupabaseConfigured,
+                showDeviceBootstrapStatus: showDeviceBootstrapStatus,
+                showHistoricalRestoreStatus: showHistoricalRestoreStatus,
+                showDeviceBootstrapAction: showDeviceBootstrapAction,
+                canRunDeviceBootstrap: canRunDeviceBootstrap,
+                deviceBootstrapMessage: deviceBootstrapMessage,
+                showHistoricalRestoreAction: showHistoricalRestoreAction,
+                canRunHistoricalRestore: canRunHistoricalRestore,
+                historicalRestoreMessage: historicalRestoreMessage,
+                onDeviceBootstrap: onDeviceBootstrap,
+                onHistoricalRestore: onHistoricalRestore,
+              ),
+            ],
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            Text('Dados neste aparelho', style: typography.cardTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(
+              'Os dados principais do Zeni ficam neste aparelho e funcionam offline.',
+              style: typography.metadata,
+            ),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            _SettingsMenuRow(
+              title: 'Apagar dados deste aparelho',
+              leading: Icon(
+                Icons.delete_forever_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await onClearLocalDeviceData();
+              },
+            ),
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            Text('Dados da nuvem', style: typography.cardTitle),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            _SettingsMenuRow(
+              title: 'Excluir conta e dados da nuvem',
+              subtitle: 'Indisponível nesta versão',
+              leading: const Icon(Icons.cloud_off_rounded),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -883,6 +1323,146 @@ class _DiagnosticRow extends StatelessWidget {
   }
 }
 
+class _SettingsMenuSurface extends StatelessWidget {
+  const _SettingsMenuSurface({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Column(children: children);
+}
+
+class _SettingsValueTrailing extends StatelessWidget {
+  const _SettingsValueTrailing({required this.value});
+  final String value;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, style: ZeniTypography.of(context).metadata),
+        const SizedBox(width: ZeniSpacing.spaceInlineTight),
+        const Icon(Icons.chevron_right_rounded),
+      ],
+    );
+  }
+}
+
+class _SettingsMenuRow extends StatelessWidget {
+  const _SettingsMenuRow({
+    required this.title,
+    this.subtitle,
+    this.leading,
+    this.trailing,
+    this.enabled = true,
+    this.onTap,
+  });
+  final String title;
+  final String? subtitle;
+  final Widget? leading;
+  final Widget? trailing;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+    return Semantics(
+      button: onTap != null,
+      enabled: enabled,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: ZeniSpacing.spaceControl,
+            ),
+            child: Row(
+              children: [
+                if (leading != null) ...[
+                  IconTheme(
+                    data: IconThemeData(color: colors.textSecondary, size: 22),
+                    child: leading!,
+                  ),
+                  const SizedBox(width: ZeniSpacing.spaceControl),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: typography.bodyEmphasis),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                        Text(subtitle!, style: typography.metadata),
+                      ],
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: ZeniSpacing.spaceControl),
+                  IconTheme(
+                    data: IconThemeData(color: colors.textSecondary),
+                    child: trailing!,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TextScalePicker extends StatefulWidget {
+  const _TextScalePicker({required this.value, required this.onChanged});
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  State<_TextScalePicker> createState() => _TextScalePickerState();
+}
+
+class _TextScalePickerState extends State<_TextScalePicker> {
+  late int _value = widget.value;
+
+  void _changeValue(int value) {
+    setState(() => _value = value);
+    widget.onChanged(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Ajuste a leitura em todo o app.', style: typography.metadata),
+        const SizedBox(height: ZeniSpacing.spaceCard),
+        Center(child: Text('$_value%', style: typography.display)),
+        const SizedBox(height: ZeniSpacing.spaceInline),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              onPressed: _value > 85 ? () => _changeValue(_value - 5) : null,
+              icon: const Icon(Icons.remove_rounded),
+              tooltip: 'Diminuir Tamanho da letra',
+            ),
+            const SizedBox(width: ZeniSpacing.spaceGroup),
+            IconButton(
+              onPressed: _value < 135 ? () => _changeValue(_value + 5) : null,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Aumentar Tamanho da letra',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title});
 
@@ -892,11 +1472,12 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: ZeniSpacing.md),
-      child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+      child: Text(title, style: ZeniTypography.of(context).cardTitle),
     );
   }
 }
 
+// ignore: unused_element
 class _ParentProfileCard extends StatelessWidget {
   const _ParentProfileCard({
     required this.name,
@@ -969,6 +1550,7 @@ class _ParentProfileCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _CloudConnectionCard extends StatelessWidget {
   const _CloudConnectionCard({
     required this.title,
@@ -1046,22 +1628,27 @@ class _BackupRestoreSectionState extends State<_BackupRestoreSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ZeniOptionRow(
-          title: 'Restaurar backup',
-          subtitle: 'Traga os dados salvos na sua conta para este aparelho.',
-          leading: const Icon(
-            Icons.cloud_download_rounded,
-            color: ZeniColors.primaryDark,
-          ),
-          trailing: Text(
-            'Restaurar',
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
-          ),
+        _SettingsMenuRow(
+          title: 'Restaurar em aparelho novo',
+          subtitle:
+              'Traz família, crianças, missões e mimos para este aparelho.',
+          leading: const Icon(Icons.cloud_download_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
           enabled: _canOpenSheet,
           onTap: _canOpenSheet ? _openRestoreOptionsSheet : null,
         ),
+        if (widget.showHistoricalRestoreAction) ...[
+          Divider(height: 1, color: context.zeniColors.borderSubtle),
+          _SettingsMenuRow(
+            title: 'Restaurar histórico e saldo',
+            subtitle:
+                'Reconstrói histórico e saldo; a sequência não é restaurada.',
+            leading: const Icon(Icons.history_rounded),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            enabled: _canOpenSheet,
+            onTap: _canOpenSheet ? _openRestoreOptionsSheet : null,
+          ),
+        ],
         if (_bootstrapMessage != null) ...[
           const SizedBox(height: ZeniSpacing.sm),
           Text(
@@ -1095,28 +1682,36 @@ class _BackupRestoreSectionState extends State<_BackupRestoreSection> {
   }
 
   Future<void> _openRestoreOptionsSheet() async {
+    final content = _CloudRestoreOptionsSheet(
+      isBootstrapping: _isBootstrapping,
+      isRestoring: _isRestoring,
+      showDeviceBootstrapAction: widget.showDeviceBootstrapAction,
+      canRunDeviceBootstrap: widget.canRunDeviceBootstrap,
+      deviceBootstrapMessage: widget.deviceBootstrapMessage,
+      showHistoricalRestoreAction: widget.showHistoricalRestoreAction,
+      canRunHistoricalRestore: widget.canRunHistoricalRestore,
+      historicalRestoreMessage: widget.historicalRestoreMessage,
+      onRestoreDeviceBootstrap:
+          widget.canRunDeviceBootstrap && !_isBootstrapping
+          ? _restoreDeviceBootstrap
+          : null,
+      onRestoreHistory: widget.canRunHistoricalRestore && !_isRestoring
+          ? _restoreHistory
+          : null,
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CloudRestoreOptionsSheet(
-        isBootstrapping: _isBootstrapping,
-        isRestoring: _isRestoring,
-        showDeviceBootstrapAction: widget.showDeviceBootstrapAction,
-        canRunDeviceBootstrap: widget.canRunDeviceBootstrap,
-        deviceBootstrapMessage: widget.deviceBootstrapMessage,
-        showHistoricalRestoreAction: widget.showHistoricalRestoreAction,
-        canRunHistoricalRestore: widget.canRunHistoricalRestore,
-        historicalRestoreMessage: widget.historicalRestoreMessage,
-        onRestoreDeviceBootstrap:
-            widget.canRunDeviceBootstrap && !_isBootstrapping
-            ? _restoreDeviceBootstrap
-            : null,
-        onRestoreHistory: widget.canRunHistoricalRestore && !_isRestoring
-            ? _restoreHistory
-            : null,
-      ),
+      builder: (_) => content,
     );
   }
 
@@ -1151,8 +1746,9 @@ class _BackupRestoreSectionState extends State<_BackupRestoreSection> {
   }
 }
 
-class _ParentProfileNameSheet extends StatefulWidget {
-  const _ParentProfileNameSheet({
+class ParentProfileNameSheet extends StatefulWidget {
+  const ParentProfileNameSheet({
+    super.key,
     required this.initialName,
     required this.onSubmit,
   });
@@ -1161,11 +1757,10 @@ class _ParentProfileNameSheet extends StatefulWidget {
   final Future<void> Function(String name) onSubmit;
 
   @override
-  State<_ParentProfileNameSheet> createState() =>
-      _ParentProfileNameSheetState();
+  State<ParentProfileNameSheet> createState() => _ParentProfileNameSheetState();
 }
 
-class _ParentProfileNameSheetState extends State<_ParentProfileNameSheet> {
+class _ParentProfileNameSheetState extends State<ParentProfileNameSheet> {
   late final TextEditingController _nameController = TextEditingController(
     text: widget.initialName,
   );
@@ -1368,29 +1963,14 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ZeniOptionRow(
-          title: 'Sincronização e backup',
+        _SettingsMenuRow(
+          title: _isSyncing ? 'Sincronizando...' : 'Sincronizar agora',
           subtitle: simpleSummary,
-          leading: const Icon(
-            Icons.sync_rounded,
-            color: ZeniColors.primaryDark,
-          ),
-          trailing: Text(
-            _isSyncing ? 'Sincronizando...' : 'Sincronizar agora',
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: ZeniColors.primaryDark),
-          ),
-          enabled: !_isSyncing,
+          leading: const Icon(Icons.sync_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
           onTap: _isSyncing ? null : _syncAll,
         ),
-        const SizedBox(height: ZeniSpacing.sm),
-        Text(
-          _syncStatusLabel(widget.lastFullSyncAt),
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-        ),
+        Divider(height: 1, color: context.zeniColors.borderSubtle),
         if (_errorText != null) ...[
           const SizedBox(height: ZeniSpacing.sm),
           Text(
@@ -1400,15 +1980,11 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
             ),
           ),
         ],
-        const SizedBox(height: ZeniSpacing.sm),
-        ZeniOptionRow(
-          title: 'Ver detalhes',
-          subtitle:
-              'Conferência, histórico de sincronização e informações da nuvem.',
-          leading: const Icon(
-            Icons.info_outline_rounded,
-            color: ZeniColors.primaryDark,
-          ),
+        _SettingsMenuRow(
+          title: 'Detalhes da sincronização',
+          subtitle: _syncStatusLabel(widget.lastFullSyncAt),
+          leading: const Icon(Icons.info_outline_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
           onTap: _openDetailsSheet,
         ),
       ],
@@ -1468,19 +2044,27 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
   }
 
   Future<void> _openDetailsSheet() async {
+    final content = _CloudSyncDetailsSheet(
+      summary: _buildSummary(),
+      detailsLabel: _buildDetailsLabel(),
+      childBalanceDiagnostics: widget.childBalanceDiagnostics,
+      hasRemoteChildBalanceData: widget.hasRemoteChildBalanceData,
+      cloudConsistencyDiagnostic: widget.cloudConsistencyDiagnostic,
+      cloudConsistencyErrorText: widget.cloudConsistencyErrorText,
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CloudSyncDetailsSheet(
-        summary: _buildSummary(),
-        detailsLabel: _buildDetailsLabel(),
-        childBalanceDiagnostics: widget.childBalanceDiagnostics,
-        hasRemoteChildBalanceData: widget.hasRemoteChildBalanceData,
-        cloudConsistencyDiagnostic: widget.cloudConsistencyDiagnostic,
-        cloudConsistencyErrorText: widget.cloudConsistencyErrorText,
-      ),
+      builder: (_) => content,
     );
   }
 
@@ -1769,7 +2353,7 @@ class _CloudRestoreOptionsSheet extends StatelessWidget {
             if (showHistoricalRestoreAction) ...[
               const SizedBox(height: ZeniSpacing.md),
               ZeniOptionRow(
-                title: 'Restaurar histórico e saldo',
+                title: 'Restaurar histórico e saldo agora',
                 subtitle:
                     'Reconstrói histórico e saldo com segurança a partir da nuvem.',
                 leading: const Icon(

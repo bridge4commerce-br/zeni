@@ -20,6 +20,7 @@ import 'family_member_card.dart';
 import 'parent_archived_child_card.dart';
 import 'parent_child_management_sheet.dart';
 import 'parent_child_summary_card.dart';
+import 'parent_settings_tab.dart' show ParentProfileNameSheet;
 
 class ParentFamilyTab extends StatelessWidget {
   const ParentFamilyTab({
@@ -34,6 +35,7 @@ class ParentFamilyTab extends StatelessWidget {
     required this.onEditChild,
     required this.onArchiveChild,
     required this.onRestoreChild,
+    required this.onUpdateParentDisplayName,
   });
 
   final Family family;
@@ -46,15 +48,12 @@ class ParentFamilyTab extends StatelessWidget {
   final ValueChanged<ChildProfile> onEditChild;
   final ValueChanged<ChildProfile> onArchiveChild;
   final ValueChanged<ChildProfile> onRestoreChild;
+  final Future<void> Function(String name) onUpdateParentDisplayName;
 
   @override
   Widget build(BuildContext context) {
     final typography = ZeniTypography.of(context);
     final colors = context.zeniColors;
-    final windowClass = ZeniResponsive.windowClass(context);
-    final isWide =
-        windowClass == ZeniWindowClass.expanded ||
-        windowClass == ZeniWindowClass.large;
     final activeChildren = children.where((child) => child.isActive).toList();
     final archivedChildren = children
         .where((child) => !child.isActive)
@@ -130,7 +129,13 @@ class ParentFamilyTab extends StatelessWidget {
                   index < responsibleMembers.length;
                   index++
                 ) ...[
-                  FamilyMemberCard(member: responsibleMembers[index]),
+                  FamilyMemberCard(
+                    member: responsibleMembers[index],
+                    onTap: () => _openParentProfileEditor(
+                      context,
+                      responsibleMembers[index],
+                    ),
+                  ),
                   if (index < responsibleMembers.length - 1)
                     Divider(height: 1, color: colors.borderSubtle),
                 ],
@@ -200,26 +205,15 @@ class ParentFamilyTab extends StatelessWidget {
               style: typography.body,
             ),
             const SizedBox(height: ZeniSpacing.spaceSection),
-            if (isWide)
-              Row(
-                key: const Key('parent-family-wide-layout'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: childrenSection),
-                  const SizedBox(width: ZeniSpacing.spaceGroup),
-                  Expanded(child: detailsSection),
-                ],
-              )
-            else
-              Column(
-                key: const Key('parent-family-single-layout'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  childrenSection,
-                  const SizedBox(height: ZeniSpacing.spaceSection),
-                  detailsSection,
-                ],
-              ),
+            Column(
+              key: const Key('parent-family-single-layout'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                childrenSection,
+                const SizedBox(height: ZeniSpacing.spaceSection),
+                detailsSection,
+              ],
+            ),
           ],
         ),
       ),
@@ -227,6 +221,27 @@ class ParentFamilyTab extends StatelessWidget {
   }
 
   void _openChildManagement(BuildContext context, ChildProfile child) {
+    final content = ParentChildManagementSheet(
+      child: child,
+      missions: activeMissions,
+      rewards: activeRewards,
+      ledgerEntries: ledgerEntries,
+      onEditProfile: () {
+        Navigator.of(context).pop();
+        onEditChild(child);
+      },
+      onArchiveProfile: () {
+        Navigator.of(context).pop();
+        onArchiveChild(child);
+      },
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -235,20 +250,35 @@ class ParentFamilyTab extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
         ),
-        child: ParentChildManagementSheet(
-          child: child,
-          missions: activeMissions,
-          rewards: activeRewards,
-          ledgerEntries: ledgerEntries,
-          onEditProfile: () {
-            Navigator.of(sheetContext).pop();
-            onEditChild(child);
-          },
-          onArchiveProfile: () {
-            Navigator.of(sheetContext).pop();
-            onArchiveChild(child);
-          },
+        child: content,
+      ),
+    );
+  }
+
+  Future<void> _openParentProfileEditor(
+    BuildContext context,
+    FamilyMember member,
+  ) async {
+    final content = ParentProfileNameSheet(
+      initialName: member.name,
+      onSubmit: onUpdateParentDisplayName,
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
         ),
+        child: content,
       ),
     );
   }

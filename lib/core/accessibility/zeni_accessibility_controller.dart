@@ -66,12 +66,14 @@ class ZeniAccessibilityController {
   Future<void> _updateAppSettings(
     AppSettings Function(AppSettings current) update,
   ) async {
-    final currentAppState = await _ref.read(
+    final currentAppStateFuture = _ref.read(
       zeniAppStateControllerProvider.future,
     );
+    final appStateController = _ref.read(
+      zeniAppStateControllerProvider.notifier,
+    );
+    final currentAppState = await currentAppStateFuture;
     final nextSettings = update(currentAppState.appSettings);
-    await _ref
-        .read(zeniAppStateControllerProvider.notifier)
-        .updateAppSettings(nextSettings);
+    await appStateController.updateAppSettings(nextSettings);
   }
 }

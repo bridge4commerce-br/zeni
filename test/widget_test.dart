@@ -70,6 +70,29 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> openSettingsAccountAndData(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      find.text('Conta, backup e restauração'),
+      300,
+    );
+    await tester.tap(find.text('Conta, backup e restauração'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openSyncDetails(WidgetTester tester) async {
+    await openSettingsAccountAndData(tester);
+    await tester.ensureVisible(find.text('Detalhes da sincronização'));
+    await tester.tap(find.text('Detalhes da sincronização'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openRestoreOptions(WidgetTester tester) async {
+    await openSettingsAccountAndData(tester);
+    await tester.ensureVisible(find.text('Restaurar em aparelho novo'));
+    await tester.tap(find.text('Restaurar em aparelho novo'));
+    await tester.pumpAndSettle();
+  }
+
   Finder settingsSwitch(String title) {
     final row = find.ancestor(
       of: find.text(title),
@@ -2947,9 +2970,11 @@ void main() {
       await tester.pumpAndSettle();
 
       await openParentSettings(tester);
-      await tester.scrollUntilVisible(find.text('Escuro'), 300);
+      await tester.scrollUntilVisible(find.text('Tema'), 300);
       await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Tema'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Escuro'));
       await tester.pumpAndSettle();
 
@@ -2958,13 +2983,41 @@ void main() {
       await tester.tap(settingsSwitch('Fonte OpenDyslexic'));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.byTooltip('Aumentar Tamanho da letra'),
-        300,
-      );
+      await tester.scrollUntilVisible(find.text('Tamanho da letra'), 300);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tamanho da letra'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Aumentar Tamanho da letra'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Aumentar Tamanho da letra'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Aumentar Tamanho da letra'));
+      await tester.pumpAndSettle();
+      expect(find.text('115%'), findsWidgets);
+
+      Navigator.of(tester.element(find.text('115%').last)).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('115%'), findsOneWidget);
+
+      await tester.scrollUntilVisible(find.text('Fonte OpenDyslexic'), 300);
+      await tester.pumpAndSettle();
+      await tester.tap(settingsSwitch('Fonte OpenDyslexic'));
+      await tester.pumpAndSettle();
+      expect(find.text('115%'), findsOneWidget);
+
+      await tester.tap(find.text('Tamanho da letra'));
+      await tester.pumpAndSettle();
+      expect(find.text('115%'), findsWidgets);
+      for (var index = 0; index < 4; index += 1) {
+        await tester.tap(find.byTooltip('Aumentar Tamanho da letra'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('135%'), findsWidgets);
+      for (var index = 0; index < 6; index += 1) {
+        await tester.tap(find.byTooltip('Diminuir Tamanho da letra'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('105%'), findsWidgets);
 
       final appSettings = container
           .read(zeniAppStateControllerProvider)
@@ -2978,12 +3031,12 @@ void main() {
       final textScale = MediaQuery.of(settingsContext).textScaler.scale(1);
 
       expect(appSettings.themeMode, 'dark');
-      expect(appSettings.dyslexiaFontEnabled, isTrue);
+      expect(appSettings.dyslexiaFontEnabled, isFalse);
       expect(appSettings.textScale, 1.05);
       expect(materialApp.themeMode, ThemeMode.dark);
       expect(
         materialApp.theme?.textTheme.bodyMedium?.fontFamily,
-        'OpenDyslexic',
+        isNot('OpenDyslexic'),
       );
       expect(textScale, 1.05);
     },
@@ -3086,16 +3139,13 @@ void main() {
         'OpenDyslexic',
       );
       expect(MediaQuery.of(settingsContext).textScaler.scale(1), 1.15);
-      expect(find.text('115 %'), findsOneWidget);
+      expect(find.text('115%'), findsOneWidget);
       expect(
         tester.widget<Switch>(settingsSwitch('Fonte OpenDyslexic')).value,
         isTrue,
       );
-      expect(tester.widget<Switch>(settingsSwitch('Vibração')).value, isFalse);
-      expect(
-        tester.widget<Switch>(settingsSwitch('Notificações')).value,
-        isFalse,
-      );
+      expect(find.text('Vibração'), findsNothing);
+      expect(find.text('Notificações'), findsNothing);
       expect(find.text('Leitura em voz alta'), findsNothing);
       expect(find.text('Leitura por perfil da criança'), findsNothing);
 
@@ -3144,7 +3194,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Sincronização e backup'), findsWidgets);
+    await openSettingsAccountAndData(tester);
+    expect(find.text('Sincronizar agora'), findsWidgets);
     expect(find.text('Há dados aguardando sincronização'), findsOneWidget);
     expect(find.text('Sincronizar agora'), findsOneWidget);
   });
@@ -3196,12 +3247,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-    expect(find.text('Restaurar backup'), findsOneWidget);
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
-    expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
+    await openRestoreOptions(tester);
+    expect(find.text('Restaurar histórico e saldo agora'), findsOneWidget);
     expect(
       find.text(
         'Disponível apenas quando este aparelho ainda não tem atividade local.',
@@ -3250,12 +3297,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-    expect(find.text('Restaurar backup'), findsOneWidget);
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
-    expect(find.text('Restaurar histórico e saldo'), findsOneWidget);
+    await openRestoreOptions(tester);
+    expect(find.text('Restaurar histórico e saldo agora'), findsOneWidget);
     expect(
       find.text(
         'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
@@ -3287,11 +3330,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-    expect(find.text('Restaurar backup'), findsOneWidget);
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
+    await openRestoreOptions(tester);
     expect(find.text('Restaurar histórico e saldo'), findsNothing);
   });
 
@@ -3326,11 +3365,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Restaurar histórico e saldo'));
+    await openRestoreOptions(tester);
+    await tester.tap(find.text('Restaurar histórico e saldo agora'));
     await tester.pumpAndSettle();
 
     expect(
@@ -3365,12 +3401,7 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Restaurar backup'), findsOneWidget);
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
+    await openRestoreOptions(tester);
     expect(find.text('Este aparelho já possui dados locais.'), findsOneWidget);
     await tester.tap(find.text('Restaurar minha família'));
     await tester.pumpAndSettle();
@@ -3414,10 +3445,7 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(find.text('Restaurar backup'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Restaurar backup'));
-    await tester.pumpAndSettle();
+    await openRestoreOptions(tester);
     await tester.tap(find.text('Restaurar minha família'));
     await tester.pumpAndSettle();
 
@@ -3430,162 +3458,138 @@ void main() {
     );
   });
 
-  testWidgets('editing remote family name calls callback and updates UI', (
-    tester,
-  ) async {
-    var summary = const RemoteFamilySummary(
-      familyId: 'family-1',
-      familyName: 'Minha família',
-      role: 'owner',
-    );
+  testWidgets(
+    'account detail keeps remote family name editing out of settings',
+    (tester) async {
+      var summary = const RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: StatefulBuilder(
-          builder: (context, setState) {
-            return Scaffold(
-              body: ParentSettingsTab(
-                parentDisplayName: 'Responsável',
-                appSettings: const AppSettings(),
-                accessibilitySettings: const ZeniAccessibilitySettings(),
-                onThemeModeChanged: (_) {},
-                onDyslexiaFontChanged: (_) {},
-                onTextScaleChanged: (_) {},
-                onVibrationChanged: (_) {},
-                onNotificationsChanged: (_) {},
-                onTtsChanged: (_) {},
-                onReadAloudByChildProfileChanged: (_) {},
-                onConfigurePin: () {},
-                onBiometricsChanged: (_) {},
-                authState: const ZeniAuthState.authenticated(
-                  ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: ParentSettingsTab(
+                  parentDisplayName: 'Responsável',
+                  appSettings: const AppSettings(),
+                  accessibilitySettings: const ZeniAccessibilitySettings(),
+                  onThemeModeChanged: (_) {},
+                  onDyslexiaFontChanged: (_) {},
+                  onTextScaleChanged: (_) {},
+                  onVibrationChanged: (_) {},
+                  onNotificationsChanged: (_) {},
+                  onTtsChanged: (_) {},
+                  onReadAloudByChildProfileChanged: (_) {},
+                  onConfigurePin: () {},
+                  onBiometricsChanged: (_) {},
+                  authState: const ZeniAuthState.authenticated(
+                    ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+                  ),
+                  remoteFamilySummary: summary,
+                  localChildrenCount: 2,
+                  remoteChildrenCount: 1,
+                  localMissionsCount: 3,
+                  remoteMissionsCount: 1,
+                  localRewardsCount: 2,
+                  remoteRewardsCount: 1,
+                  localMissionLogsCount: 0,
+                  remoteMissionLogsCount: null,
+                  localRewardRequestsCount: 0,
+                  remoteRewardRequestsCount: null,
+                  localStarLedgerCount: 0,
+                  remoteStarLedgerCount: null,
+                  childBalanceDiagnostics: const <ChildBalanceDiagnostic>[],
+                  hasRemoteChildBalanceData: false,
+                  cloudConsistencyDiagnostic: null,
+                  cloudConsistencyErrorText: null,
+                  lastChildrenSyncAt: null,
+                  lastMissionsSyncAt: null,
+                  lastRewardsSyncAt: null,
+                  lastMissionLogsSyncAt: null,
+                  lastRewardRequestsSyncAt: null,
+                  lastStarLedgerSyncAt: null,
+                  lastFullSyncAt: null,
+                  isSupabaseConfigured: true,
+                  supabaseBootstrapState:
+                      const ZeniSupabaseBootstrapState.initialized(),
+                  isGoogleSignInAvailable: true,
+                  isAppleSignInAvailable: false,
+                  showHistoricalRestoreStatus: false,
+                  showDeviceBootstrapStatus: false,
+                  showDeviceBootstrapAction: false,
+                  canRunDeviceBootstrap: false,
+                  deviceBootstrapMessage: null,
+                  showHistoricalRestoreAction: false,
+                  canRunHistoricalRestore: false,
+                  historicalRestoreMessage: null,
+                  onOpenAccount: () {},
+                  onSignOut: () {},
+                  onManageAccountAndData: () {},
+                  onClearLocalDeviceData: () async {},
+                  onUpdateParentDisplayName: (name) async {},
+                  onUpdateRemoteFamilyName:
+                      ({required familyId, required name}) async {
+                        setState(() {
+                          summary = RemoteFamilySummary(
+                            familyId: familyId,
+                            familyName: name,
+                            role: summary.role,
+                          );
+                        });
+                        return ZeniUpdateRemoteFamilyResult.success(summary);
+                      },
+                  onSyncCloudData: () async =>
+                      const ZeniCloudSyncResult.success(),
+                  onDeviceBootstrap: () async =>
+                      const DeviceBootstrapResult.failure('indisponível'),
+                  onHistoricalRestore: () async =>
+                      const HistoricalRestoreResult.failure(
+                        status: HistoricalRestoreResultStatus.applyBlocked,
+                        message: 'indisponível',
+                      ),
                 ),
-                remoteFamilySummary: summary,
-                localChildrenCount: 2,
-                remoteChildrenCount: 1,
-                localMissionsCount: 3,
-                remoteMissionsCount: 1,
-                localRewardsCount: 2,
-                remoteRewardsCount: 1,
-                localMissionLogsCount: 0,
-                remoteMissionLogsCount: null,
-                localRewardRequestsCount: 0,
-                remoteRewardRequestsCount: null,
-                localStarLedgerCount: 0,
-                remoteStarLedgerCount: null,
-                childBalanceDiagnostics: const <ChildBalanceDiagnostic>[],
-                hasRemoteChildBalanceData: false,
-                cloudConsistencyDiagnostic: null,
-                cloudConsistencyErrorText: null,
-                lastChildrenSyncAt: null,
-                lastMissionsSyncAt: null,
-                lastRewardsSyncAt: null,
-                lastMissionLogsSyncAt: null,
-                lastRewardRequestsSyncAt: null,
-                lastStarLedgerSyncAt: null,
-                lastFullSyncAt: null,
-                isSupabaseConfigured: true,
-                supabaseBootstrapState:
-                    const ZeniSupabaseBootstrapState.initialized(),
-                isGoogleSignInAvailable: true,
-                isAppleSignInAvailable: false,
-                showHistoricalRestoreStatus: false,
-                showDeviceBootstrapStatus: false,
-                showDeviceBootstrapAction: false,
-                canRunDeviceBootstrap: false,
-                deviceBootstrapMessage: null,
-                showHistoricalRestoreAction: false,
-                canRunHistoricalRestore: false,
-                historicalRestoreMessage: null,
-                onOpenAccount: () {},
-                onSignOut: () {},
-                onManageAccountAndData: () {},
-                onClearLocalDeviceData: () async {},
-                onUpdateParentDisplayName: (name) async {},
-                onUpdateRemoteFamilyName:
-                    ({required familyId, required name}) async {
-                      setState(() {
-                        summary = RemoteFamilySummary(
-                          familyId: familyId,
-                          familyName: name,
-                          role: summary.role,
-                        );
-                      });
-                      return ZeniUpdateRemoteFamilyResult.success(summary);
-                    },
-                onSyncCloudData: () async =>
-                    const ZeniCloudSyncResult.success(),
-                onDeviceBootstrap: () async =>
-                    const DeviceBootstrapResult.failure('indisponível'),
-                onHistoricalRestore: () async =>
-                    const HistoricalRestoreResult.failure(
-                      status: HistoricalRestoreResultStatus.applyBlocked,
-                      message: 'indisponível',
-                    ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.scrollUntilVisible(
-      find.text('Nome da família no backup'),
-      300,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome da família no backup'));
-    await tester.pumpAndSettle();
-    expect(find.text('Nome da família remota'), findsOneWidget);
+      await openSettingsAccountAndData(tester);
+      expect(find.text('Nome da família no backup'), findsNothing);
+      expect(find.byKey(const Key('remote-family-name-input')), findsNothing);
+    },
+  );
 
-    await tester.enterText(
-      find.byKey(const Key('remote-family-name-input')),
-      'Família da Luna',
-    );
-    await tester.tap(find.text('Salvar nome'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Família da Luna'), findsWidgets);
-  });
-
-  testWidgets('empty remote family name shows controlled error', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      buildStaticSettingsHarness(
-        authState: const ZeniAuthState.authenticated(
-          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+  testWidgets(
+    'account detail does not expose the legacy remote name submit action',
+    (tester) async {
+      await tester.pumpWidget(
+        buildStaticSettingsHarness(
+          authState: const ZeniAuthState.authenticated(
+            ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+          ),
+          remoteFamilySummary: const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Minha família',
+            role: 'owner',
+          ),
+          onUpdateRemoteFamilyName:
+              ({required familyId, required name}) async =>
+                  const ZeniUpdateRemoteFamilyResult.failure(
+                    'Digite um nome para a família.',
+                  ),
         ),
-        remoteFamilySummary: const RemoteFamilySummary(
-          familyId: 'family-1',
-          familyName: 'Minha família',
-          role: 'owner',
-        ),
-        onUpdateRemoteFamilyName: ({required familyId, required name}) async =>
-            const ZeniUpdateRemoteFamilyResult.failure(
-              'Digite um nome para a família.',
-            ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.scrollUntilVisible(
-      find.text('Nome da família no backup'),
-      300,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Nome da família no backup'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('remote-family-name-input')),
-      '   ',
-    );
-    await tester.tap(find.text('Salvar nome'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Digite um nome para a família.'), findsWidgets);
-  });
+      await openSettingsAccountAndData(tester);
+      expect(find.text('Salvar nome'), findsNothing);
+    },
+  );
 
   testWidgets('cloud sync failure shows controlled inline error', (
     tester,
@@ -3607,8 +3611,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Sincronizar agora'), 300);
-    await tester.pumpAndSettle();
+    await openSettingsAccountAndData(tester);
+    await tester.ensureVisible(find.text('Sincronizar agora'));
     await tester.tap(find.text('Sincronizar agora'));
     await tester.pumpAndSettle();
 
@@ -3652,13 +3656,13 @@ void main() {
     );
     await tester.pump();
 
+    await openSettingsAccountAndData(tester);
     expect(
       find.text('Última sincronização: 28/05/2026 às 16:10'),
       findsOneWidget,
     );
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver detalhes'));
+    await tester.ensureVisible(find.text('Detalhes da sincronização'));
+    await tester.tap(find.text('Detalhes da sincronização'));
     await tester.pumpAndSettle();
     expect(
       find.text(
@@ -3694,10 +3698,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver detalhes'));
-    await tester.pumpAndSettle();
+    await openSyncDetails(tester);
     expect(
       find.text('Saldo remoto disponível para conferência'),
       findsOneWidget,
@@ -3737,10 +3738,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver detalhes'));
-    await tester.pumpAndSettle();
+    await openSyncDetails(tester);
     expect(
       find.text('Diferença encontrada entre saldo local e saldo na nuvem.'),
       findsOneWidget,
@@ -3802,10 +3800,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ver detalhes'));
-      await tester.pumpAndSettle();
+      await openSyncDetails(tester);
       expect(find.text('Cadastros disponíveis neste aparelho'), findsOneWidget);
       expect(
         find.text('Crianças, missões e mimos estão sincronizados.'),
@@ -3871,11 +3866,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    expect(find.text('Ver detalhes'), findsOneWidget);
-    await tester.tap(find.text('Ver detalhes'));
-    await tester.pumpAndSettle();
+    await openSyncDetails(tester);
     expect(find.text('Conferência da nuvem'), findsOneWidget);
     expect(
       find.text('Dados locais e nuvem parecem alinhados.'),
@@ -3930,10 +3921,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ver detalhes'));
-      await tester.pumpAndSettle();
+      await openSyncDetails(tester);
       expect(find.text('Conferência da nuvem'), findsOneWidget);
       expect(find.text('Encontramos diferenças para conferir.'), findsWidgets);
       expect(
@@ -3963,10 +3951,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver detalhes'));
-    await tester.pumpAndSettle();
+    await openSyncDetails(tester);
     expect(find.text('Não foi possível conferir a nuvem agora.'), findsWidgets);
   });
 }

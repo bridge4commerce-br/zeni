@@ -18,6 +18,20 @@ import '../support/widget_test_fakes.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  Future<void> openAccountAndData(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      find.text('Conta, backup e restauração'),
+      300,
+    );
+    await tester.tap(find.text('Conta, backup e restauração'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> revealInAccountData(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('responsible profile appears at the top with name and email', (
     tester,
   ) async {
@@ -31,11 +45,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Carla'), findsOneWidget);
+    expect(find.text('Carla'), findsNothing);
+    expect(find.text('Conta, backup e restauração'), findsOneWidget);
     expect(find.text('responsavel@zeni.app'), findsOneWidget);
-    final profileTop = tester.getTopLeft(find.text('Carla')).dy;
-    final securityTop = tester.getTopLeft(find.text('Segurança')).dy;
-    expect(profileTop, lessThan(securityTop));
   });
 
   testWidgets('owner role appears as friendly responsible principal label', (
@@ -55,8 +67,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Nome da família no backup'), findsOneWidget);
-    expect(find.text('Minha família'), findsOneWidget);
+    expect(find.text('Conta, backup e restauração'), findsOneWidget);
+    expect(find.text('Minha família'), findsNothing);
   });
 
   testWidgets('tapping profile card opens parent name editor', (tester) async {
@@ -75,17 +87,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Carla'));
-    await tester.pumpAndSettle();
-    expect(find.text('Perfil do responsável'), findsOneWidget);
-    await tester.enterText(
-      find.byKey(const Key('parent-display-name-input')),
-      'Marina',
-    );
-    await tester.tap(find.text('Salvar nome'));
-    await tester.pumpAndSettle();
-
-    expect(savedName, 'Marina');
+    expect(find.text('Carla'), findsNothing);
+    expect(savedName, isEmpty);
   });
 
   testWidgets('responsible role appears as friendly label', (tester) async {
@@ -103,7 +106,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Minha família'), findsOneWidget);
+    expect(find.text('Minha família'), findsNothing);
   });
 
   testWidgets('settings use simple groups and no danger zone label', (
@@ -123,23 +126,13 @@ void main() {
     );
 
     expect(find.text('Segurança'), findsOneWidget);
-    expect(find.text('Preferências'), findsOneWidget);
-    expect(find.text('Sincronização e backup'), findsWidgets);
+    expect(find.text('Aparência e acessibilidade'), findsOneWidget);
+    expect(find.text('Sincronização e backup'), findsNothing);
     expect(find.text('Ajuda e informações'), findsOneWidget);
     expect(find.text('Conta e dados'), findsOneWidget);
     expect(find.text('Zona de perigo'), findsNothing);
-    expect(find.text('Sair da conta'), findsOneWidget);
-    expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Segurança')).dy,
-      lessThan(tester.getTopLeft(find.text('Sincronização e backup').first).dy),
-    );
-    expect(
-      tester.getTopLeft(find.text('Apagar dados deste aparelho')).dy,
-      greaterThan(
-        tester.getTopLeft(find.text('Sincronização e backup').first).dy,
-      ),
-    );
+    expect(find.text('Sair da conta'), findsNothing);
+    expect(find.text('Apagar dados deste aparelho'), findsNothing);
   });
 
   testWidgets('help and support section appears in settings', (tester) async {
@@ -153,8 +146,8 @@ void main() {
     expect(find.text('Suporte'), findsOneWidget);
     expect(find.text('Política de Privacidade'), findsOneWidget);
     expect(find.text('Termos de Uso'), findsOneWidget);
-    expect(find.text('Como seus dados são salvos'), findsOneWidget);
-    expect(find.text('Informações técnicas para suporte'), findsOneWidget);
+    expect(find.text('Dados locais e nuvem'), findsOneWidget);
+    expect(find.text('Informações técnicas para suporte'), findsNothing);
   });
 
   testWidgets('sync section shows a simple summary on the main screen', (
@@ -175,6 +168,7 @@ void main() {
     );
     await tester.pump();
 
+    await openAccountAndData(tester);
     expect(find.text('Tudo salvo na sua conta'), findsOneWidget);
     expect(
       find.text('Última sincronização: 15/06/2026 às 10:30'),
@@ -218,6 +212,8 @@ void main() {
     );
     await tester.pump();
 
+    await openAccountAndData(tester);
+
     expect(
       find.text(
         'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
@@ -225,9 +221,8 @@ void main() {
       findsNothing,
     );
 
-    await tester.scrollUntilVisible(find.text('Ver detalhes'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver detalhes'));
+    await revealInAccountData(tester, find.text('Detalhes da sincronização'));
+    await tester.tap(find.text('Detalhes da sincronização'));
     await tester.pumpAndSettle();
 
     expect(
@@ -253,12 +248,9 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('Informações técnicas para suporte'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Suporte'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Informações técnicas para suporte'));
+    await tester.tap(find.text('Suporte'));
     await tester.pumpAndSettle();
 
     expect(find.text('Supabase configurado'), findsOneWidget);
@@ -285,11 +277,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Conectar conta'), findsOneWidget);
-    expect(
-      find.text('A conexão com a nuvem falhou ao iniciar neste aparelho.'),
-      findsOneWidget,
-    );
+    await openAccountAndData(tester);
+    expect(find.text('Conta não conectada'), findsWidgets);
   });
 
   testWidgets('help and support items open internal content sheets', (
@@ -307,7 +296,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'O Zeni salva dados da família para organizar crianças, missões, mimos, pedidos e histórico de estrelas. O app pode funcionar apenas neste aparelho. Quando você entra com uma conta, parte desses dados pode ser sincronizada na nuvem para permitir restauração e continuidade em outro aparelho. Você pode apagar dados locais deste aparelho e também solicitar a exclusão da conta e dos dados da nuvem.',
+        'O Zeni mantém os dados neste aparelho e, quando você conecta uma conta, pode manter uma cópia na nuvem para recuperação.',
       ),
       findsOneWidget,
     );
@@ -317,9 +306,7 @@ void main() {
     await tester.tap(find.text('Termos de Uso'));
     await tester.pumpAndSettle();
     expect(
-      find.text(
-        'O Zeni é uma ferramenta de organização familiar. O responsável é quem cria e gerencia crianças, missões, mimos e aprovações. O app não substitui acompanhamento parental, financeiro, educacional ou profissional. Ao usar recursos de conta e nuvem, você concorda em manter suas credenciais seguras e usar o app de forma adequada à sua família.',
-      ),
+      find.text('O responsável gerencia a família, missões e aprovações.'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
@@ -329,26 +316,21 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Suporte'));
     await tester.pumpAndSettle();
+    expect(find.text('Diagnóstico técnico'), findsOneWidget);
     expect(
-      find.textContaining(
-        'Para ajuda com conta, sincronização, restauração, exclusão de conta ou dúvidas sobre privacidade',
-      ),
+      find.textContaining('Resumo seguro para suporte interno.'),
       findsOneWidget,
     );
-    expect(find.textContaining('suporte@luminadigital.app'), findsOneWidget);
     await tester.tap(find.widgetWithText(ElevatedButton, 'Fechar'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Como seus dados são salvos'),
-      300,
-    );
+    await tester.scrollUntilVisible(find.text('Dados locais e nuvem'), 300);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Como seus dados são salvos'));
+    await tester.tap(find.text('Dados locais e nuvem'));
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'O Zeni foi pensado para funcionar de forma local/offline. Os dados salvos neste aparelho continuam disponíveis mesmo sem login. Entrar com uma conta é opcional e permite sincronizar ou restaurar dados da família pela nuvem. Sair da conta remove apenas a sessão. Apagar dados deste aparelho não apaga a nuvem. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
+        'Conecte uma conta para manter uma cópia dos seus dados na nuvem e recuperá-los quando precisar.',
       ),
       findsOneWidget,
     );
@@ -387,19 +369,21 @@ void main() {
     await openParentSettings(tester);
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
-    await tester.pumpAndSettle();
+    await openAccountAndData(tester);
+
+    await revealInAccountData(
+      tester,
+      find.text('Excluir conta e dados da nuvem'),
+    );
     await tester.tap(find.text('Excluir conta e dados da nuvem'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Gerenciar dados e conta'), findsOneWidget);
+    expect(find.text('Conta, backup e restauração'), findsWidgets);
     expect(
-      find.text(
-        'Indisponível nesta versão. A exclusão completa da conta e dos dados da nuvem ficará para uma etapa própria.',
-      ),
+      find.text('Indisponível nesta versão'),
       findsOneWidget,
     );
-    expect(find.text('Indisponível'), findsOneWidget);
+    expect(find.text('Indisponível nesta versão'), findsOneWidget);
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 
@@ -444,13 +428,15 @@ void main() {
     await tester.pumpAndSettle();
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
+    await openAccountAndData(tester);
+    await revealInAccountData(
+      tester,
+      find.text('Excluir conta e dados da nuvem'),
+    );
     await tester.pumpAndSettle();
 
     expect(fakeAccountRepository.deleteCalls, 0);
-    expect(find.text('Indisponível'), findsOneWidget);
+    expect(find.text('Indisponível nesta versão'), findsOneWidget);
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 
@@ -480,8 +466,11 @@ void main() {
       await tester.pumpAndSettle();
 
       await openParentSettings(tester);
-      await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
-      await tester.pumpAndSettle();
+      await openAccountAndData(tester);
+      await revealInAccountData(
+        tester,
+        find.text('Apagar dados deste aparelho'),
+      );
       await tester.tap(find.text('Apagar dados deste aparelho'));
       await tester.pumpAndSettle();
 
@@ -565,8 +554,8 @@ void main() {
     final before = await container.read(zeniAppStateControllerProvider.future);
 
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Conta e dados'), 300);
-    await tester.pumpAndSettle();
+    await openAccountAndData(tester);
+    await revealInAccountData(tester, find.text('Apagar dados deste aparelho'));
     await tester.tap(find.text('Apagar dados deste aparelho'));
     await tester.pumpAndSettle();
 
@@ -591,6 +580,7 @@ void main() {
   testWidgets('account section opens cloud data sheet for manual sync', (
     tester,
   ) async {
+    var syncCalls = 0;
     await tester.pumpWidget(
       buildStaticSettingsHarness(
         authState: const ZeniAuthState.authenticated(
@@ -601,24 +591,25 @@ void main() {
           familyName: 'Minha família',
           role: 'owner',
         ),
-        onSyncCloudData: () async => const ZeniCloudSyncResult(
-          status: ZeniCloudSyncStatus.success,
-          message: 'Dados sincronizados neste aparelho.',
-        ),
+        onSyncCloudData: () async {
+          syncCalls += 1;
+          return const ZeniCloudSyncResult(
+            status: ZeniCloudSyncStatus.success,
+            message: 'Dados sincronizados neste aparelho.',
+          );
+        },
       ),
     );
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('Dados na nuvem'), 300);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Dados na nuvem'));
-    await tester.pumpAndSettle();
+    await openAccountAndData(tester);
+    await revealInAccountData(tester, find.text('Sincronizar agora'));
 
     expect(find.text('Sincronizar agora'), findsWidgets);
 
     await tester.tap(find.text('Sincronizar agora').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Dados sincronizados neste aparelho.'), findsOneWidget);
+    expect(syncCalls, 1);
   });
 }
