@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_balance_pill.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../rewards/data/models/reward_request.dart';
 import '../../../rewards/presentation/widgets/reward_child_detail_sheet.dart';
@@ -50,84 +54,97 @@ class ChildRewardsTab extends StatelessWidget {
 
     final content = SingleChildScrollView(
       physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Meus mimos', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Toque em um mimo para ver detalhes.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          if (pendingRewardRequests.isNotEmpty) ...[
+      padding: EdgeInsets.only(
+        top: ZeniSpacing.spaceSection,
+        bottom: ZeniSpacing.spaceCanvas + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: ZeniPageFrame(
+        width: ZeniPageWidth.main,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              'Pedidos pendentes',
-              style: Theme.of(context).textTheme.titleLarge,
+              'Mimos',
+              key: const Key('child-rewards-title'),
+              style: ZeniTypography.of(context).pageTitle,
             ),
-            const SizedBox(height: ZeniSpacing.md),
-            for (final request in pendingRewardRequests) ...[
-              _ChildPendingRewardCard(
-                request: request,
-                reward: rewardById(request.rewardId),
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(
+              'Toque em um mimo para ver detalhes.',
+              style: ZeniTypography.of(context).body,
+            ),
+            const SizedBox(height: ZeniSpacing.spaceGroup),
+            _RewardsBalanceHeader(childBalance: childBalance),
+            if (pendingRewardRequests.isNotEmpty) ...[
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              Text(
+                'Pedidos pendentes',
+                style: ZeniTypography.of(context).sectionTitle,
               ),
-              const SizedBox(height: ZeniSpacing.sm),
+              const SizedBox(height: ZeniSpacing.spaceCard),
+              ZeniSurface(
+                key: const Key('child-rewards-pending-list'),
+                role: ZeniSurfaceRole.grouped,
+                mode: ZeniVisualMode.kids,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < pendingRewardRequests.length;
+                      index++
+                    ) ...[
+                      _ChildPendingRewardCard(
+                        request: pendingRewardRequests[index],
+                        reward: rewardById(
+                          pendingRewardRequests[index].rewardId,
+                        ),
+                      ),
+                      if (index < pendingRewardRequests.length - 1)
+                        _ChildRewardDivider(),
+                    ],
+                  ],
+                ),
+              ),
             ],
-            const SizedBox(height: ZeniSpacing.xl),
-          ],
-          Text(
-            'Catálogo de mimos',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: ZeniSpacing.md),
-          for (final reward in sortedRewards) ...[
-            RewardCompactChildCard(
-              reward: reward,
-              childBalance: childBalance,
-              onTap: () async {
-                final pendingRequest = _pendingRequestForReward(reward.id);
-                final action =
-                    await showModalBottomSheet<RewardChildDetailAction>(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      builder: (context) {
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.viewInsetsOf(context).bottom,
-                          ),
-                          child: RewardChildDetailSheet(
-                            reward: reward,
-                            childBalance: childBalance,
-                            onListenToReward: () {
-                              onListenToReward(reward);
-                            },
-                            onListenToRewardDetails: () {
-                              onListenToRewardDetails(reward, pendingRequest);
-                            },
-                            pendingRequest: pendingRequest,
-                            showListenActions: canListenToReward,
-                          ),
-                        );
-                      },
-                    );
-
-                if (!context.mounted) return;
-
-                switch (action) {
-                  case RewardChildDetailAction.redeem:
-                    onRedeemReward(reward);
-                  case null:
-                    break;
-                }
-              },
+            const SizedBox(height: ZeniSpacing.spaceSection),
+            Text(
+              'Mimos disponíveis',
+              style: ZeniTypography.of(context).sectionTitle,
             ),
-            const SizedBox(height: ZeniSpacing.sm),
+            const SizedBox(height: ZeniSpacing.spaceCard),
+            if (sortedRewards.isEmpty)
+              const _RewardsEmptyState()
+            else
+              ZeniSurface(
+                key: const Key('child-rewards-catalog-list'),
+                role: ZeniSurfaceRole.grouped,
+                mode: ZeniVisualMode.kids,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < sortedRewards.length;
+                      index++
+                    ) ...[
+                      RewardCompactChildCard(
+                        key: Key('child-reward-${sortedRewards[index].id}'),
+                        reward: sortedRewards[index],
+                        childBalance: childBalance,
+                        pendingRequest: _pendingRequestForReward(
+                          sortedRewards[index].id,
+                        ),
+                        onTap: () => _openReward(context, sortedRewards[index]),
+                      ),
+                      if (index < sortedRewards.length - 1)
+                        _ChildRewardDivider(),
+                    ],
+                  ],
+                ),
+              ),
           ],
-        ],
+        ),
       ),
     );
 
@@ -136,6 +153,101 @@ class ChildRewardsTab extends StatelessWidget {
     }
 
     return RefreshIndicator(onRefresh: onRefresh!, child: content);
+  }
+
+  Future<void> _openReward(BuildContext context, Reward reward) async {
+    final pendingRequest = _pendingRequestForReward(reward.id);
+    final action = await showRewardChildDetailModal(
+      context: context,
+      reward: reward,
+      childBalance: childBalance,
+      onListenToReward: () => onListenToReward(reward),
+      onListenToRewardDetails: () {
+        onListenToRewardDetails(reward, pendingRequest);
+      },
+      pendingRequest: pendingRequest,
+      showListenActions: canListenToReward,
+    );
+
+    if (!context.mounted) return;
+
+    switch (action) {
+      case RewardChildDetailAction.redeem:
+        onRedeemReward(reward);
+      case null:
+        break;
+    }
+  }
+}
+
+class _RewardsBalanceHeader extends StatelessWidget {
+  const _RewardsBalanceHeader({required this.childBalance});
+
+  final int childBalance;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+
+    return ZeniSurface(
+      key: const Key('child-rewards-balance'),
+      role: ZeniSurfaceRole.highlight,
+      mode: ZeniVisualMode.kids,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Seu saldo', style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                Text(
+                  'Estrelas disponíveis para escolher um mimo.',
+                  style: typography.metadata,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          ZeniBalancePill(stars: childBalance),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardsEmptyState extends StatelessWidget {
+  const _RewardsEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
+
+    return ZeniSurface(
+      key: const Key('child-rewards-empty-state'),
+      role: ZeniSurfaceRole.grouped,
+      mode: ZeniVisualMode.kids,
+      child: Row(
+        children: [
+          Icon(Icons.card_giftcard_rounded, color: colors.actionPrimary),
+          const SizedBox(width: ZeniSpacing.spaceControl),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nenhum mimo por enquanto', style: typography.cardTitle),
+                const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                Text(
+                  'Quando houver novos mimos, eles aparecerão aqui.',
+                  style: typography.metadata,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -147,43 +259,55 @@ class _ChildPendingRewardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    final colors = context.zeniColors;
     final displayEmoji = reward?.emoji ?? '🎁';
     final displayTitle = reward?.title ?? 'Mimo solicitado';
     final displayCost = reward?.cost ?? 0;
 
-    return ZeniCard(
-      child: Row(
-        children: [
-          Text(displayEmoji, style: const TextStyle(fontSize: 32)),
-          const SizedBox(width: ZeniSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: ZeniSpacing.xs),
-                Text(
-                  'Aguardando responsável',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ZeniColors.mutedText),
-                ),
-              ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 88),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: ZeniSpacing.spaceCard,
+          vertical: ZeniSpacing.spaceCard,
+        ),
+        child: Row(
+          children: [
+            Text(displayEmoji, style: const TextStyle(fontSize: 30)),
+            const SizedBox(width: ZeniSpacing.spaceControl),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayTitle, style: typography.cardTitle),
+                  const SizedBox(height: ZeniSpacing.spaceInline),
+                  Text('Aguardando responsável', style: typography.metadata),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: ZeniSpacing.md),
-          Text(
-            '$displayCost ⭐',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: ZeniColors.primaryDark,
+            const SizedBox(width: ZeniSpacing.spaceInline),
+            Text(
+              '$displayCost ⭐',
+              style: typography.bodyEmphasis.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+class _ChildRewardDivider extends StatelessWidget {
+  const _ChildRewardDivider();
+
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    indent: ZeniSpacing.spaceCard,
+    endIndent: ZeniSpacing.spaceCard,
+    color: context.zeniColors.borderSubtle,
+  );
 }

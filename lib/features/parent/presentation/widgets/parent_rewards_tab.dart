@@ -325,7 +325,6 @@ class _PendingRewardsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ZeniTypography.of(context);
-    final colors = context.zeniColors;
     return Column(
       key: const Key('parent-rewards-pending-panel'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,11 +421,10 @@ class _PendingRewardsSection extends StatelessWidget {
                     onApprove: () => onApprove(requests[index]),
                     onReject: () => onReject(requests[index]),
                   ),
-                  if (index < requests.length - 1)
-                    Divider(height: 1, color: colors.borderSubtle),
+                  if (index < requests.length - 1) const _RewardDivider(),
                 ],
                 if (isSelecting && selectedRequestIds.isNotEmpty) ...[
-                  Divider(height: 1, color: colors.borderSubtle),
+                  const _RewardDivider(),
                   _RewardBatchActionBar(
                     selectedCount: selectedRequestIds.length,
                     onRejectSelected: onRejectSelected,
@@ -495,8 +493,7 @@ class _RewardCatalogSection extends StatelessWidget {
                     onEdit: () => onEditReward(rewards[index]),
                     onDelete: () => onArchiveReward(rewards[index]),
                   ),
-                  if (index < rewards.length - 1)
-                    Divider(height: 1, color: colors.borderSubtle),
+                  if (index < rewards.length - 1) const _RewardDivider(),
                 ],
               ],
             ),
@@ -556,7 +553,7 @@ class _RewardCatalogSection extends StatelessWidget {
                       onRestore: () => onRestoreReward(archivedRewards[index]),
                     ),
                     if (index < archivedRewards.length - 1)
-                      Divider(height: 1, color: colors.borderSubtle),
+                      const _RewardDivider(),
                   ],
                 ],
               ),
@@ -713,4 +710,16 @@ class _ArchivedRewardCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RewardDivider extends StatelessWidget {
+  const _RewardDivider();
+
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    indent: ZeniSpacing.spaceCard,
+    endIndent: ZeniSpacing.spaceCard,
+    color: context.zeniColors.borderSubtle,
+  );
 }

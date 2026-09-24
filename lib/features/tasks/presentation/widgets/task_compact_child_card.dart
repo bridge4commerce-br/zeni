@@ -38,7 +38,7 @@ class TaskCompactChildCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: ZeniSpacing.spaceCard,
-                vertical: ZeniSpacing.spaceControl,
+                vertical: ZeniSpacing.spaceCard,
               ),
               child: Row(
                 children: [
@@ -63,7 +63,7 @@ class TaskCompactChildCard extends StatelessWidget {
                                 : colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: ZeniSpacing.spaceInlineTight),
+                        const SizedBox(height: ZeniSpacing.spaceInline),
                         Text(
                           _subtitle(status),
                           maxLines: 2,

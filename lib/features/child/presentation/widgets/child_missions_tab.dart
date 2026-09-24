@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/theme/zeni_visual_mode.dart';
@@ -139,7 +140,12 @@ class ChildMissionsTab extends StatelessWidget {
                           missions
                               .where((item) => item.timeGroup == group)
                               .last)
-                        const Divider(height: 1),
+                        Divider(
+                          height: 1,
+                          indent: ZeniSpacing.spaceCard,
+                          endIndent: ZeniSpacing.spaceCard,
+                          color: context.zeniColors.borderSubtle,
+                        ),
                     ],
                   ],
                 ),

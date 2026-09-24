@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/zeni_enums.dart';
+import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
 import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/widgets/base/zeni_icon_action_button.dart';
 import '../../../rewards/data/models/reward.dart';
 
 class ParentRewardCard extends StatelessWidget {
@@ -22,6 +24,8 @@ class ParentRewardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ZeniTypography.of(context);
     final colors = context.zeniColors;
+    final isCompact =
+        ZeniResponsive.windowClass(context) == ZeniWindowClass.compact;
     return Semantics(
       container: true,
       label:
@@ -55,6 +59,13 @@ class ParentRewardCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: ZeniSpacing.spaceInline),
+            if (!isCompact)
+              ZeniIconActionButton(
+                icon: Icons.edit_rounded,
+                tooltip: 'Editar mimo',
+                tone: ZeniIconActionTone.primary,
+                onPressed: onEdit,
+              ),
             PopupMenuButton<_ParentRewardAction>(
               key: Key('parent-reward-actions-${reward.id}'),
               tooltip: 'Mais ações para ${reward.title}',
@@ -67,15 +78,16 @@ class ParentRewardCard extends StatelessWidget {
                     onDelete?.call();
                 }
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: _ParentRewardAction.edit,
-                  child: _RewardMenuLabel(
-                    icon: Icons.edit_rounded,
-                    label: 'Editar mimo',
+              itemBuilder: (context) => [
+                if (isCompact)
+                  const PopupMenuItem(
+                    value: _ParentRewardAction.edit,
+                    child: _RewardMenuLabel(
+                      icon: Icons.edit_rounded,
+                      label: 'Editar mimo',
+                    ),
                   ),
-                ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: _ParentRewardAction.archive,
                   child: _RewardMenuLabel(
                     icon: Icons.archive_outlined,

@@ -2041,7 +2041,7 @@ void main() {
     await tester.tap(find.text('Você tem mimo aguardando aprovação 🎁'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Meus mimos'), findsOneWidget);
+    expect(find.byKey(const Key('child-rewards-title')), findsOneWidget);
   });
 
   testWidgets(
@@ -2291,9 +2291,11 @@ void main() {
     await tester.tap(find.text('Mimos'));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.byType(RewardCompactChildCard).first);
     await tester.tap(find.byType(RewardCompactChildCard).first);
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Pedir mimo'));
     await tester.tap(find.text('Pedir mimo'));
     await tester.pumpAndSettle();
 
