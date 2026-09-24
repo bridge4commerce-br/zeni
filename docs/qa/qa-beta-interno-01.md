@@ -26,17 +26,17 @@
 | C14 | Login Apple | iPhone/iPad real, se aplicável | Entrar com Apple | Sessão autenticada; UI atualiza corretamente | Pendente | |
 | C15 | Sync geral inicial | Sessão autenticada, família remota preparada | Rodar sincronização | Família/crianças/missões/mimos/logs/pedidos/ledger sincronizam sem erro | Pendente | |
 | C16 | Sync repetido sem duplicação | Sync inicial concluído | Rodar sincronização novamente | Nenhuma duplicação remota/local aparente | Pendente | |
-| C17 | Diagnóstico da nuvem | Conta conectada | Abrir Ajustes/Sincronização | Diagnóstico carrega sem erro técnico indevido | Pendente | |
-| C18 | Restauração em aparelho limpo | Conta com dados remotos principais | Limpar app, fazer login, tocar em restaurar dados principais | Família, crianças, missões e mimos restaurados | Pendente | |
+| C17 | Diagnóstico da nuvem | Conta conectada | Abrir Ajustes → Conta, backup e restauração → Detalhes da sincronização | Diagnóstico carrega sem erro técnico indevido | Pendente | |
+| C18 | Restauração em aparelho limpo | Conta com dados remotos principais | Limpar app, fazer login, abrir Ajustes → Conta, backup e restauração → Restaurar em aparelho novo | Família, crianças, missões e mimos restaurados | Pendente | |
 | C19 | Restauração principal não traz saldo/histórico | Após C18 | Conferir perfis e histórico | Saldo/histórico/streak não vêm nessa etapa | Pendente | |
-| C20 | Restauração histórica e saldo | Dados principais já restaurados, sem atividade local | Tocar em “Restaurar histórico e saldo” | Logs, pedidos, ledger e saldo local restaurados com sucesso | Pendente | |
+| C20 | Restauração histórica e saldo | Dados principais já restaurados, sem atividade local | Abrir Ajustes → Conta, backup e restauração → Restaurar histórico e saldo | Logs, pedidos, ledger e saldo local restaurados com sucesso | Pendente | |
 | C21 | Streak não é restaurado | Após C20 | Verificar perfis | Sequência/streak permanece fora da restauração | Pendente | |
-| C22 | Bloqueio de restauração histórica com atividade local | Aparelho com atividade local | Abrir Ajustes/Sincronização | Ação bloqueada com explicação clara | Pendente | |
+| C22 | Bloqueio de restauração histórica com atividade local | Aparelho com atividade local | Abrir Ajustes → Conta, backup e restauração → Restaurar histórico e saldo | Ação bloqueada com explicação clara | Pendente | |
 | C23 | Wipe local com confirmação errada | Dados locais existentes | Abrir “Apagar dados deste aparelho”, digitar texto incorreto | Nada é apagado | Pendente | |
 | C24 | Wipe local com APAGAR | Dados locais existentes | Repetir fluxo e digitar `APAGAR` | Dados locais são apagados; app volta ao onboarding | Pendente | |
 | C25 | Wipe local não apaga nuvem | Após C24 | Fazer login novamente e testar restauração/sync | Dados remotos continuam disponíveis | Pendente | |
-| C26 | Exclusão remota continua indisponível | Conta conectada | Abrir “Conta e dados” | “Excluir conta e dados da nuvem” aparece só como informativo/indisponível | Pendente | |
-| C27 | PIN do responsável | App com modo responsável | Configurar PIN e sair/entrar do modo responsável | Bloqueio por PIN funciona | Pendente | |
+| C26 | Exclusão remota continua indisponível | Conta conectada | Abrir Ajustes → Conta, backup e restauração | “Excluir conta e dados da nuvem” aparece só como informativo/indisponível | Pendente | |
+| C27 | PIN do responsável | App com modo responsável | Configurar PIN em Ajustes e sair/entrar do modo responsável | Bloqueio por PIN funciona | Pendente | |
 | C28 | Biometria do responsável | Device com biometria | Habilitar biometria e testar acesso | Biometria funciona ou cai em fallback previsto | Pendente | |
 | C29 | Missão automática no modo criança | Missão automática existente | Concluir missão | Estrela/animação/saldo funcionam corretamente | Pendente | |
 | C30 | Missão com aprovação | Missão com aprovação existente | Concluir no modo criança, aprovar no responsável | Não credita antes; credita uma vez após aprovação | Pendente | |
@@ -50,11 +50,11 @@
 | R01 | Telas pequenas | Device pequeno/simulador | Navegar pelas telas principais | Conteúdo continua acessível e legível | Pendente | |
 | R02 | Acessibilidade/preferências | App com dados | Alterar fonte, escala, vibração, TTS, etc. | Preferências persistem e não quebram layout | Pendente | |
 | R03 | Tema claro/escuro | Se disponível | Alternar tema | App permanece consistente visualmente | Pendente | |
-| R04 | Edição de nome da família remota | Conta conectada | Editar nome em Ajustes | Atualiza corretamente sem erro | Pendente | |
+| R04 | Edição do responsável | Família criada | Abrir Família e tocar no responsável | Nome atualiza corretamente sem erro | Pendente | |
 | R05 | Logout e login repetidos | Conta válida | Sair e entrar mais de uma vez | Estado local permanece íntegro | Pendente | |
 | R06 | Sync após uso offline | Ações locais feitas offline | Religar internet e sincronizar | Sync conclui sem duplicação aparente | Pendente | |
 | R07 | Restore principal sem dados remotos | Conta sem dados remotos principais | Fazer login em aparelho limpo | Mensagem controlada informa ausência de dados | Pendente | |
-| R08 | Legal e suporte | App aberto | Abrir Política, Termos, Suporte, Dados locais e nuvem | Conteúdo abre corretamente em folhas internas | Pendente | |
+| R08 | Legal e suporte | App aberto | Abrir Política, Termos, Suporte e Dados locais e nuvem | Conteúdo abre corretamente; Suporte mostra e-mail e Diagnóstico técnico como opção secundária | Pendente | |
 | R09 | Navegação criança/responsável repetida | App com dados | Alternar entre modos várias vezes | Sem inconsistência visual ou estado perdido | Pendente | |
 | R10 | Estabilidade longa | Sessão de 15-20 min | Usar fluxos principais continuamente | Sem crash, travamento ou perda de estado | Pendente | |
 

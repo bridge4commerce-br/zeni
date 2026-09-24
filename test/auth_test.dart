@@ -2310,49 +2310,56 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues({
         'zeni_app_state_v1': jsonEncode(
-          ZeniAppState.initial().copyWith(
-            children: [
-              ChildProfile(
-                id: 'child-local-1',
-                familyId: 'local-family',
-                name: 'Luna',
-                emoji: '🦊',
-                starBalance: 0,
-                streakCount: 0,
-                createdAt: DateTime(2026, 5, 28),
-              ),
-            ],
-            missions: [
-              Mission(
-                id: 'mission-local-1',
-                familyId: 'local-family',
-                childId: 'child-local-1',
-                title: 'Arrumar brinquedos',
-                description: 'Guardar tudo',
-                stars: 10,
-                recurrence: MissionRecurrence.daily,
-                timeGroup: MissionTimeGroup.anytime,
-                approvalMode: MissionApprovalMode.automatic,
-                status: MissionStatus.active,
-                createdAt: DateTime(2026, 5, 28),
-                updatedAt: DateTime(2026, 5, 28),
-              ),
-            ],
-          ).toJson(),
+          ZeniAppState.initial()
+              .copyWith(
+                children: [
+                  ChildProfile(
+                    id: 'child-local-1',
+                    familyId: 'local-family',
+                    name: 'Luna',
+                    emoji: '🦊',
+                    starBalance: 0,
+                    streakCount: 0,
+                    createdAt: DateTime(2026, 5, 28),
+                  ),
+                ],
+                missions: [
+                  Mission(
+                    id: 'mission-local-1',
+                    familyId: 'local-family',
+                    childId: 'child-local-1',
+                    title: 'Arrumar brinquedos',
+                    description: 'Guardar tudo',
+                    stars: 10,
+                    recurrence: MissionRecurrence.daily,
+                    timeGroup: MissionTimeGroup.anytime,
+                    approvalMode: MissionApprovalMode.automatic,
+                    status: MissionStatus.active,
+                    createdAt: DateTime(2026, 5, 28),
+                    updatedAt: DateTime(2026, 5, 28),
+                  ),
+                ],
+              )
+              .toJson(),
         ),
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final mission = (await container.read(zeniAppStateControllerProvider.future))
-          .missionById('mission-local-1')!;
-      await container.read(missionRepositoryProvider).submitMission(
-        childId: 'child-local-1',
-        mission: mission,
-        currentLog: null,
-      );
+      final mission = (await container.read(
+        zeniAppStateControllerProvider.future,
+      )).missionById('mission-local-1')!;
+      await container
+          .read(missionRepositoryProvider)
+          .submitMission(
+            childId: 'child-local-1',
+            mission: mission,
+            currentLog: null,
+          );
 
-      final appState = await container.read(zeniAppStateControllerProvider.future);
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
       final ledgerEntry = appState.starLedgerEntries.single;
       expect(ledgerEntry.type, StarLedgerEntryType.earned);
       expect(ledgerEntry.amount, 10);
@@ -2430,47 +2437,50 @@ void main() {
     },
   );
 
-  test('mission reversal generates correct star ledger idempotency key', () async {
-    final tableClient = _FakeStarLedgerTableClient();
-    final repository = SupabaseRemoteStarLedgerRepository(
-      client: null,
-      tableClient: tableClient,
-      currentUserIdOverride: 'user-1',
-    );
+  test(
+    'mission reversal generates correct star ledger idempotency key',
+    () async {
+      final tableClient = _FakeStarLedgerTableClient();
+      final repository = SupabaseRemoteStarLedgerRepository(
+        client: null,
+        tableClient: tableClient,
+        currentUserIdOverride: 'user-1',
+      );
 
-    final result = await repository.ensureRemoteStarLedger(
-      familyId: 'family-1',
-      localEntries: [
-        StarLedgerEntry(
-          id: 'ledger-local-reversal-1',
-          familyId: 'local-family',
-          childId: 'child-local-1',
-          amount: -12,
-          balanceAfter: 0,
-          type: StarLedgerEntryType.adjusted,
-          title: 'Desfazer: Arrumar brinquedos',
-          description: 'Conclusão automática desfeita no mesmo dia.',
-          createdAt: DateTime(2026, 5, 28, 10, 5),
-          relatedMissionLogId: 'log-local-1',
-        ),
-      ],
-      remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
-      remoteMissionLogIdByLocalMissionLogId: const {
-        'log-local-1': 'remote-log-1',
-      },
-      remoteRewardRequestIdByLocalRewardRequestId: const {},
-    );
+      final result = await repository.ensureRemoteStarLedger(
+        familyId: 'family-1',
+        localEntries: [
+          StarLedgerEntry(
+            id: 'ledger-local-reversal-1',
+            familyId: 'local-family',
+            childId: 'child-local-1',
+            amount: -12,
+            balanceAfter: 0,
+            type: StarLedgerEntryType.adjusted,
+            title: 'Desfazer: Arrumar brinquedos',
+            description: 'Conclusão automática desfeita no mesmo dia.',
+            createdAt: DateTime(2026, 5, 28, 10, 5),
+            relatedMissionLogId: 'log-local-1',
+          ),
+        ],
+        remoteChildIdByLocalChildId: const {'child-local-1': 'remote-child-1'},
+        remoteMissionLogIdByLocalMissionLogId: const {
+          'log-local-1': 'remote-log-1',
+        },
+        remoteRewardRequestIdByLocalRewardRequestId: const {},
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(
-      tableClient.insertedPayloads.single['idempotency_key'],
-      'mission_log:log-local-1:reversal',
-    );
-    expect(tableClient.insertedPayloads.single['direction'], 'debit');
-    expect(tableClient.insertedPayloads.single['amount'], 12);
-    expect(tableClient.insertedPayloads.single['source_type'], 'mission_log');
-    expect(tableClient.insertedPayloads.single['source_id'], 'remote-log-1');
-  });
+      expect(result.isSuccess, isTrue);
+      expect(
+        tableClient.insertedPayloads.single['idempotency_key'],
+        'mission_log:log-local-1:reversal',
+      );
+      expect(tableClient.insertedPayloads.single['direction'], 'debit');
+      expect(tableClient.insertedPayloads.single['amount'], 12);
+      expect(tableClient.insertedPayloads.single['source_type'], 'mission_log');
+      expect(tableClient.insertedPayloads.single['source_id'], 'remote-log-1');
+    },
+  );
 
   test('reward debit generates correct star ledger idempotency key', () async {
     final tableClient = _FakeStarLedgerTableClient();
@@ -2606,57 +2616,65 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues({
         'zeni_app_state_v1': jsonEncode(
-          ZeniAppState.initial().copyWith(
-            children: [
-              ChildProfile(
-                id: 'child-local-1',
-                familyId: 'local-family',
-                name: 'Luna',
-                emoji: '🦊',
-                starBalance: 0,
-                streakCount: 0,
-                createdAt: DateTime(2026, 5, 28),
-              ),
-            ],
-            missions: [
-              Mission(
-                id: 'mission-local-1',
-                familyId: 'local-family',
-                childId: 'child-local-1',
-                title: 'Arrumar brinquedos',
-                description: 'Guardar tudo',
-                stars: 10,
-                recurrence: MissionRecurrence.daily,
-                timeGroup: MissionTimeGroup.anytime,
-                approvalMode: MissionApprovalMode.automatic,
-                status: MissionStatus.active,
-                createdAt: DateTime(2026, 5, 28),
-                updatedAt: DateTime(2026, 5, 28),
-              ),
-            ],
-          ).toJson(),
+          ZeniAppState.initial()
+              .copyWith(
+                children: [
+                  ChildProfile(
+                    id: 'child-local-1',
+                    familyId: 'local-family',
+                    name: 'Luna',
+                    emoji: '🦊',
+                    starBalance: 0,
+                    streakCount: 0,
+                    createdAt: DateTime(2026, 5, 28),
+                  ),
+                ],
+                missions: [
+                  Mission(
+                    id: 'mission-local-1',
+                    familyId: 'local-family',
+                    childId: 'child-local-1',
+                    title: 'Arrumar brinquedos',
+                    description: 'Guardar tudo',
+                    stars: 10,
+                    recurrence: MissionRecurrence.daily,
+                    timeGroup: MissionTimeGroup.anytime,
+                    approvalMode: MissionApprovalMode.automatic,
+                    status: MissionStatus.active,
+                    createdAt: DateTime(2026, 5, 28),
+                    updatedAt: DateTime(2026, 5, 28),
+                  ),
+                ],
+              )
+              .toJson(),
         ),
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final mission = (await container.read(zeniAppStateControllerProvider.future))
-          .missionById('mission-local-1')!;
-      await container.read(missionRepositoryProvider).submitMission(
-        childId: 'child-local-1',
-        mission: mission,
-        currentLog: null,
-      );
+      final mission = (await container.read(
+        zeniAppStateControllerProvider.future,
+      )).missionById('mission-local-1')!;
+      await container
+          .read(missionRepositoryProvider)
+          .submitMission(
+            childId: 'child-local-1',
+            mission: mission,
+            currentLog: null,
+          );
       final completedState = await container.read(
         zeniAppStateControllerProvider.future,
       );
-      final missionLogId = completedState.starLedgerEntries.single.relatedMissionLogId!;
+      final missionLogId =
+          completedState.starLedgerEntries.single.relatedMissionLogId!;
 
-      await container.read(missionRepositoryProvider).undoMissionCompletion(
-        missionLogId,
+      await container
+          .read(missionRepositoryProvider)
+          .undoMissionCompletion(missionLogId);
+
+      final appState = await container.read(
+        zeniAppStateControllerProvider.future,
       );
-
-      final appState = await container.read(zeniAppStateControllerProvider.future);
       final reversalEntries = appState.starLedgerEntries
           .where((entry) => entry.type == StarLedgerEntryType.adjusted)
           .toList();
@@ -2698,7 +2716,11 @@ void main() {
       );
       expect(
         tableClient.rows
-            .where((row) => row['idempotency_key'] == 'mission_log:$missionLogId:reversal')
+            .where(
+              (row) =>
+                  row['idempotency_key'] ==
+                  'mission_log:$missionLogId:reversal',
+            )
             .single['direction'],
         'debit',
       );
@@ -5270,6 +5292,7 @@ class _FakeFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) async {
     throw UnimplementedError();
@@ -5310,6 +5333,7 @@ class _FakeFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) async {
     throw UnimplementedError();

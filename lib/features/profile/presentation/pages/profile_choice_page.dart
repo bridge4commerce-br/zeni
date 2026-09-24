@@ -12,7 +12,6 @@ import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_balance_pill.dart';
 import '../../../../core/widgets/base/zeni_brand_logo.dart';
-import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
@@ -164,8 +163,6 @@ class _ProfileChoiceContent extends StatelessWidget {
                   parentSection,
                   const SizedBox(height: ZeniSpacing.spaceSection),
                   childrenSection,
-                  const SizedBox(height: ZeniSpacing.spaceGroup),
-                  const _FamilyCodeAction(),
                 ],
               )
             else
@@ -176,8 +173,6 @@ class _ProfileChoiceContent extends StatelessWidget {
                   parentSection,
                   const SizedBox(height: ZeniSpacing.spaceSection),
                   childrenSection,
-                  const SizedBox(height: ZeniSpacing.spaceGroup),
-                  const _FamilyCodeAction(),
                 ],
               ),
           ],
@@ -311,28 +306,6 @@ class _ParentAccessButton extends StatelessWidget {
           Icon(Icons.chevron_right_rounded, color: colors.actionPrimary),
         ],
       ),
-    );
-  }
-}
-
-class _FamilyCodeAction extends StatelessWidget {
-  const _FamilyCodeAction();
-
-  @override
-  Widget build(BuildContext context) {
-    return ZeniButton(
-      label: 'Entrar com código da família',
-      icon: Icons.qr_code_rounded,
-      role: ZeniButtonRole.tertiary,
-      mode: ZeniVisualMode.parent,
-      fullWidth: false,
-      onPressed: () {
-        ZeniInfoPopup.show(
-          context,
-          title: 'Código da família',
-          message: 'Este recurso estará disponível em breve.',
-        );
-      },
     );
   }
 }

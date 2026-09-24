@@ -22,6 +22,7 @@ class ParentChildManagementSheet extends StatelessWidget {
     required this.ledgerEntries,
     required this.onEditProfile,
     required this.onArchiveProfile,
+    this.showDragHandle = true,
   });
 
   final ChildProfile child;
@@ -30,6 +31,7 @@ class ParentChildManagementSheet extends StatelessWidget {
   final List<StarLedgerEntry> ledgerEntries;
   final VoidCallback onEditProfile;
   final VoidCallback onArchiveProfile;
+  final bool showDragHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +49,7 @@ class ParentChildManagementSheet extends StatelessWidget {
 
     return ZeniModalSheetContainer(
       title: 'Gerenciar criança',
+      showDragHandle: showDragHandle,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

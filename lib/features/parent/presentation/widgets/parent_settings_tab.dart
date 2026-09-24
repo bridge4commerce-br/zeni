@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/accessibility/zeni_accessibility_settings.dart';
 import '../../../../core/layout/zeni_responsive.dart';
@@ -19,6 +20,8 @@ import '../../../sync/data/models/device_bootstrap_result.dart';
 import '../../../sync/data/models/cloud_consistency_diagnostic.dart';
 import '../../../sync/data/models/historical_restore_result.dart';
 import '../../../sync/presentation/providers/cloud_sync_providers.dart';
+
+const _zeniSupportEmail = 'suporte@luminadigital.app';
 
 class ParentSettingsTab extends StatelessWidget {
   const ParentSettingsTab({
@@ -447,7 +450,7 @@ class _ParentSettingsGroup extends StatelessWidget {
               title: 'Suporte',
               leading: const Icon(Icons.help_outline_rounded),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => _openTechnicalDiagnosticsSheet(context),
+              onTap: () => _openSupportSheet(context),
             ),
             Divider(height: 1, color: colors.borderSubtle),
             _SettingsMenuRow(
@@ -924,26 +927,62 @@ class _ParentSettingsGroup extends StatelessWidget {
     required String title,
     required String message,
   }) async {
+    final content = _SettingsInfoSheet(title: title, message: message);
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _SettingsInfoSheet(title: title, message: message),
+      builder: (_) => content,
+    );
+  }
+
+  Future<void> _openSupportSheet(BuildContext context) async {
+    final content = _SupportSheet(
+      onOpenTechnicalDiagnostics: () => _openTechnicalDiagnosticsSheet(context),
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => content,
     );
   }
 
   Future<void> _openTechnicalDiagnosticsSheet(BuildContext context) async {
+    final content = _TechnicalDiagnosticsSheet(
+      bootstrapState: supabaseBootstrapState,
+      isGoogleSignInAvailable: isGoogleSignInAvailable,
+      isAppleSignInAvailable: isAppleSignInAvailable,
+    );
+    if (ZeniAdaptiveModal.usesDialog(context)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _TechnicalDiagnosticsSheet(
-        bootstrapState: supabaseBootstrapState,
-        isGoogleSignInAvailable: isGoogleSignInAvailable,
-        isAppleSignInAvailable: isAppleSignInAvailable,
-      ),
+      builder: (_) => content,
     );
   }
 
@@ -1235,6 +1274,85 @@ class _SettingsInfoSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SupportSheet extends StatefulWidget {
+  const _SupportSheet({required this.onOpenTechnicalDiagnostics});
+
+  final VoidCallback onOpenTechnicalDiagnostics;
+
+  @override
+  State<_SupportSheet> createState() => _SupportSheetState();
+}
+
+class _SupportSheetState extends State<_SupportSheet> {
+  String? _errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
+    return ZeniModalSheetContainer(
+      title: 'Suporte',
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Precisa de ajuda com o Zeni? Fale com a gente.',
+            style: typography.body,
+          ),
+          const SizedBox(height: ZeniSpacing.spaceInline),
+          Text(_zeniSupportEmail, style: typography.metadata),
+          const SizedBox(height: ZeniSpacing.spaceCard),
+          ZeniPrimaryButton(label: 'Enviar e-mail', onPressed: _sendEmail),
+          if (_errorText != null) ...[
+            const SizedBox(height: ZeniSpacing.spaceInline),
+            Text(
+              _errorText!,
+              style: typography.metadata.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: ZeniSpacing.spaceSection),
+          _SettingsMenuRow(
+            title: 'Diagnóstico técnico',
+            subtitle: 'Informações úteis caso o suporte solicite.',
+            leading: const Icon(Icons.health_and_safety_outlined),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onOpenTechnicalDiagnostics();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendEmail() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _zeniSupportEmail,
+      queryParameters: const {'subject': 'Suporte Zeni'},
+    );
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        setState(() {
+          _errorText =
+              'Não foi possível abrir o e-mail. Use $_zeniSupportEmail para falar com a gente.';
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorText =
+            'Não foi possível abrir o e-mail. Use $_zeniSupportEmail para falar com a gente.';
+      });
+    }
   }
 }
 
@@ -1751,10 +1869,12 @@ class ParentProfileNameSheet extends StatefulWidget {
     super.key,
     required this.initialName,
     required this.onSubmit,
+    this.showDragHandle = true,
   });
 
   final String initialName;
   final Future<void> Function(String name) onSubmit;
+  final bool showDragHandle;
 
   @override
   State<ParentProfileNameSheet> createState() => _ParentProfileNameSheetState();
@@ -1777,6 +1897,7 @@ class _ParentProfileNameSheetState extends State<ParentProfileNameSheet> {
   Widget build(BuildContext context) {
     return ZeniModalSheetContainer(
       title: 'Perfil do responsável',
+      showDragHandle: widget.showDragHandle,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

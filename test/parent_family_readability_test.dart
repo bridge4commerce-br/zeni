@@ -76,6 +76,7 @@ void main() {
             onEditChild: (_) {},
             onArchiveChild: (_) {},
             onRestoreChild: onRestore ?? (_) {},
+            onUpdateParentDisplayName: (_) async {},
           ),
         ),
       ),
@@ -116,11 +117,15 @@ void main() {
     },
   );
 
-  testWidgets('keeps empty states calm and uses wide layout on tablet', (
+  testWidgets('keeps empty states calm in the shared vertical tablet layout', (
     tester,
   ) async {
     await pumpFamily(tester, size: const Size(1024, 1366), children: const []);
-    expect(find.byKey(const Key('parent-family-wide-layout')), findsOneWidget);
+    expect(
+      find.byKey(const Key('parent-family-single-layout')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('parent-family-wide-layout')), findsNothing);
     expect(find.text('Nenhuma criança ativa'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

@@ -16,6 +16,7 @@ abstract class FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   });
 
@@ -24,6 +25,7 @@ abstract class FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   });
 

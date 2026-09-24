@@ -8,14 +8,12 @@ import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_surface.dart';
-import '../../../../core/widgets/feedback/zeni_success_popup.dart';
 import '../../../balance/data/models/star_ledger_entry.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../family/data/models/family.dart';
 import '../../../family/data/models/family_member.dart';
 import '../../../rewards/data/models/reward.dart';
 import '../../../tasks/data/models/mission.dart';
-import 'family_invite_code_card.dart';
 import 'family_member_card.dart';
 import 'parent_archived_child_card.dart';
 import 'parent_child_management_sheet.dart';
@@ -142,22 +140,6 @@ class ParentFamilyTab extends StatelessWidget {
               ],
             ),
           ),
-        const SizedBox(height: ZeniSpacing.spaceSection),
-        Text('Código da família', style: typography.sectionTitle),
-        const SizedBox(height: ZeniSpacing.spaceCard),
-        ZeniSurface(
-          role: ZeniSurfaceRole.highlight,
-          mode: ZeniVisualMode.parent,
-          padding: EdgeInsets.zero,
-          child: FamilyInviteCodeCard(
-            family: family,
-            onCopy: () => ZeniSuccessPopup.show(
-              context,
-              title: 'Código copiado',
-              message: 'Depois vamos conectar isso à área de transferência.',
-            ),
-          ),
-        ),
         if (archivedChildren.isNotEmpty) ...[
           const SizedBox(height: ZeniSpacing.spaceSection),
           Text('Crianças arquivadas', style: typography.sectionTitle),
@@ -234,6 +216,7 @@ class ParentFamilyTab extends StatelessWidget {
         Navigator.of(context).pop();
         onArchiveChild(child);
       },
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
     if (ZeniAdaptiveModal.usesDialog(context)) {
       showDialog<void>(
@@ -262,6 +245,7 @@ class ParentFamilyTab extends StatelessWidget {
     final content = ParentProfileNameSheet(
       initialName: member.name,
       onSubmit: onUpdateParentDisplayName,
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
     if (ZeniAdaptiveModal.usesDialog(context)) {
       await showDialog<void>(

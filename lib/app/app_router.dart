@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/child/presentation/pages/child_shell_page.dart';
@@ -8,7 +9,8 @@ import '../features/onboarding/presentation/pages/onboarding_flow_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_preview_page.dart';
 import '../features/parent/presentation/pages/parent_shell_page.dart';
 
-GoRouter createZeniRouter() {
+GoRouter createZeniRouter({bool? enableDevRoutes}) {
+  final includesDevRoutes = enableDevRoutes ?? kDebugMode;
   return GoRouter(
     initialLocation: '/',
     routes: [
@@ -37,10 +39,11 @@ GoRouter createZeniRouter() {
         path: '/parent',
         builder: (context, state) => const ParentShellPage(),
       ),
-      GoRoute(
-        path: '/dev/components',
-        builder: (context, state) => const OnboardingPreviewPage(),
-      ),
+      if (includesDevRoutes)
+        GoRoute(
+          path: '/dev/components',
+          builder: (context, state) => const OnboardingPreviewPage(),
+        ),
     ],
   );
 }

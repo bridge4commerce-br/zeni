@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
 import '../../../../core/widgets/base/zeni_primary_button.dart';
 import '../../../../core/widgets/base/zeni_secondary_button.dart';
-import '../../../../core/widgets/inputs/zeni_switch.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
+import '../../../family/presentation/avatar_catalog.dart';
 
 class ParentChildFormResult {
   const ParentChildFormResult({
     required this.name,
     required this.emoji,
     required this.ttsEnabled,
+    this.avatarId,
     this.birthDate,
   });
 
   final String name;
   final String emoji;
   final bool ttsEnabled;
+  final String? avatarId;
   final DateTime? birthDate;
 }
 
@@ -28,45 +30,30 @@ class ParentChildFormSheet extends StatefulWidget {
     this.initialEmoji,
     this.initialBirthDate,
     this.initialTtsEnabled = false,
+    this.initialAvatarId,
     this.title = 'Adicionar criança',
     this.submitLabel = 'Adicionar criança',
+    this.showDragHandle = true,
   });
 
   final String? initialName;
   final String? initialEmoji;
   final DateTime? initialBirthDate;
   final bool initialTtsEnabled;
+  final String? initialAvatarId;
   final String title;
   final String submitLabel;
+  final bool showDragHandle;
 
   @override
   State<ParentChildFormSheet> createState() => _ParentChildFormSheetState();
 }
 
 class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
-  static const _emojiOptions = [
-    '🌟',
-    '🚀',
-    '🦁',
-    '🦊',
-    '🐼',
-    '🐵',
-    '🐯',
-    '🐰',
-    '🐸',
-    '🦄',
-    '⚽',
-    '🎨',
-    '🎮',
-    '📚',
-    '🎧',
-    '🌈',
-    '⭐',
-  ];
-
   final _nameController = TextEditingController();
 
   late String _selectedEmoji;
+  late String? _selectedAvatarId;
   late bool _ttsEnabled;
   DateTime? _birthDate;
 
@@ -77,13 +64,12 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
     super.initState();
 
     _nameController.text = widget.initialName ?? '';
-    _selectedEmoji = widget.initialEmoji ?? _emojiOptions.first;
+    _selectedEmoji = widget.initialEmoji ?? '⭐';
+    _selectedAvatarId =
+        widget.initialAvatarId ??
+        (widget.initialName == null ? ZeniChildAvatarCatalog.fallbackId : null);
     _ttsEnabled = widget.initialTtsEnabled;
     _birthDate = widget.initialBirthDate;
-
-    if (!_emojiOptions.contains(_selectedEmoji)) {
-      _selectedEmoji = _emojiOptions.first;
-    }
   }
 
   @override
@@ -96,15 +82,14 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
   Widget build(BuildContext context) {
     return ZeniModalSheetContainer(
       title: widget.title,
+      showDragHandle: widget.showDragHandle,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Escolha um nome, avatar e data de nascimento.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
+              'Escolha um nome, data de nascimento e avatar.',
+              style: ZeniTypography.of(context).body,
             ),
             const SizedBox(height: ZeniSpacing.xl),
             TextField(
@@ -119,8 +104,8 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
             ),
             const SizedBox(height: ZeniSpacing.xl),
             Text(
-              'Data de nascimento',
-              style: Theme.of(context).textTheme.titleLarge,
+              'Data de nascimento (opcional)',
+              style: ZeniTypography.of(context).cardTitle,
             ),
             const SizedBox(height: ZeniSpacing.md),
             OutlinedButton.icon(
@@ -133,35 +118,32 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
               onPressed: _pickBirthDate,
             ),
             const SizedBox(height: ZeniSpacing.xl),
-            ZeniSwitch(
-              title: 'Leitura em voz alta para esta criança',
-              subtitle:
-                  'Quando o app usar a configuração por criança, ${_nameController.text.trim().isEmpty ? 'este perfil' : _nameController.text.trim()} poderá ouvir missões e mimos.',
-              icon: Icons.record_voice_over_rounded,
-              value: _ttsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _ttsEnabled = value;
-                });
-              },
-            ),
-            const SizedBox(height: ZeniSpacing.md),
             Text(
               'Escolha um avatar',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: ZeniTypography.of(context).cardTitle,
             ),
             const SizedBox(height: ZeniSpacing.md),
             Wrap(
               spacing: ZeniSpacing.sm,
               runSpacing: ZeniSpacing.sm,
               children: [
-                for (final emoji in _emojiOptions)
+                for (final avatar in ZeniChildAvatarCatalog.all)
                   ChoiceChip(
-                    label: Text(emoji, style: const TextStyle(fontSize: 22)),
-                    selected: _selectedEmoji == emoji,
+                    label: Image.asset(avatar.assetPath, width: 40, height: 40),
+                    selected: _selectedAvatarId == avatar.id,
+                    showCheckmark: false,
+                    selectedColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: .12),
+                    side: BorderSide(
+                      color: _selectedAvatarId == avatar.id
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outlineVariant,
+                      width: _selectedAvatarId == avatar.id ? 2 : 1,
+                    ),
                     onSelected: (_) {
                       setState(() {
-                        _selectedEmoji = emoji;
+                        _selectedAvatarId = avatar.id;
                       });
                     },
                   ),
@@ -219,6 +201,7 @@ class _ParentChildFormSheetState extends State<ParentChildFormSheet> {
       ParentChildFormResult(
         name: _nameController.text.trim(),
         emoji: _selectedEmoji,
+        avatarId: _selectedAvatarId,
         ttsEnabled: _ttsEnabled,
         birthDate: _birthDate,
       ),

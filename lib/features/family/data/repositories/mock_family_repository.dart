@@ -48,6 +48,7 @@ class MockFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) {
     return _ref
@@ -57,6 +58,7 @@ class MockFamilyRepository implements FamilyRepository {
           name: name,
           emoji: emoji,
           birthDate: birthDate,
+          avatarId: avatarId,
           ttsEnabled: ttsEnabled,
         );
   }
@@ -67,6 +69,7 @@ class MockFamilyRepository implements FamilyRepository {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) {
     return _ref
@@ -76,6 +79,7 @@ class MockFamilyRepository implements FamilyRepository {
           name: name,
           emoji: emoji,
           birthDate: birthDate,
+          avatarId: avatarId,
           ttsEnabled: ttsEnabled,
         );
   }

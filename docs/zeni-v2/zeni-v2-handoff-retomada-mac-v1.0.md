@@ -1,5 +1,9 @@
 # Zeni V2 — Handoff para Retomada no Mac v1.0
 
+> **Superseded:** este handoff registra uma etapa anterior do rollout V2. Para
+> o contexto operacional atual, use `docs/context/zeni-context-current.md`.
+> Smart Content e “Sugerir missões” não são próximos passos deste handoff.
+
 **Data:** 2026-09-06  
 **Status do projeto:** pré-beta interno maduro  
 **Objetivo deste arquivo:** permitir retomar o projeto Flutter correto sem reabrir decisões já fechadas de arquitetura, UX e Smart Content.

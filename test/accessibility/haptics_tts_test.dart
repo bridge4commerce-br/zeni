@@ -328,7 +328,9 @@ void main() {
     expect(ttsPlatform.spokenTexts.length, greaterThanOrEqualTo(2));
   });
 
-  testWidgets('editing child form allows changing ttsEnabled', (tester) async {
+  testWidgets('child form no longer exposes per-child TTS configuration', (
+    tester,
+  ) async {
     ParentChildFormResult? submitted;
 
     await tester.pumpWidget(
@@ -345,15 +347,12 @@ void main() {
     await tester.tap(find.text('Abrir formulário'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Leitura em voz alta para esta criança'), findsOneWidget);
-
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
+    expect(find.text('Leitura em voz alta para esta criança'), findsNothing);
     await tester.ensureVisible(find.text('Salvar perfil'));
     await tester.tap(find.text('Salvar perfil'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
-    expect(submitted?.ttsEnabled, isTrue);
+    expect(submitted?.ttsEnabled, isFalse);
   });
 
   test(

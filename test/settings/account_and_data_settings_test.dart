@@ -253,6 +253,9 @@ void main() {
     await tester.tap(find.text('Suporte'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Diagnóstico técnico'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Supabase configurado'), findsOneWidget);
     expect(find.text('Sim'), findsWidgets);
     expect(find.text('Supabase inicializado'), findsOneWidget);
@@ -316,7 +319,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Suporte'));
     await tester.pumpAndSettle();
-    expect(find.text('Diagnóstico técnico'), findsOneWidget);
+    expect(
+      find.text('Precisa de ajuda com o Zeni? Fale com a gente.'),
+      findsOneWidget,
+    );
+    expect(find.text('suporte@luminadigital.app'), findsOneWidget);
+    await tester.tap(find.text('Diagnóstico técnico'));
+    await tester.pumpAndSettle();
     expect(
       find.textContaining('Resumo seguro para suporte interno.'),
       findsOneWidget,
@@ -379,10 +388,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Conta, backup e restauração'), findsWidgets);
-    expect(
-      find.text('Indisponível nesta versão'),
-      findsOneWidget,
-    );
+    expect(find.text('Indisponível nesta versão'), findsOneWidget);
     expect(find.text('Indisponível nesta versão'), findsOneWidget);
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });

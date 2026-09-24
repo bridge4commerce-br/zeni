@@ -63,6 +63,7 @@ class _InitialFamilySetupPageState
           // Kept only while legacy profiles still require the emoji field.
           childEmoji: '⭐',
           childAvatarId: child.avatarId,
+          childBirthDate: child.birthDate,
           hasCompletedOnboarding: true,
           clearParentPin: false,
           createSuggestedMission: false,
@@ -268,6 +269,27 @@ class _AddChildSheetState extends State<_AddChildSheet> {
   );
   late String _avatarId =
       widget.initial?.avatarId ?? ZeniChildAvatarCatalog.fallbackId;
+  DateTime? _birthDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _birthDate = widget.initial?.birthDate;
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(now.year - 8),
+      firstDate: DateTime(now.year - 18),
+      lastDate: now,
+    );
+    if (date != null) setState(() => _birthDate = date);
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   @override
   void dispose() {
     _name.dispose();
@@ -292,18 +314,38 @@ class _AddChildSheetState extends State<_AddChildSheet> {
             style: ZeniTypography.of(context).sectionTitle,
           ),
           const SizedBox(height: ZeniSpacing.lg),
-          _AvatarPicker(
-            avatars: ZeniChildAvatarCatalog.all,
-            selectedAvatarId: _avatarId,
-            onSelected: (avatarId) => setState(() => _avatarId = avatarId),
-          ),
-          const SizedBox(height: ZeniSpacing.lg),
           ZeniTextInput(
             controller: _name,
             label: 'Nome',
             hint: 'Ex.: Luna',
             prefixIcon: Icons.child_care_rounded,
             onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          Text(
+            'Data de nascimento (opcional)',
+            style: ZeniTypography.of(context).cardTitle,
+          ),
+          const SizedBox(height: ZeniSpacing.spaceControl),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.cake_rounded),
+            label: Text(
+              _birthDate == null
+                  ? 'Adicionar data de nascimento'
+                  : _formatDate(_birthDate!),
+            ),
+            onPressed: _pickBirthDate,
+          ),
+          const SizedBox(height: ZeniSpacing.lg),
+          Text(
+            'Escolha um avatar',
+            style: ZeniTypography.of(context).cardTitle,
+          ),
+          const SizedBox(height: ZeniSpacing.spaceControl),
+          _AvatarPicker(
+            avatars: ZeniChildAvatarCatalog.all,
+            selectedAvatarId: _avatarId,
+            onSelected: (avatarId) => setState(() => _avatarId = avatarId),
           ),
           const SizedBox(height: ZeniSpacing.xl),
           ZeniButton(
@@ -313,7 +355,11 @@ class _AddChildSheetState extends State<_AddChildSheet> {
             onPressed: _name.text.trim().isEmpty
                 ? null
                 : () => Navigator.of(context).pop(
-                    _DraftChild(name: _name.text.trim(), avatarId: _avatarId),
+                    _DraftChild(
+                      name: _name.text.trim(),
+                      avatarId: _avatarId,
+                      birthDate: _birthDate,
+                    ),
                   ),
           ),
         ],
@@ -386,7 +432,12 @@ class _AvatarPicker extends StatelessWidget {
 }
 
 class _DraftChild {
-  const _DraftChild({required this.name, required this.avatarId});
+  const _DraftChild({
+    required this.name,
+    required this.avatarId,
+    this.birthDate,
+  });
   final String name;
   final String avatarId;
+  final DateTime? birthDate;
 }

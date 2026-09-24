@@ -11,8 +11,13 @@ void main() {
 
   Future<void> openAccountSheet(WidgetTester tester) async {
     await openParentSettings(tester);
-    await tester.scrollUntilVisible(find.text('Conectar conta'), 300);
-    await tester.tap(find.text('Conectar conta'));
+    await tester.scrollUntilVisible(
+      find.text('Conta, backup e restauração'),
+      300,
+    );
+    await tester.tap(find.text('Conta, backup e restauração'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Conta não conectada').last);
     await tester.pumpAndSettle();
   }
 

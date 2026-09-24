@@ -543,11 +543,7 @@ void main() {
         280,
       );
       expect(find.text('Criança 7'), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Entrar com código da família'),
-        280,
-      );
-      expect(find.text('Entrar com código da família'), findsOneWidget);
+      expect(find.text('Entrar com código da família'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -644,16 +640,7 @@ void main() {
     );
     expect((secondChild.dy - firstChild.dy).abs(), lessThan(1));
     expect(secondChild.dx, greaterThan(firstChild.dx));
-    final familyCode = find.text('Entrar com código da família');
-    expect(familyCode, findsOneWidget);
-    expect(
-      tester.getTopLeft(familyCode).dy,
-      greaterThan(
-        tester
-            .getBottomRight(find.byKey(const Key('profile-child-child-2')))
-            .dy,
-      ),
-    );
+    expect(find.text('Entrar com código da família'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -709,17 +696,7 @@ void main() {
       tester.getTopLeft(fourthChild).dy,
       greaterThan(tester.getTopLeft(firstChild).dy),
     );
-    final familyCode = find.text('Entrar com código da família');
-    expect(
-      tester.getTopLeft(familyCode).dy,
-      greaterThan(
-        tester
-            .getBottomRight(
-              find.byKey(const Key('profile-child-landscape-child-6')),
-            )
-            .dy,
-      ),
-    );
+    expect(find.text('Entrar com código da família'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -741,7 +718,7 @@ void main() {
       tester.getSize(childCard).width,
       lessThan(tester.getSize(parentSection).width),
     );
-    expect(find.text('Entrar com código da família'), findsOneWidget);
+    expect(find.text('Entrar com código da família'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

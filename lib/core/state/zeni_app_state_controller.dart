@@ -64,6 +64,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) async {
     final current = _requireState();
@@ -77,7 +78,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       birthDate: birthDate,
       ttsEnabled: ttsEnabled,
       createdAt: now,
-    );
+    ).copyWith(avatarId: avatarId);
     final member = _buildChildFamilyMember(
       familyId: familyId,
       childId: childId,
@@ -98,6 +99,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required String name,
     required String emoji,
     DateTime? birthDate,
+    String? avatarId,
     required bool ttsEnabled,
   }) async {
     final current = _requireState();
@@ -111,6 +113,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       emoji: emoji,
       birthDate: birthDate,
       ttsEnabled: ttsEnabled,
+      avatarId: avatarId ?? child.avatarId,
     );
     final updated = current.copyWith(
       children: [
@@ -468,6 +471,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     required bool createSuggestedReward,
     String? rewardTitle,
     String? childAvatarId,
+    DateTime? childBirthDate,
   }) async {
     final current = _requireState();
     final now = DateTime.now();
@@ -478,7 +482,7 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
       name: childName,
       emoji: childEmoji,
       createdAt: now,
-    ).copyWith(avatarId: childAvatarId);
+    ).copyWith(avatarId: childAvatarId, birthDate: childBirthDate);
     final member = _buildChildFamilyMember(
       familyId: current.family.id,
       childId: childId,
