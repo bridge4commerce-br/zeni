@@ -14,7 +14,6 @@ import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
 import '../../../../core/widgets/base/zeni_icon_action_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
 import '../../../../core/widgets/feedback/zeni_confirm_action_sheet.dart';
@@ -25,7 +24,6 @@ import '../../../../core/widgets/layout/zeni_top_bar.dart';
 import '../../../../core/widgets/zeni_flying_star_overlay.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../balance/data/models/star_ledger_entry.dart';
-import '../../../balance/presentation/widgets/history_entry_card.dart';
 import '../../../family/data/models/child_profile.dart';
 import '../../../family/presentation/avatar_catalog.dart';
 import '../../../rewards/data/models/reward.dart';
@@ -37,6 +35,7 @@ import '../../../tasks/data/models/mission_log.dart';
 import '../../../tasks/domain/mission_undo_policy.dart';
 import '../../../tts/domain/zeni_speech_text_builders.dart';
 import '../../../tts/presentation/providers/zeni_tts_service.dart';
+import '../widgets/child_balance_tab.dart';
 import '../widgets/child_home_tab.dart';
 import '../widgets/child_missions_tab.dart';
 import '../widgets/child_rewards_tab.dart';
@@ -504,7 +503,10 @@ class _ChildShellPageState extends ConsumerState<ChildShellPage> {
             canListenToReward: canUseReadAloud,
             onRefresh: _refreshPrimaryLists,
           ),
-          _ChildBalancePage(data: data),
+          ChildBalanceTab(
+            childBalance: data.child.starBalance,
+            ledgerEntries: data.ledgerEntries,
+          ),
         ];
 
         return ZeniScaffold(
@@ -569,64 +571,6 @@ List<Mission> childMissionsForDate({
             mission.occursOnDate(targetDate),
       )
       .toList();
-}
-
-class _ChildBalancePage extends StatelessWidget {
-  const _ChildBalancePage({required this.data});
-
-  final _ChildModeData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(ZeniSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Meu saldo', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: ZeniSpacing.sm),
-          Text(
-            'Acompanhe as estrelas que você ganhou e usou.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: ZeniColors.mutedText),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          ZeniCard(
-            child: Row(
-              children: [
-                const Text('⭐', style: TextStyle(fontSize: 42)),
-                const SizedBox(width: ZeniSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Saldo atual',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: ZeniSpacing.xs),
-                      Text(
-                        '${data.child.starBalance} estrelas',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: ZeniSpacing.xl),
-          Text('Histórico', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: ZeniSpacing.md),
-          for (final entry in data.ledgerEntries) ...[
-            HistoryEntryCard(entry: entry),
-            const SizedBox(height: ZeniSpacing.md),
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 class _ChildIdentityHeader extends StatelessWidget
