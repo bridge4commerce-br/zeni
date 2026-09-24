@@ -8,11 +8,13 @@ class ZeniModalSheetContainer extends StatelessWidget {
     super.key,
     required this.child,
     this.title,
+    this.showDragHandle = true,
     this.padding = const EdgeInsets.all(ZeniSpacing.xl),
   });
 
   final Widget child;
   final String? title;
+  final bool showDragHandle;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -34,16 +36,18 @@ class ZeniModalSheetContainer extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 44,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(ZeniRadius.pill),
+            if (showDragHandle)
+              Container(
+                key: const Key('zeni-modal-drag-handle'),
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(ZeniRadius.pill),
+                ),
               ),
-            ),
             if (title != null) ...[
               const SizedBox(height: ZeniSpacing.lg),
               Align(

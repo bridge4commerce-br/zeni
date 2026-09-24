@@ -22,11 +22,13 @@ class AuthAccountSheet extends ConsumerStatefulWidget {
     required this.isSupabaseConfigured,
     required this.bootstrapState,
     this.preferredEmailAction = AuthEmailAction.signIn,
+    this.showDragHandle = true,
   });
 
   final bool isSupabaseConfigured;
   final ZeniSupabaseBootstrapState bootstrapState;
   final AuthEmailAction preferredEmailAction;
+  final bool showDragHandle;
 
   @override
   ConsumerState<AuthAccountSheet> createState() => _AuthAccountSheetState();
@@ -56,6 +58,7 @@ class _AuthAccountSheetState extends ConsumerState<AuthAccountSheet> {
 
     return ZeniModalSheetContainer(
       title: 'Conta da família',
+      showDragHandle: widget.showDragHandle,
       child: SingleChildScrollView(
         child: _emailAction == null
             ? _ProviderOptions(

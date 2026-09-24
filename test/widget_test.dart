@@ -29,6 +29,7 @@ import 'package:zeni/features/family/data/repositories/remote_children_repositor
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
 import 'package:zeni/features/onboarding/presentation/pages/initial_start_choice_page.dart';
 import 'package:zeni/features/onboarding/presentation/pages/family_account_page.dart';
+import 'package:zeni/core/widgets/base/zeni_button.dart';
 import 'package:zeni/features/profile/presentation/pages/profile_choice_page.dart';
 import 'package:zeni/features/parent/presentation/widgets/parent_settings_tab.dart';
 import 'package:zeni/features/parent/presentation/widgets/monthly_star_projection_card.dart';
@@ -995,7 +996,7 @@ void main() {
     await openNewFamilySetup(tester);
     expect(find.text('Continuar'), findsOneWidget);
     expect(
-      tester.widget<ElevatedButton>(find.byType(ElevatedButton).last).onPressed,
+      tester.widget<ZeniButton>(find.byType(ZeniButton).last).onPressed,
       isNull,
     );
   });

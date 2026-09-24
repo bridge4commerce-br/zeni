@@ -6,9 +6,11 @@ import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
-import '../../../../core/widgets/base/zeni_primary_button.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../family/presentation/avatar_catalog.dart';
@@ -27,12 +29,19 @@ class _InitialFamilySetupPageState
   bool _isSaving = false;
 
   Future<void> _addChild({_DraftChild? existing}) async {
-    final child = await showModalBottomSheet<_DraftChild>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _AddChildSheet(initial: existing),
-    );
+    final content = _AddChildSheet(initial: existing);
+    final child = ZeniAdaptiveModal.usesDialog(context)
+        ? await showDialog<_DraftChild>(
+            context: context,
+            builder: (_) =>
+                Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+          )
+        : await showModalBottomSheet<_DraftChild>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (_) => content,
+          );
     if (!mounted || child == null) return;
     setState(() {
       if (existing == null) {
@@ -76,7 +85,7 @@ class _InitialFamilySetupPageState
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
     return ZeniScaffold(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
@@ -96,15 +105,11 @@ class _InitialFamilySetupPageState
                 icon: const Icon(Icons.arrow_back_rounded),
               ),
               const SizedBox(height: ZeniSpacing.sm),
-              Text('Quem vai usar o Zeni?', style: textTheme.displayLarge),
+              Text('Quem vai usar o Zeni?', style: typography.display),
               const SizedBox(height: ZeniSpacing.sm),
               Text(
                 'Adicione as crianças da família. Você pode incluir outras agora ou depois.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.68),
-                ),
+                style: typography.body,
               ),
               const SizedBox(height: ZeniSpacing.xl),
               if (_children.isEmpty)
@@ -120,16 +125,21 @@ class _InitialFamilySetupPageState
                   ),
                   const SizedBox(height: ZeniSpacing.sm),
                 ],
-                OutlinedButton.icon(
+                ZeniButton(
+                  label: 'Adicionar outra criança',
+                  icon: Icons.add_rounded,
+                  role: ZeniButtonRole.secondary,
+                  mode: ZeniVisualMode.parent,
                   onPressed: _isSaving ? null : _addChild,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Adicionar outra criança'),
                 ),
               ],
               const SizedBox(height: ZeniSpacing.xl),
-              ZeniPrimaryButton(
+              ZeniButton(
                 label: _isSaving ? 'Salvando...' : 'Continuar',
                 icon: Icons.arrow_forward_rounded,
+                role: ZeniButtonRole.primary,
+                mode: ZeniVisualMode.parent,
+                loading: _isSaving,
                 onPressed: _children.isEmpty || _isSaving ? null : _finish,
               ),
             ],
@@ -146,19 +156,23 @@ class _AddChildInvite extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     width: double.infinity,
-    child: ZeniCard(
+    child: ZeniSurface(
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.parent,
       onTap: onTap,
-      padding: const EdgeInsets.all(ZeniSpacing.lg),
+      padding: const EdgeInsets.all(ZeniSpacing.spaceCard),
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: ZeniColors.primary.withValues(alpha: 0.14),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.add_rounded, color: ZeniColors.primaryDark),
+            child: const Icon(Icons.add_rounded),
           ),
           const SizedBox(width: ZeniSpacing.md),
           Expanded(
@@ -167,20 +181,20 @@ class _AddChildInvite extends StatelessWidget {
               children: [
                 Text(
                   'Adicionar criança',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: ZeniTypography.of(context).cardTitle,
                 ),
                 const SizedBox(height: ZeniSpacing.xs),
                 Text(
                   'Nome e avatar levam menos de um minuto.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: ZeniTypography.of(context).metadata,
                 ),
               ],
             ),
           ),
           const SizedBox(width: ZeniSpacing.sm),
-          const Icon(
+          Icon(
             Icons.arrow_forward_rounded,
-            color: ZeniColors.primaryDark,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -200,15 +214,19 @@ class _ChildDraftCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatar = ZeniChildAvatarCatalog.byId(child.avatarId);
-    return ZeniCard(
-      padding: const EdgeInsets.all(ZeniSpacing.md),
+    return ZeniSurface(
+      role: ZeniSurfaceRole.grouped,
+      mode: ZeniVisualMode.parent,
+      padding: const EdgeInsets.all(ZeniSpacing.spaceControl),
       child: Row(
         children: [
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: ZeniColors.primary.withValues(alpha: 0.08),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             clipBehavior: Clip.antiAlias,
@@ -218,7 +236,7 @@ class _ChildDraftCard extends StatelessWidget {
           Expanded(
             child: Text(
               child.name,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: ZeniTypography.of(context).cardTitle,
             ),
           ),
           IconButton(
@@ -271,7 +289,7 @@ class _AddChildSheetState extends State<_AddChildSheet> {
         children: [
           Text(
             'Adicionar criança',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: ZeniTypography.of(context).sectionTitle,
           ),
           const SizedBox(height: ZeniSpacing.lg),
           _AvatarPicker(
@@ -288,8 +306,10 @@ class _AddChildSheetState extends State<_AddChildSheet> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: ZeniSpacing.xl),
-          ZeniPrimaryButton(
+          ZeniButton(
             label: 'Adicionar',
+            role: ZeniButtonRole.primary,
+            mode: ZeniVisualMode.parent,
             onPressed: _name.text.trim().isEmpty
                 ? null
                 : () => Navigator.of(context).pop(

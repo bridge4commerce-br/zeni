@@ -7,11 +7,12 @@ import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_radius.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_brand_logo.dart';
-import '../../../../core/widgets/base/zeni_card.dart';
-import '../../../../core/widgets/base/zeni_primary_button.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
-import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
 import '../../../../core/widgets/feedback/zeni_info_popup.dart';
 import '../../../../core/widgets/feedback/zeni_success_popup.dart';
@@ -34,7 +35,7 @@ class _InitialStartChoicePageState
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
 
     return ZeniScaffold(
       child: SingleChildScrollView(
@@ -55,18 +56,11 @@ class _InitialStartChoicePageState
                   children: [
                     const ZeniBrandLogo(width: 76),
                     const SizedBox(height: ZeniSpacing.xl),
-                    Text(
-                      'Como você quer começar?',
-                      style: textTheme.displayLarge,
-                    ),
+                    Text('Como você quer começar?', style: typography.display),
                     const SizedBox(height: ZeniSpacing.sm),
                     Text(
                       'Escolha uma opção para continuar.',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.68),
-                      ),
+                      style: typography.body,
                     ),
                     const SizedBox(height: ZeniSpacing.xl),
                     _StartOptionCard(
@@ -110,20 +104,28 @@ class _InitialStartChoicePageState
           'Faça login para continuar. A restauração completa só começa quando você tocar em "Restaurar minha família".';
     });
 
-    final didAuthenticate = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: AuthAccountSheet(
-          isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
-          bootstrapState: ZeniSupabaseBootstrap.state,
-        ),
-      ),
+    final content = AuthAccountSheet(
+      isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+      bootstrapState: ZeniSupabaseBootstrap.state,
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
+    final didAuthenticate = ZeniAdaptiveModal.usesDialog(context)
+        ? await showDialog<bool>(
+            context: context,
+            builder: (_) =>
+                Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+          )
+        : await showModalBottomSheet<bool>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: content,
+            ),
+          );
 
     if (!mounted || didAuthenticate != true) return;
     setState(() {
@@ -182,53 +184,53 @@ class _RestoreChoiceContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const ZeniBrandLogo(width: 86),
         const SizedBox(height: ZeniSpacing.xxxl),
-        Text('Sua família está por aqui', style: textTheme.displayLarge),
+        Text('Sua família está por aqui', style: typography.display),
         const SizedBox(height: ZeniSpacing.sm),
         Text(
           'Sua conta já foi conectada. Agora vamos preparar este aparelho com segurança.',
-          style: textTheme.bodyLarge?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.68),
-          ),
+          style: typography.body,
         ),
         const SizedBox(height: ZeniSpacing.xxl),
         const _ConnectedAccountCard(),
         if (restoreMessage != null) ...[
           const SizedBox(height: ZeniSpacing.lg),
-          ZeniCard(
+          ZeniSurface(
+            role: ZeniSurfaceRole.highlight,
+            mode: ZeniVisualMode.parent,
             padding: const EdgeInsets.all(ZeniSpacing.md),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   isRestoring ? Icons.sync_rounded : Icons.info_outline_rounded,
-                  color: ZeniColors.primaryDark,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: ZeniSpacing.sm),
-                Expanded(
-                  child: Text(restoreMessage!, style: textTheme.bodyMedium),
-                ),
+                Expanded(child: Text(restoreMessage!, style: typography.body)),
               ],
             ),
           ),
         ],
         const SizedBox(height: ZeniSpacing.lg),
-        ZeniPrimaryButton(
+        ZeniButton(
           label: isRestoring ? 'Restaurando...' : 'Restaurar minha família',
           icon: Icons.cloud_download_rounded,
+          role: ZeniButtonRole.primary,
+          mode: ZeniVisualMode.parent,
           onPressed: onRestore,
         ),
         const SizedBox(height: ZeniSpacing.md),
-        ZeniSecondaryButton(
+        ZeniButton(
           label: 'Começar nova família neste aparelho',
           icon: Icons.arrow_forward_rounded,
+          role: ZeniButtonRole.secondary,
+          mode: ZeniVisualMode.parent,
           onPressed: onStartNewFamily,
         ),
       ],
@@ -240,23 +242,28 @@ class _ConnectedAccountCard extends StatelessWidget {
   const _ConnectedAccountCard();
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return ZeniCard(
+    final typography = ZeniTypography.of(context);
+    return ZeniSurface(
+      role: ZeniSurfaceRole.grouped,
+      mode: ZeniVisualMode.parent,
       padding: const EdgeInsets.all(ZeniSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.cloud_done_rounded, color: ZeniColors.primaryDark),
+          Icon(
+            Icons.cloud_done_rounded,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: ZeniSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Conta conectada', style: textTheme.titleLarge),
+                Text('Conta conectada', style: typography.cardTitle),
                 const SizedBox(height: ZeniSpacing.xs),
                 Text(
                   'Encontramos dados salvos na nuvem. Vamos trazer sua família para este aparelho.',
-                  style: textTheme.bodyMedium,
+                  style: typography.metadata,
                 ),
               ],
             ),
@@ -290,7 +297,9 @@ class _StartOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final palette = _StartOptionPalette.of(context, tone);
-    return ZeniCard(
+    return ZeniSurface(
+      role: ZeniSurfaceRole.interactive,
+      mode: ZeniVisualMode.parent,
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: ConstrainedBox(

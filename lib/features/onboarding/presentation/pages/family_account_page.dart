@@ -4,12 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/layout/zeni_responsive.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
-import '../../../../core/theme/zeni_colors.dart';
 import '../../../../core/theme/zeni_spacing.dart';
+import '../../../../core/theme/zeni_typography.dart';
+import '../../../../core/theme/zeni_visual_mode.dart';
 import '../../../../core/widgets/base/zeni_brand_logo.dart';
-import '../../../../core/widgets/base/zeni_primary_button.dart';
+import '../../../../core/widgets/base/zeni_button.dart';
 import '../../../../core/widgets/base/zeni_scaffold.dart';
-import '../../../../core/widgets/base/zeni_secondary_button.dart';
+import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
 
 class FamilyAccountPage extends ConsumerWidget {
@@ -17,7 +18,7 @@ class FamilyAccountPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
+    final typography = ZeniTypography.of(context);
 
     return ZeniScaffold(
       child: SingleChildScrollView(
@@ -43,38 +44,47 @@ class FamilyAccountPage extends ConsumerWidget {
               const SizedBox(height: ZeniSpacing.xl),
               Text(
                 'Guarde as conquistas da sua família',
-                style: textTheme.displayLarge,
+                style: typography.display,
               ),
               const SizedBox(height: ZeniSpacing.sm),
               Text(
                 'Crie uma conta grátis para recuperar seus dados e usar o Zeni em outros aparelhos.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.68),
-                ),
+                style: typography.body,
               ),
               const SizedBox(height: ZeniSpacing.lg),
-              Text(
-                '✓ O Zeni continua funcionando offline.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: ZeniColors.primaryDark,
-                  fontWeight: FontWeight.w700,
+              ZeniSurface(
+                role: ZeniSurfaceRole.highlight,
+                mode: ZeniVisualMode.parent,
+                child: Row(
+                  children: [
+                    const Icon(Icons.offline_bolt_rounded),
+                    const SizedBox(width: ZeniSpacing.spaceInline),
+                    Expanded(
+                      child: Text(
+                        'O Zeni continua funcionando offline.',
+                        style: typography.metadata,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: ZeniSpacing.xl),
-              ZeniPrimaryButton(
+              ZeniButton(
                 label: 'Criar conta grátis',
                 icon: Icons.person_add_alt_1_rounded,
+                role: ZeniButtonRole.primary,
+                mode: ZeniVisualMode.parent,
                 onPressed: () => _openAccountSheet(
                   context,
                   preferredEmailAction: AuthEmailAction.signUp,
                 ),
               ),
               const SizedBox(height: ZeniSpacing.md),
-              ZeniSecondaryButton(
+              ZeniButton(
                 label: 'Já tenho conta',
                 icon: Icons.login_rounded,
+                role: ZeniButtonRole.secondary,
+                mode: ZeniVisualMode.parent,
                 onPressed: () => _openAccountSheet(
                   context,
                   preferredEmailAction: AuthEmailAction.signIn,
@@ -92,11 +102,7 @@ class FamilyAccountPage extends ConsumerWidget {
               Center(
                 child: Text(
                   'Você pode criar uma conta depois.',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.62),
-                  ),
+                  style: typography.metadata,
                 ),
               ),
             ],
@@ -110,21 +116,29 @@ class FamilyAccountPage extends ConsumerWidget {
     BuildContext context, {
     required AuthEmailAction preferredEmailAction,
   }) async {
-    final didAuthenticate = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: AuthAccountSheet(
-          isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
-          bootstrapState: ZeniSupabaseBootstrap.state,
-          preferredEmailAction: preferredEmailAction,
-        ),
-      ),
+    final content = AuthAccountSheet(
+      isSupabaseConfigured: ZeniSupabaseBootstrap.state.isConfigured,
+      bootstrapState: ZeniSupabaseBootstrap.state,
+      preferredEmailAction: preferredEmailAction,
+      showDragHandle: !ZeniAdaptiveModal.usesDialog(context),
     );
+    final didAuthenticate = ZeniAdaptiveModal.usesDialog(context)
+        ? await showDialog<bool>(
+            context: context,
+            builder: (_) =>
+                Dialog(child: ZeniAdaptiveModalFrame(child: content)),
+          )
+        : await showModalBottomSheet<bool>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: content,
+            ),
+          );
 
     if (context.mounted && didAuthenticate == true) {
       context.go('/initial-setup');
