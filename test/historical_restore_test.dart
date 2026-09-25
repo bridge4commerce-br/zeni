@@ -178,7 +178,9 @@ void main() {
 
     test('4. does not restore if main catalogs are not aligned', () async {
       await enableSupabaseForTests();
-      seedAppState(_buildLocalCatalogState(missions: const [], rewards: const []));
+      seedAppState(
+        _buildLocalCatalogState(missions: const [], rewards: const []),
+      );
       final container = buildContainer(
         initialUser: const ZeniAuthUser(id: 'user-1', email: 'parent@zeni.app'),
         remoteFamily: _remoteFamily,
@@ -248,50 +250,68 @@ void main() {
       expect(result.status, HistoricalRestoreResultStatus.localActivityPresent);
     });
 
-    test('7. does not restore if local starLedgerEntries already exist', () async {
-      await enableSupabaseForTests();
-      seedAppState(
-        _buildLocalCatalogState(
-          starLedgerEntries: [
-            StarLedgerEntry(
-              id: 'ledger-local-1',
-              familyId: 'local-family',
-              childId: 'child-local-1',
-              amount: 10,
-              balanceAfter: 10,
-              type: StarLedgerEntryType.earned,
-              title: 'Missão local',
-              createdAt: DateTime(2026, 6, 1, 9),
-            ),
-          ],
-        ),
-      );
-      final container = buildContainer(
-        initialUser: const ZeniAuthUser(id: 'user-1', email: 'parent@zeni.app'),
-        remoteFamily: _remoteFamily,
-      );
+    test(
+      '7. does not restore if local starLedgerEntries already exist',
+      () async {
+        await enableSupabaseForTests();
+        seedAppState(
+          _buildLocalCatalogState(
+            starLedgerEntries: [
+              StarLedgerEntry(
+                id: 'ledger-local-1',
+                familyId: 'family-remote-1',
+                childId: 'child-local-1',
+                amount: 10,
+                balanceAfter: 10,
+                type: StarLedgerEntryType.earned,
+                title: 'Missão local',
+                createdAt: DateTime(2026, 6, 1, 9),
+              ),
+            ],
+          ),
+        );
+        final container = buildContainer(
+          initialUser: const ZeniAuthUser(
+            id: 'user-1',
+            email: 'parent@zeni.app',
+          ),
+          remoteFamily: _remoteFamily,
+        );
 
-      final result = await container
-          .read(historicalRestoreControllerProvider)
-          .restoreHistoryIfSafe();
+        final result = await container
+            .read(historicalRestoreControllerProvider)
+            .restoreHistoryIfSafe();
 
-      expect(result.status, HistoricalRestoreResultStatus.localActivityPresent);
-    });
+        expect(
+          result.status,
+          HistoricalRestoreResultStatus.localActivityPresent,
+        );
+      },
+    );
 
-    test('8. does not restore if any child already has starBalance greater than zero', () async {
-      await enableSupabaseForTests();
-      seedAppState(_buildLocalCatalogState(child1Balance: 3));
-      final container = buildContainer(
-        initialUser: const ZeniAuthUser(id: 'user-1', email: 'parent@zeni.app'),
-        remoteFamily: _remoteFamily,
-      );
+    test(
+      '8. does not restore if any child already has starBalance greater than zero',
+      () async {
+        await enableSupabaseForTests();
+        seedAppState(_buildLocalCatalogState(child1Balance: 3));
+        final container = buildContainer(
+          initialUser: const ZeniAuthUser(
+            id: 'user-1',
+            email: 'parent@zeni.app',
+          ),
+          remoteFamily: _remoteFamily,
+        );
 
-      final result = await container
-          .read(historicalRestoreControllerProvider)
-          .restoreHistoryIfSafe();
+        final result = await container
+            .read(historicalRestoreControllerProvider)
+            .restoreHistoryIfSafe();
 
-      expect(result.status, HistoricalRestoreResultStatus.localActivityPresent);
-    });
+        expect(
+          result.status,
+          HistoricalRestoreResultStatus.localActivityPresent,
+        );
+      },
+    );
 
     test('22. remote failure does not break the app', () async {
       await enableSupabaseForTests();
@@ -306,7 +326,9 @@ void main() {
       final result = await container
           .read(historicalRestoreControllerProvider)
           .restoreHistoryIfSafe();
-      final stateAfter = await container.read(zeniAppStateControllerProvider.future);
+      final stateAfter = await container.read(
+        zeniAppStateControllerProvider.future,
+      );
 
       expect(result.status, HistoricalRestoreResultStatus.remoteReadFailure);
       expect(stateAfter.missionLogs, isEmpty);
@@ -319,122 +341,137 @@ void main() {
   });
 
   group('historical restore mapper guards', () {
-    test('9. does not restore if remote child cannot be mapped to local child', () {
-      final scenario = _buildSuccessfulRestoreScenario();
-      final mapper = const RemoteHistoricalRestoreMapper();
+    test(
+      '9. does not restore if remote child cannot be mapped to local child',
+      () {
+        final scenario = _buildSuccessfulRestoreScenario();
+        final mapper = const RemoteHistoricalRestoreMapper();
 
-      final result = mapper.map(
-        localState: scenario.localState,
-        remoteChildren: [
-          const RemoteChildSummary(
-            id: 'remote-child-1',
-            familyId: 'family-remote-1',
-            localId: 'missing-child-local-1',
-            name: 'Luna',
-            avatarKey: '🦊',
-          ),
-          scenario.remoteChildren[1],
-        ],
-        remoteMissions: scenario.remoteMissions,
-        remoteRewards: scenario.remoteRewards,
-        remoteMissionLogs: scenario.remoteMissionLogs,
-        remoteRewardRequests: scenario.remoteRewardRequests,
-        remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
-        remoteChildBalances: scenario.remoteChildBalances,
-      );
+        final result = mapper.map(
+          localState: scenario.localState,
+          remoteChildren: [
+            const RemoteChildSummary(
+              id: 'remote-child-1',
+              familyId: 'family-remote-1',
+              localId: 'missing-child-local-1',
+              name: 'Luna',
+              avatarKey: '🦊',
+            ),
+            scenario.remoteChildren[1],
+          ],
+          remoteMissions: scenario.remoteMissions,
+          remoteRewards: scenario.remoteRewards,
+          remoteMissionLogs: scenario.remoteMissionLogs,
+          remoteRewardRequests: scenario.remoteRewardRequests,
+          remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
+          remoteChildBalances: scenario.remoteChildBalances,
+        );
 
-      expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
-    });
+        expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
+      },
+    );
 
-    test('10. does not restore if remote mission cannot be mapped to local mission', () {
-      final scenario = _buildSuccessfulRestoreScenario();
-      final mapper = const RemoteHistoricalRestoreMapper();
+    test(
+      '10. does not restore if remote mission cannot be mapped to local mission',
+      () {
+        final scenario = _buildSuccessfulRestoreScenario();
+        final mapper = const RemoteHistoricalRestoreMapper();
 
-      final result = mapper.map(
-        localState: scenario.localState,
-        remoteChildren: scenario.remoteChildren,
-        remoteMissions: [
-          const RemoteMissionSummary(
-            id: 'remote-mission-1',
-            familyId: 'family-remote-1',
-            childId: 'remote-child-1',
-            localId: 'missing-mission-local-1',
-            title: 'Arrumar brinquedos',
-            stars: 10,
-            requiresApproval: false,
-            recurrenceType: 'daily',
-            recurrenceDays: <int>[],
-            isActive: true,
-          ),
-          scenario.remoteMissions[1],
-        ],
-        remoteRewards: scenario.remoteRewards,
-        remoteMissionLogs: scenario.remoteMissionLogs,
-        remoteRewardRequests: scenario.remoteRewardRequests,
-        remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
-        remoteChildBalances: scenario.remoteChildBalances,
-      );
+        final result = mapper.map(
+          localState: scenario.localState,
+          remoteChildren: scenario.remoteChildren,
+          remoteMissions: [
+            const RemoteMissionSummary(
+              id: 'remote-mission-1',
+              familyId: 'family-remote-1',
+              childId: 'remote-child-1',
+              localId: 'missing-mission-local-1',
+              title: 'Arrumar brinquedos',
+              stars: 10,
+              requiresApproval: false,
+              recurrenceType: 'daily',
+              recurrenceDays: <int>[],
+              isActive: true,
+            ),
+            scenario.remoteMissions[1],
+          ],
+          remoteRewards: scenario.remoteRewards,
+          remoteMissionLogs: scenario.remoteMissionLogs,
+          remoteRewardRequests: scenario.remoteRewardRequests,
+          remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
+          remoteChildBalances: scenario.remoteChildBalances,
+        );
 
-      expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
-    });
+        expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
+      },
+    );
 
-    test('11. does not restore if remote reward cannot be mapped to local reward', () {
-      final scenario = _buildSuccessfulRestoreScenario();
-      final mapper = const RemoteHistoricalRestoreMapper();
+    test(
+      '11. does not restore if remote reward cannot be mapped to local reward',
+      () {
+        final scenario = _buildSuccessfulRestoreScenario();
+        final mapper = const RemoteHistoricalRestoreMapper();
 
-      final result = mapper.map(
-        localState: scenario.localState,
-        remoteChildren: scenario.remoteChildren,
-        remoteMissions: scenario.remoteMissions,
-        remoteRewards: [
-          const RemoteRewardSummary(
-            id: 'remote-reward-1',
-            familyId: 'family-remote-1',
-            childId: 'remote-child-1',
-            localId: 'missing-reward-local-1',
-            title: 'Filme em família',
-            cost: 4,
-            isActive: true,
-          ),
-          scenario.remoteRewards[1],
-        ],
-        remoteMissionLogs: scenario.remoteMissionLogs,
-        remoteRewardRequests: scenario.remoteRewardRequests,
-        remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
-        remoteChildBalances: scenario.remoteChildBalances,
-      );
+        final result = mapper.map(
+          localState: scenario.localState,
+          remoteChildren: scenario.remoteChildren,
+          remoteMissions: scenario.remoteMissions,
+          remoteRewards: [
+            const RemoteRewardSummary(
+              id: 'remote-reward-1',
+              familyId: 'family-remote-1',
+              childId: 'remote-child-1',
+              localId: 'missing-reward-local-1',
+              title: 'Filme em família',
+              cost: 4,
+              isActive: true,
+            ),
+            scenario.remoteRewards[1],
+          ],
+          remoteMissionLogs: scenario.remoteMissionLogs,
+          remoteRewardRequests: scenario.remoteRewardRequests,
+          remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
+          remoteChildBalances: scenario.remoteChildBalances,
+        );
 
-      expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
-    });
+        expect(result.status, HistoricalRestoreResultStatus.catalogsNotAligned);
+      },
+    );
 
-    test('12. does not restore if remote ledger diverges from child_star_balances', () {
-      final scenario = _buildSuccessfulRestoreScenario();
-      final mapper = const RemoteHistoricalRestoreMapper();
+    test(
+      '12. does not restore if remote ledger diverges from child_star_balances',
+      () {
+        final scenario = _buildSuccessfulRestoreScenario();
+        final mapper = const RemoteHistoricalRestoreMapper();
 
-      final result = mapper.map(
-        localState: scenario.localState,
-        remoteChildren: scenario.remoteChildren,
-        remoteMissions: scenario.remoteMissions,
-        remoteRewards: scenario.remoteRewards,
-        remoteMissionLogs: scenario.remoteMissionLogs,
-        remoteRewardRequests: scenario.remoteRewardRequests,
-        remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
-        remoteChildBalances: [
-          scenario.remoteChildBalances[0],
-          const RemoteChildStarBalance(
-            familyId: 'family-remote-1',
-            childId: 'remote-child-2',
-            childName: 'Theo',
-            creditsTotal: 5,
-            debitsTotal: 0,
-            derivedBalance: 99,
-            ledgerEventsCount: 1,
-          ),
-        ],
-      );
+        final result = mapper.map(
+          localState: scenario.localState,
+          remoteChildren: scenario.remoteChildren,
+          remoteMissions: scenario.remoteMissions,
+          remoteRewards: scenario.remoteRewards,
+          remoteMissionLogs: scenario.remoteMissionLogs,
+          remoteRewardRequests: scenario.remoteRewardRequests,
+          remoteStarLedgerEntries: scenario.remoteStarLedgerEntries,
+          remoteChildBalances: [
+            scenario.remoteChildBalances[0],
+            const RemoteChildStarBalance(
+              familyId: 'family-remote-1',
+              childId: 'remote-child-2',
+              childName: 'Theo',
+              creditsTotal: 5,
+              debitsTotal: 0,
+              derivedBalance: 99,
+              ledgerEventsCount: 1,
+            ),
+          ],
+        );
 
-      expect(result.status, HistoricalRestoreResultStatus.unsafeBalanceMismatch);
-    });
+        expect(
+          result.status,
+          HistoricalRestoreResultStatus.unsafeBalanceMismatch,
+        );
+      },
+    );
   });
 
   group('historical restore success path', () {
@@ -461,7 +498,10 @@ void main() {
       expect(run.state.rewardRequests.single.id, 'reward-request-local-1');
       expect(run.state.rewardRequests.single.rewardId, 'reward-local-1');
       expect(run.state.rewardRequests.single.childId, 'child-local-1');
-      expect(run.state.rewardRequests.single.status, RewardRequestStatus.approved);
+      expect(
+        run.state.rewardRequests.single.status,
+        RewardRequestStatus.approved,
+      );
     });
 
     test('15. restores remote starLedgerEntries correctly', () async {
@@ -474,24 +514,26 @@ void main() {
         'remote:restore-2',
         'remote:restore-3',
       ]);
-      expect(run.state.starLedgerEntries.map((entry) => entry.amount), [10, 5, -4]);
-      expect(
-        run.state.starLedgerEntries.map((entry) => entry.type),
-        [
-          StarLedgerEntryType.earned,
-          StarLedgerEntryType.earned,
-          StarLedgerEntryType.spent,
-        ],
-      );
+      expect(run.state.starLedgerEntries.map((entry) => entry.amount), [
+        10,
+        5,
+        -4,
+      ]);
+      expect(run.state.starLedgerEntries.map((entry) => entry.type), [
+        StarLedgerEntryType.earned,
+        StarLedgerEntryType.earned,
+        StarLedgerEntryType.spent,
+      ]);
     });
 
     test('16. rebuilds balanceAfter locally per child', () async {
       final run = await _runSuccessfulRestore();
 
-      expect(
-        run.state.starLedgerEntries.map((entry) => entry.balanceAfter),
-        [10, 5, 6],
-      );
+      expect(run.state.starLedgerEntries.map((entry) => entry.balanceAfter), [
+        10,
+        5,
+        6,
+      ]);
       expect(run.state.starLedgerEntries[0].childId, 'child-local-1');
       expect(run.state.starLedgerEntries[1].childId, 'child-local-2');
       expect(run.state.starLedgerEntries[2].childId, 'child-local-1');
@@ -541,38 +583,43 @@ void main() {
   });
 
   group('historical restore apply safety', () {
-    test('applyHistoricalRestoreIfSafe revalidates current state and avoids partial application', () async {
-      final scenario = _buildSuccessfulRestoreScenario();
-      seedAppState(
-        _buildLocalCatalogState(
-          missionLogs: [
-            MissionLog(
-              id: 'local-existing-log',
-              missionId: 'mission-local-1',
-              childId: 'child-local-1',
-              scheduledDate: DateTime(2026, 6, 1),
-              status: MissionLogStatus.approved,
-              starsAwarded: 10,
-            ),
-          ],
-        ),
-      );
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      await container.read(zeniAppStateControllerProvider.future);
+    test(
+      'applyHistoricalRestoreIfSafe revalidates current state and avoids partial application',
+      () async {
+        final scenario = _buildSuccessfulRestoreScenario();
+        seedAppState(
+          _buildLocalCatalogState(
+            missionLogs: [
+              MissionLog(
+                id: 'local-existing-log',
+                missionId: 'mission-local-1',
+                childId: 'child-local-1',
+                scheduledDate: DateTime(2026, 6, 1),
+                status: MissionLogStatus.approved,
+                starsAwarded: 10,
+              ),
+            ],
+          ),
+        );
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        await container.read(zeniAppStateControllerProvider.future);
 
-      final result = await container
-          .read(zeniAppStateControllerProvider.notifier)
-          .applyHistoricalRestoreIfSafe(scenario.mappedResult.payload!);
-      final stateAfter = await container.read(zeniAppStateControllerProvider.future);
+        final result = await container
+            .read(zeniAppStateControllerProvider.notifier)
+            .applyHistoricalRestoreIfSafe(scenario.mappedResult.payload!);
+        final stateAfter = await container.read(
+          zeniAppStateControllerProvider.future,
+        );
 
-      expect(result.status, HistoricalRestoreResultStatus.applyBlocked);
-      expect(stateAfter.missionLogs.length, 1);
-      expect(stateAfter.missionLogs.single.id, 'local-existing-log');
-      expect(stateAfter.rewardRequests, isEmpty);
-      expect(stateAfter.starLedgerEntries, isEmpty);
-      expect(stateAfter.children.map((child) => child.starBalance), [0, 0]);
-    });
+        expect(result.status, HistoricalRestoreResultStatus.applyBlocked);
+        expect(stateAfter.missionLogs.length, 1);
+        expect(stateAfter.missionLogs.single.id, 'local-existing-log');
+        expect(stateAfter.rewardRequests, isEmpty);
+        expect(stateAfter.starLedgerEntries, isEmpty);
+        expect(stateAfter.children.map((child) => child.starBalance), [0, 0]);
+      },
+    );
   });
 
   test('23. signOut does not erase restored history', () async {
@@ -581,7 +628,9 @@ void main() {
     final signOutResult = await run.container
         .read(zeniAuthControllerProvider)
         .signOut();
-    final stateAfter = await run.container.read(zeniAppStateControllerProvider.future);
+    final stateAfter = await run.container.read(
+      zeniAppStateControllerProvider.future,
+    );
 
     expect(signOutResult.isSuccess, isTrue);
     expect(stateAfter.missionLogs.length, 2);
@@ -662,7 +711,9 @@ Future<_SuccessfulRestoreRun> _runSuccessfulRestore() async {
         _FakeRemoteRewardsRepository(rewards: scenario.remoteRewards),
       ),
       remoteMissionLogsRepositoryProvider.overrideWithValue(
-        _FakeRemoteMissionLogsRepository(missionLogs: scenario.remoteMissionLogs),
+        _FakeRemoteMissionLogsRepository(
+          missionLogs: scenario.remoteMissionLogs,
+        ),
       ),
       remoteRewardRequestsRepositoryProvider.overrideWithValue(
         _FakeRemoteRewardRequestsRepository(
@@ -670,10 +721,14 @@ Future<_SuccessfulRestoreRun> _runSuccessfulRestore() async {
         ),
       ),
       remoteStarLedgerRepositoryProvider.overrideWithValue(
-        _FakeRemoteStarLedgerRepository(entries: scenario.remoteStarLedgerEntries),
+        _FakeRemoteStarLedgerRepository(
+          entries: scenario.remoteStarLedgerEntries,
+        ),
       ),
       remoteChildBalanceRepositoryProvider.overrideWithValue(
-        _FakeRemoteChildBalanceRepository(balances: scenario.remoteChildBalances),
+        _FakeRemoteChildBalanceRepository(
+          balances: scenario.remoteChildBalances,
+        ),
       ),
     ],
   );
@@ -688,7 +743,11 @@ Future<_SuccessfulRestoreRun> _runSuccessfulRestore() async {
     container.dispose();
   });
 
-  return _SuccessfulRestoreRun(container: container, result: result, state: state);
+  return _SuccessfulRestoreRun(
+    container: container,
+    result: result,
+    state: state,
+  );
 }
 
 _SuccessfulRestoreScenario _buildSuccessfulRestoreScenario() {
@@ -893,14 +952,14 @@ ZeniAppState _buildLocalCatalogState({
   int child1Balance = 0,
   int child2Balance = 0,
 }) {
-  final initial = ZeniAppState.initial();
+  final initial = _boundInitialState();
   final createdAt = DateTime(2026, 5, 20);
 
   return initial.copyWith(
     children: [
       ChildProfile(
         id: 'child-local-1',
-        familyId: 'local-family',
+        familyId: 'family-remote-1',
         name: 'Luna',
         emoji: '🦊',
         starBalance: child1Balance,
@@ -909,7 +968,7 @@ ZeniAppState _buildLocalCatalogState({
       ),
       ChildProfile(
         id: 'child-local-2',
-        familyId: 'local-family',
+        familyId: 'family-remote-1',
         name: 'Theo',
         emoji: '🐼',
         starBalance: child2Balance,
@@ -917,11 +976,12 @@ ZeniAppState _buildLocalCatalogState({
         createdAt: createdAt,
       ),
     ],
-    missions: missions ??
+    missions:
+        missions ??
         [
           Mission(
             id: 'mission-local-1',
-            familyId: 'local-family',
+            familyId: 'family-remote-1',
             childId: 'child-local-1',
             title: 'Arrumar brinquedos',
             description: 'Guardar tudo',
@@ -935,7 +995,7 @@ ZeniAppState _buildLocalCatalogState({
           ),
           Mission(
             id: 'mission-local-2',
-            familyId: 'local-family',
+            familyId: 'family-remote-1',
             childId: 'child-local-2',
             title: 'Ler por 15 minutos',
             description: 'Ler junto com a família',
@@ -948,11 +1008,12 @@ ZeniAppState _buildLocalCatalogState({
             updatedAt: createdAt,
           ),
         ],
-    rewards: rewards ??
+    rewards:
+        rewards ??
         [
           Reward(
             id: 'reward-local-1',
-            familyId: 'local-family',
+            familyId: 'family-remote-1',
             childId: 'child-local-1',
             title: 'Filme em família',
             description: 'Escolher o filme da noite',
@@ -963,7 +1024,7 @@ ZeniAppState _buildLocalCatalogState({
           ),
           Reward(
             id: 'reward-local-2',
-            familyId: 'local-family',
+            familyId: 'family-remote-1',
             childId: 'child-local-2',
             title: 'Escolher sobremesa',
             description: 'Vale sobremesa especial',
@@ -1228,4 +1289,17 @@ class _FakeRemoteChildBalanceRepository
   }) async {
     return balances;
   }
+}
+
+// These sync/restore fixtures represent an already bootstrapped family.
+// Unbound and cross-family bases are covered by family identity guard tests.
+ZeniAppState _boundInitialState() {
+  final initial = ZeniAppState.initial();
+  return initial.copyWith(
+    family: initial.family.copyWith(id: 'family-remote-1'),
+    familyMembers: [
+      for (final member in initial.familyMembers)
+        member.copyWith(familyId: 'family-remote-1'),
+    ],
+  );
 }

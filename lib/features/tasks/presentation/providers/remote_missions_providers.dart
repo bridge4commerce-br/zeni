@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../sync/domain/family_identity.dart';
+import '../../../sync/presentation/providers/family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -8,11 +11,15 @@ import '../../../family/presentation/providers/remote_children_providers.dart';
 import '../../data/repositories/remote_missions_repository.dart';
 import '../../data/repositories/supabase_remote_missions_repository.dart';
 
-final remoteMissionsRepositoryProvider = Provider<RemoteMissionsRepository>((ref) {
+final remoteMissionsRepositoryProvider = Provider<RemoteMissionsRepository>((
+  ref,
+) {
   return SupabaseRemoteMissionsRepository(client: ZeniSupabaseBootstrap.client);
 });
 
-final remoteMissionsProvider = FutureProvider<List<RemoteMissionSummary>?>((ref) async {
+final remoteMissionsProvider = FutureProvider<List<RemoteMissionSummary>?>((
+  ref,
+) async {
   final authState = ref.watch(authStateProvider);
   if (!ZeniSupabaseBootstrap.state.isAvailable || !authState.isAuthenticated) {
     return null;
@@ -31,16 +38,18 @@ final remoteMissionsProvider = FutureProvider<List<RemoteMissionSummary>?>((ref)
       .getRemoteMissions(familyId: remoteFamily.familyId);
 });
 
-final zeniRemoteMissionsControllerProvider = Provider<ZeniRemoteMissionsController>((ref) {
-  return ZeniRemoteMissionsController(ref);
-});
+final zeniRemoteMissionsControllerProvider =
+    Provider<ZeniRemoteMissionsController>((ref) {
+      return ZeniRemoteMissionsController(ref);
+    });
 
 class ZeniRemoteMissionsController {
   const ZeniRemoteMissionsController(this._ref);
 
   final Ref _ref;
 
-  Future<ZeniEnsureRemoteMissionsResult> ensureRemoteMissionsForCurrentFamily() async {
+  Future<ZeniEnsureRemoteMissionsResult>
+  ensureRemoteMissionsForCurrentFamily() async {
     if (!ZeniSupabaseBootstrap.state.isAvailable) {
       return const ZeniEnsureRemoteMissionsResult.failure(
         'Missões remotas indisponíveis neste build.',
@@ -54,6 +63,7 @@ class ZeniRemoteMissionsController {
       );
     }
 
+    final startingUserId = authState.user?.id;
     final remoteFamily = await _ref.read(remoteFamilySummaryProvider.future);
     if (remoteFamily == null) {
       return const ZeniEnsureRemoteMissionsResult.failure(
@@ -75,6 +85,13 @@ class ZeniRemoteMissionsController {
     };
 
     final appState = await _ref.read(zeniAppStateControllerProvider.future);
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    await _ref.read(zeniAppStateControllerProvider.future);
+    if (startingUserId != identity.userId || !identity.canSync) {
+      return const ZeniEnsureRemoteMissionsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final result = await _ref
         .read(remoteMissionsRepositoryProvider)
         .ensureRemoteMissions(
@@ -82,6 +99,11 @@ class ZeniRemoteMissionsController {
           localMissions: appState.missions,
           remoteChildIdByLocalChildId: remoteChildIdByLocalChildId,
         );
+    if (!identity.canSync) {
+      return const ZeniEnsureRemoteMissionsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     if (result.isSuccess) {
       await _ref
           .read(zeniAppStateControllerProvider.notifier)

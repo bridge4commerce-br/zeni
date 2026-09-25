@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../sync/domain/family_identity.dart';
+import '../../../sync/presentation/providers/family_identity_guard.dart';
+
 import '../../../../core/providers/zeni_repository_providers.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
@@ -14,7 +17,9 @@ final remoteChildrenRepositoryProvider = Provider<RemoteChildrenRepository>((
   return SupabaseRemoteChildrenRepository(client: ZeniSupabaseBootstrap.client);
 });
 
-final remoteChildrenProvider = FutureProvider<List<RemoteChildSummary>?>((ref) async {
+final remoteChildrenProvider = FutureProvider<List<RemoteChildSummary>?>((
+  ref,
+) async {
   final authState = ref.watch(authStateProvider);
   if (!ZeniSupabaseBootstrap.state.isAvailable || !authState.isAuthenticated) {
     return null;
@@ -28,16 +33,18 @@ final remoteChildrenProvider = FutureProvider<List<RemoteChildSummary>?>((ref) a
       .getRemoteChildren(familyId: remoteFamily.familyId);
 });
 
-final zeniRemoteChildrenControllerProvider = Provider<ZeniRemoteChildrenController>((ref) {
-  return ZeniRemoteChildrenController(ref);
-});
+final zeniRemoteChildrenControllerProvider =
+    Provider<ZeniRemoteChildrenController>((ref) {
+      return ZeniRemoteChildrenController(ref);
+    });
 
 class ZeniRemoteChildrenController {
   const ZeniRemoteChildrenController(this._ref);
 
   final Ref _ref;
 
-  Future<ZeniEnsureRemoteChildrenResult> ensureRemoteChildrenForCurrentFamily() async {
+  Future<ZeniEnsureRemoteChildrenResult>
+  ensureRemoteChildrenForCurrentFamily() async {
     if (!ZeniSupabaseBootstrap.state.isAvailable) {
       return const ZeniEnsureRemoteChildrenResult.failure(
         'Crianças remotas indisponíveis neste build.',
@@ -51,6 +58,7 @@ class ZeniRemoteChildrenController {
       );
     }
 
+    final startingUserId = authState.user?.id;
     final remoteFamily = await _ref.read(remoteFamilySummaryProvider.future);
     if (remoteFamily == null) {
       return const ZeniEnsureRemoteChildrenResult.failure(
@@ -61,12 +69,24 @@ class ZeniRemoteChildrenController {
     final localChildren = await _ref
         .read(familyRepositoryProvider)
         .getChildren(includeArchived: true);
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    await _ref.read(zeniAppStateControllerProvider.future);
+    if (startingUserId != identity.userId || !identity.canSync) {
+      return const ZeniEnsureRemoteChildrenResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final result = await _ref
         .read(remoteChildrenRepositoryProvider)
         .ensureRemoteChildren(
           familyId: remoteFamily.familyId,
           localChildren: localChildren,
         );
+    if (!identity.canSync) {
+      return const ZeniEnsureRemoteChildrenResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     if (result.isSuccess) {
       final appState = await _ref.read(zeniAppStateControllerProvider.future);
       await _ref

@@ -1,8 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:zeni/core/state/zeni_app_state.dart';
+import 'package:zeni/features/sync/domain/family_identity.dart';
+import 'package:zeni/features/sync/presentation/providers/device_bootstrap_providers.dart';
+import 'package:zeni/features/sync/presentation/providers/historical_restore_providers.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zeni/core/domain/zeni_enums.dart';
 import 'package:zeni/core/state/zeni_app_state_controller.dart';
 import 'package:zeni/core/supabase/zeni_supabase.dart';
 import 'package:zeni/features/auth/data/repositories/zeni_account_repository.dart';
@@ -11,6 +18,7 @@ import 'package:zeni/features/auth/presentation/providers/zeni_account_providers
 import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.dart';
 import 'package:zeni/features/balance/data/repositories/remote_child_balance_repository.dart';
 import 'package:zeni/features/balance/data/repositories/remote_star_ledger_repository.dart';
+import 'package:zeni/features/balance/data/models/star_ledger_entry.dart';
 import 'package:zeni/features/balance/presentation/providers/remote_child_balance_providers.dart';
 import 'package:zeni/features/balance/presentation/providers/remote_star_ledger_providers.dart';
 import 'package:zeni/features/family/data/repositories/remote_children_repository.dart';
@@ -18,12 +26,14 @@ import 'package:zeni/features/family/presentation/providers/remote_children_prov
 import 'package:zeni/features/rewards/data/repositories/remote_reward_requests_repository.dart';
 import 'package:zeni/features/rewards/data/repositories/remote_rewards_repository.dart';
 import 'package:zeni/features/rewards/data/models/reward.dart';
+import 'package:zeni/features/rewards/data/models/reward_request.dart';
 import 'package:zeni/features/rewards/presentation/providers/remote_reward_requests_providers.dart';
 import 'package:zeni/features/rewards/presentation/providers/remote_rewards_providers.dart';
 import 'package:zeni/features/sync/presentation/providers/cloud_sync_providers.dart';
 import 'package:zeni/features/tasks/data/repositories/remote_mission_logs_repository.dart';
 import 'package:zeni/features/tasks/data/repositories/remote_missions_repository.dart';
 import 'package:zeni/features/tasks/data/models/mission.dart';
+import 'package:zeni/features/tasks/data/models/mission_log.dart';
 import 'package:zeni/features/tasks/presentation/providers/remote_mission_logs_providers.dart';
 import 'package:zeni/features/tasks/presentation/providers/remote_missions_providers.dart';
 
@@ -45,6 +55,8 @@ void main() {
   tearDown(() {
     ZeniSupabaseBootstrap.resetForTests();
   });
+
+  familyIdentityTests();
 
   test(
     'manual sync without login returns noSession and keeps local state intact',
@@ -225,10 +237,10 @@ void main() {
         state.missions.map((mission) => mission.childId).toList()..sort(),
         ['child-local-1', 'child-local-2'],
       );
-      expect(
-        state.rewards.map((reward) => reward.childId).toList()..sort(),
-        ['child-local-1', 'child-local-2'],
-      );
+      expect(state.rewards.map((reward) => reward.childId).toList()..sort(), [
+        'child-local-1',
+        'child-local-2',
+      ]);
     },
   );
 }
@@ -671,4 +683,771 @@ class _EmptyRemoteChildBalanceRepository
   Future<List<RemoteChildStarBalance>> getRemoteChildStarBalances({
     required String familyId,
   }) async => const [];
+}
+
+void familyIdentityTests() {
+  ZeniAppState boundState() {
+    final initial = ZeniAppState.initial();
+    return initial.copyWith(
+      family: initial.family.copyWith(id: 'family-remote-1'),
+      familyMembers: [
+        for (final member in initial.familyMembers)
+          member.copyWith(familyId: 'family-remote-1'),
+      ],
+    );
+  }
+
+  ZeniAppState coherentGraphState() {
+    final state = boundState();
+    final seed = ZeniAppState.seeded();
+    final child = seed.children.first.copyWith(
+      familyId: 'family-remote-1',
+      starBalance: 0,
+    );
+    final mission = seed.missions.first.copyWith(
+      familyId: 'family-remote-1',
+      childId: child.id,
+    );
+    final reward = seed.rewards.first.copyWith(
+      familyId: 'family-remote-1',
+      childId: child.id,
+    );
+    final missionLog = MissionLog(
+      id: 'mission-log-1',
+      missionId: mission.id,
+      childId: child.id,
+      scheduledDate: DateTime(2026, 1, 1),
+      status: MissionLogStatus.approved,
+      starsAwarded: mission.stars,
+    );
+    final rewardRequest = RewardRequest(
+      id: 'reward-request-1',
+      rewardId: reward.id,
+      childId: child.id,
+      status: RewardRequestStatus.approved,
+      requestedAt: DateTime(2026, 1, 1),
+    );
+    final ledgerEntry = StarLedgerEntry(
+      id: 'ledger-1',
+      familyId: 'family-remote-1',
+      childId: child.id,
+      amount: mission.stars,
+      balanceAfter: mission.stars,
+      type: StarLedgerEntryType.earned,
+      title: 'Missão aprovada',
+      createdAt: DateTime(2026, 1, 1),
+      relatedMissionLogId: missionLog.id,
+      relatedRewardRequestId: rewardRequest.id,
+    );
+    return state.copyWith(
+      children: [child],
+      missions: [mission],
+      missionLogs: [missionLog],
+      rewards: [reward],
+      rewardRequests: [rewardRequest],
+      starLedgerEntries: [ledgerEntry],
+    );
+  }
+
+  Future<
+    ({
+      ProviderContainer container,
+      _MutableIdentityAuth auth,
+      _IdentityAccount account,
+      _IdentityChildren children,
+      _IdentityMissionLogs missionLogs,
+    })
+  >
+  setup(ZeniAppState state, {String familyId = 'family-remote-1'}) async {
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(state.toJson()),
+    });
+    final auth = _MutableIdentityAuth();
+    final account = _IdentityAccount()..familyId = familyId;
+    final children = _IdentityChildren();
+    final missionLogs = _IdentityMissionLogs();
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(auth),
+        accountRepositoryProvider.overrideWithValue(account),
+        remoteChildrenRepositoryProvider.overrideWithValue(children),
+        remoteMissionsRepositoryProvider.overrideWithValue(
+          const _TestRemoteMissionsRepository(),
+        ),
+        remoteRewardsRepositoryProvider.overrideWithValue(
+          const _TestRemoteRewardsRepository(),
+        ),
+        remoteMissionLogsRepositoryProvider.overrideWithValue(missionLogs),
+        remoteRewardRequestsRepositoryProvider.overrideWithValue(
+          const _EmptyRemoteRewardRequestsRepository(),
+        ),
+        remoteStarLedgerRepositoryProvider.overrideWithValue(
+          const _EmptyRemoteStarLedgerRepository(),
+        ),
+        remoteChildBalanceRepositoryProvider.overrideWithValue(
+          const _EmptyRemoteChildBalanceRepository(),
+        ),
+      ],
+    );
+    addTearDown(() {
+      container.dispose();
+      auth.events.close();
+    });
+    await container.read(zeniAppStateControllerProvider.future);
+    container.read(authStateProvider);
+    return (
+      container: container,
+      auth: auth,
+      account: account,
+      children: children,
+      missionLogs: missionLogs,
+    );
+  }
+
+  test(
+    'identity classifies all four states without inferring binding from login',
+    () {
+      final empty = ZeniAppState.initial();
+      expect(
+        FamilyIdentity.evaluate(empty, 'family-remote-1'),
+        FamilyIdentityStatus.localUnboundSafe,
+      );
+      expect(
+        FamilyIdentity.evaluate(boundState(), 'family-remote-1'),
+        FamilyIdentityStatus.bound,
+      );
+      expect(
+        FamilyIdentity.evaluate(boundState(), 'family-B'),
+        FamilyIdentityStatus.sessionMismatch,
+      );
+      expect(
+        FamilyIdentity.evaluate(
+          empty.copyWith(children: ZeniAppState.seeded().children),
+          'family-remote-1',
+        ),
+        FamilyIdentityStatus.legacyUnboundWithData,
+      );
+    },
+  );
+
+  test('identity rejects mission log with unknown child', () {
+    final state = coherentGraphState();
+    final broken = state.copyWith(
+      missionLogs: [state.missionLogs.single.copyWith(childId: 'missing')],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects mission log with unknown mission', () {
+    final state = coherentGraphState();
+    final broken = state.copyWith(
+      missionLogs: [state.missionLogs.single.copyWith(missionId: 'missing')],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects reward request with unknown child', () {
+    final state = coherentGraphState();
+    final broken = state.copyWith(
+      rewardRequests: [
+        state.rewardRequests.single.copyWith(childId: 'missing'),
+      ],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects reward request with unknown reward', () {
+    final state = coherentGraphState();
+    final broken = state.copyWith(
+      rewardRequests: [
+        state.rewardRequests.single.copyWith(rewardId: 'missing'),
+      ],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects ledger entry with unknown child', () {
+    final state = coherentGraphState();
+    final entry = state.starLedgerEntries.single;
+    final broken = state.copyWith(
+      starLedgerEntries: [
+        StarLedgerEntry(
+          id: entry.id,
+          familyId: entry.familyId,
+          childId: 'missing',
+          amount: entry.amount,
+          balanceAfter: entry.balanceAfter,
+          type: entry.type,
+          title: entry.title,
+          createdAt: entry.createdAt,
+          relatedMissionLogId: entry.relatedMissionLogId,
+          relatedRewardRequestId: entry.relatedRewardRequestId,
+        ),
+      ],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects ledger entry with unknown mission log', () {
+    final state = coherentGraphState();
+    final entry = state.starLedgerEntries.single;
+    final broken = state.copyWith(
+      starLedgerEntries: [
+        StarLedgerEntry(
+          id: entry.id,
+          familyId: entry.familyId,
+          childId: entry.childId,
+          amount: entry.amount,
+          balanceAfter: entry.balanceAfter,
+          type: entry.type,
+          title: entry.title,
+          createdAt: entry.createdAt,
+          relatedMissionLogId: 'missing',
+          relatedRewardRequestId: entry.relatedRewardRequestId,
+        ),
+      ],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('identity rejects ledger entry with unknown reward request', () {
+    final state = coherentGraphState();
+    final entry = state.starLedgerEntries.single;
+    final broken = state.copyWith(
+      starLedgerEntries: [
+        StarLedgerEntry(
+          id: entry.id,
+          familyId: entry.familyId,
+          childId: entry.childId,
+          amount: entry.amount,
+          balanceAfter: entry.balanceAfter,
+          type: entry.type,
+          title: entry.title,
+          createdAt: entry.createdAt,
+          relatedMissionLogId: entry.relatedMissionLogId,
+          relatedRewardRequestId: 'missing',
+        ),
+      ],
+    );
+    expect(
+      FamilyIdentity.evaluate(broken, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+  });
+
+  test('login with an existing remote family never calls ensure', () async {
+    final h = await setup(boundState(), familyId: 'family-B');
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+    expect(result.isSuccess, isTrue);
+    expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+    expect(h.account.ensureCalls, 0);
+  });
+
+  test('login may ensure a remote family for an empty safe base', () async {
+    final h = await setup(ZeniAppState.initial());
+    h.account.hasRemoteFamily = false;
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+    expect(result.isSuccess, isTrue);
+    expect(h.account.ensureCalls, 1);
+  });
+
+  test(
+    'login preserves unbound local data and does not ensure a family',
+    () async {
+      final local = ZeniAppState.seeded().copyWith(
+        family: ZeniAppState.initial().family,
+      );
+      final h = await setup(local);
+      h.account.hasRemoteFamily = false;
+      final before = jsonEncode(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).toJson(),
+      );
+      final result = await h.container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+      expect(result.isSuccess, isTrue);
+      expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+      expect(h.account.ensureCalls, 0);
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+    },
+  );
+
+  test(
+    'bootstrap action is disabled on mismatch without reading remote catalogs',
+    () async {
+      final h = await setup(boundState(), familyId: 'family-B');
+      final action = await h.container.read(
+        deviceBootstrapActionStateProvider.future,
+      );
+      expect(action.isVisible, isFalse);
+      expect(action.showAction, isFalse);
+      expect(action.isEnabled, isFalse);
+      expect(action.message, familyIdentityBlockedMessage);
+      expect(h.children.reads, 0);
+    },
+  );
+
+  test(
+    'bootstrap action is hidden for an unsafe unbound base without catalog reads',
+    () async {
+      final local = ZeniAppState.seeded().copyWith(
+        family: ZeniAppState.initial().family,
+      );
+      final h = await setup(local);
+      final action = await h.container.read(
+        deviceBootstrapActionStateProvider.future,
+      );
+      expect(action.isVisible, isFalse);
+      expect(action.showAction, isFalse);
+      expect(action.isEnabled, isFalse);
+      expect(h.children.reads, 0);
+    },
+  );
+
+  test(
+    'historical restore action is disabled on mismatch before history reads',
+    () async {
+      final h = await setup(coherentGraphState(), familyId: 'family-B');
+      final action = await h.container.read(
+        historicalRestoreActionStateProvider.future,
+      );
+      expect(action.isVisible, isFalse);
+      expect(action.showAction, isFalse);
+      expect(action.isEnabled, isFalse);
+      expect(action.message, familyIdentityBlockedMessage);
+      expect(h.missionLogs.reads, 0);
+    },
+  );
+
+  test('bound A plus session A permits sync', () async {
+    final h = await setup(boundState());
+    final result = await h.container
+        .read(zeniCloudSyncControllerProvider)
+        .syncCloudDataNow();
+    expect(result.isSuccess, isTrue);
+    expect(h.children.pushes, 1);
+  });
+
+  test(
+    'mismatch blocks push and pull and preserves persisted state byte for byte',
+    () async {
+      final h = await setup(boundState(), familyId: 'family-B');
+      final prefs = await SharedPreferences.getInstance();
+      final before = prefs.getString('zeni_app_state_v1');
+      final result = await h.container
+          .read(zeniCloudSyncControllerProvider)
+          .syncCloudDataNow();
+      expect(result.status, ZeniCloudSyncStatus.familyMismatch);
+      expect(h.children.pushes, 0);
+      expect(h.children.reads, 0);
+      expect(prefs.getString('zeni_app_state_v1'), before);
+      expect(h.account.ensureCalls, 0);
+    },
+  );
+
+  test(
+    'manual retries cannot bypass mismatch or create a remote family',
+    () async {
+      final h = await setup(boundState(), familyId: 'family-B');
+      for (var retry = 0; retry < 3; retry++) {
+        final result = await h.container
+            .read(zeniCloudSyncControllerProvider)
+            .syncNowManually();
+        expect(result.status, ZeniCloudSyncStatus.familyMismatch);
+      }
+      expect(h.children.pushes, 0);
+      expect(h.children.reads, 0);
+      expect(h.account.ensureCalls, 0);
+    },
+  );
+
+  test(
+    'local data without binding cannot attach to the first session',
+    () async {
+      final local = ZeniAppState.seeded().copyWith(
+        family: ZeniAppState.initial().family,
+      );
+      final h = await setup(local);
+      final before = jsonEncode(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).toJson(),
+      );
+      final result = await h.container
+          .read(zeniCloudSyncControllerProvider)
+          .syncNowManually();
+      expect(result.status, ZeniCloudSyncStatus.familyMismatch);
+      expect(h.children.pushes, 0);
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+    },
+  );
+
+  test(
+    'logout preserves binding and login to B cannot reassociate A',
+    () async {
+      final h = await setup(boundState());
+      final before = jsonEncode(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).toJson(),
+      );
+      await h.container.read(zeniAuthControllerProvider).signOut();
+      expect(h.container.read(authStateProvider).isAuthenticated, isFalse);
+      expect(
+        (await h.container
+                .read(zeniCloudSyncControllerProvider)
+                .syncCloudDataNow())
+            .status,
+        ZeniCloudSyncStatus.noSession,
+      );
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+      h.account.familyId = 'family-B';
+      await h.container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+      final result = await h.container
+          .read(zeniCloudSyncControllerProvider)
+          .syncNowManually();
+      expect(result.status, ZeniCloudSyncStatus.familyMismatch);
+      expect(h.children.pushes, 0);
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+    },
+  );
+
+  test(
+    'empty local base becomes bound only after safe bootstrap and persists restart',
+    () async {
+      final h = await setup(ZeniAppState.initial());
+      final result = await h.container
+          .read(deviceBootstrapControllerProvider)
+          .bootstrapFromRemoteFamily();
+      expect(result.isSuccess, isTrue);
+      final state = await h.container.read(
+        zeniAppStateControllerProvider.future,
+      );
+      expect(
+        FamilyIdentity.evaluate(state, 'family-remote-1'),
+        FamilyIdentityStatus.bound,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      final restored = ZeniAppState.fromJson(
+        jsonDecode(prefs.getString('zeni_app_state_v1')!)
+            as Map<String, dynamic>,
+      );
+      expect(restored.family.id, 'family-remote-1');
+      expect(h.children.pushes, 0);
+    },
+  );
+
+  test(
+    'bootstrap cannot replace an empty but already bound A with B',
+    () async {
+      final h = await setup(boundState(), familyId: 'family-B');
+      final result = await h.container
+          .read(deviceBootstrapControllerProvider)
+          .bootstrapFromRemoteFamily();
+      expect(result.isSuccess, isFalse);
+      expect(h.children.reads, 0);
+      expect(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).family.id,
+        'family-remote-1',
+      );
+    },
+  );
+
+  test('history without catalog is not an empty safe unbound base', () async {
+    final local = ZeniAppState.initial().copyWith(
+      missionLogs: ZeniAppState.seeded().missionLogs,
+    );
+    expect(local.missionLogs, isNotEmpty);
+    final h = await setup(local);
+    expect(
+      FamilyIdentity.evaluate(local, 'family-remote-1'),
+      FamilyIdentityStatus.legacyUnboundWithData,
+    );
+    expect(
+      (await h.container
+              .read(deviceBootstrapControllerProvider)
+              .bootstrapFromRemoteFamily())
+          .isSuccess,
+      isFalse,
+    );
+    expect(h.children.reads, 0);
+  });
+
+  test(
+    'direct domain push entry points also use the shared identity guard',
+    () async {
+      final h = await setup(boundState(), familyId: 'family-B');
+      expect(
+        (await h.container
+                .read(zeniRemoteChildrenControllerProvider)
+                .ensureRemoteChildrenForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(
+        (await h.container
+                .read(zeniRemoteMissionsControllerProvider)
+                .ensureRemoteMissionsForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(
+        (await h.container
+                .read(zeniRemoteRewardsControllerProvider)
+                .ensureRemoteRewardsForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(
+        (await h.container
+                .read(zeniRemoteMissionLogsControllerProvider)
+                .ensureRemoteMissionLogsForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(
+        (await h.container
+                .read(zeniRemoteRewardRequestsControllerProvider)
+                .ensureRemoteRewardRequestsForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(
+        (await h.container
+                .read(zeniRemoteStarLedgerControllerProvider)
+                .ensureRemoteStarLedgerForCurrentFamily())
+            .isSuccess,
+        isFalse,
+      );
+      expect(h.children.pushes, 0);
+    },
+  );
+
+  test(
+    'account change while bootstrap reads cannot apply the stale snapshot',
+    () async {
+      final h = await setup(ZeniAppState.initial());
+      final started = Completer<void>();
+      final resume = Completer<void>();
+      h.children.beforeRead = () async {
+        started.complete();
+        await resume.future;
+      };
+      final pending = h.container
+          .read(deviceBootstrapControllerProvider)
+          .bootstrapFromRemoteFamily();
+      await started.future;
+      await h.container.read(zeniAuthControllerProvider).signOut();
+      resume.complete();
+      expect((await pending).isSuccess, isFalse);
+      expect(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).family.id,
+        'local-family',
+      );
+      expect(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).children,
+        isEmpty,
+      );
+    },
+  );
+
+  test('account change during push cannot continue into pull', () async {
+    final h = await setup(boundState());
+    h.children.afterPush = () async {
+      await h.container.read(zeniAuthControllerProvider).signOut();
+    };
+    expect(
+      (await h.container
+              .read(zeniCloudSyncControllerProvider)
+              .syncCloudDataNow())
+          .isSuccess,
+      isFalse,
+    );
+    expect(
+      (await h.container.read(zeniAppStateControllerProvider.future)).children,
+      isEmpty,
+    );
+    expect(
+      (await h.container.read(zeniAppStateControllerProvider.future)).family.id,
+      'family-remote-1',
+    );
+  });
+
+  test(
+    'historical restore rejects another family without replacing local catalogs',
+    () async {
+      final h = await setup(ZeniAppState.initial());
+      await h.container
+          .read(deviceBootstrapControllerProvider)
+          .bootstrapFromRemoteFamily();
+      final before = jsonEncode(
+        (await h.container.read(
+          zeniAppStateControllerProvider.future,
+        )).toJson(),
+      );
+      h.account.familyId = 'family-B';
+      h.container.invalidate(remoteFamilySummaryProvider);
+      final result = await h.container
+          .read(historicalRestoreControllerProvider)
+          .restoreHistoryIfSafe();
+      expect(result.isSuccess, isFalse);
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+    },
+  );
+}
+
+class _MutableIdentityAuth extends _TestAuthRepository {
+  ZeniAuthUser? user = const ZeniAuthUser(id: 'user-A', email: 'a@zeni.app');
+  final events = StreamController<ZeniAuthUser?>.broadcast();
+  @override
+  ZeniAuthUser? get currentUser => user;
+  @override
+  Stream<ZeniAuthUser?> authStateChanges() => events.stream;
+  @override
+  Future<ZeniAuthOperationResult> signOut() async {
+    user = null;
+    events.add(null);
+    return const ZeniAuthOperationResult.success();
+  }
+
+  @override
+  Future<ZeniAuthOperationResult> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    user = ZeniAuthUser(id: 'user-B', email: email);
+    events.add(user);
+    return ZeniAuthOperationResult.success(user: user);
+  }
+}
+
+class _IdentityAccount extends _TestAccountRepository {
+  String familyId = 'family-remote-1';
+  bool hasRemoteFamily = true;
+  int ensureCalls = 0;
+  @override
+  Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {
+    if (!hasRemoteFamily) return null;
+    return RemoteFamilySummary(
+      familyId: familyId,
+      familyName: 'Família',
+      role: 'owner',
+    );
+  }
+
+  @override
+  Future<ZeniEnsureRemoteFamilyResult>
+  ensureRemoteFamilyForCurrentUser() async {
+    ensureCalls++;
+    hasRemoteFamily = true;
+    return ZeniEnsureRemoteFamilyResult.success(
+      (await getCurrentRemoteFamilySummary())!,
+    );
+  }
+}
+
+class _IdentityChildren extends _TestRemoteChildrenRepository {
+  int pushes = 0;
+  int reads = 0;
+  Future<void> Function()? beforeRead;
+  Future<void> Function()? afterPush;
+  @override
+  Future<List<RemoteChildSummary>> getRemoteChildren({
+    required String familyId,
+  }) async {
+    reads++;
+    await beforeRead?.call();
+    return super.getRemoteChildren(familyId: familyId);
+  }
+
+  @override
+  Future<ZeniEnsureRemoteChildrenResult> ensureRemoteChildren({
+    required String familyId,
+    required List localChildren,
+  }) async {
+    pushes++;
+    await afterPush?.call();
+    return ZeniEnsureRemoteChildrenResult.success(
+      await super.getRemoteChildren(familyId: familyId),
+    );
+  }
+}
+
+class _IdentityMissionLogs extends _EmptyRemoteMissionLogsRepository {
+  int reads = 0;
+
+  @override
+  Future<List<RemoteMissionLogSummary>> getRemoteMissionLogs({
+    required String familyId,
+  }) async {
+    reads++;
+    return super.getRemoteMissionLogs(familyId: familyId);
+  }
 }

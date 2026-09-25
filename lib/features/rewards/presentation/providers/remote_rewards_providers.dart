@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../sync/domain/family_identity.dart';
+import '../../../sync/presentation/providers/family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -56,6 +59,7 @@ class ZeniRemoteRewardsController {
       );
     }
 
+    final startingUserId = authState.user?.id;
     final remoteFamily = await _ref.read(remoteFamilySummaryProvider.future);
     if (remoteFamily == null) {
       return const ZeniEnsureRemoteRewardsResult.failure(
@@ -83,6 +87,13 @@ class ZeniRemoteRewardsController {
           child.localId!: child.id,
     };
 
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    await _ref.read(zeniAppStateControllerProvider.future);
+    if (startingUserId != identity.userId || !identity.canSync) {
+      return const ZeniEnsureRemoteRewardsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final result = await _ref
         .read(remoteRewardsRepositoryProvider)
         .ensureRemoteRewards(
@@ -90,6 +101,11 @@ class ZeniRemoteRewardsController {
           localRewards: appState.rewards,
           remoteChildIdByLocalChildId: remoteChildIdByLocalChildId,
         );
+    if (!identity.canSync) {
+      return const ZeniEnsureRemoteRewardsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     if (result.isSuccess) {
       await _ref
           .read(zeniAppStateControllerProvider.notifier)

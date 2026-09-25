@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../sync/domain/family_identity.dart';
+import '../../../sync/presentation/providers/family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -66,6 +69,7 @@ class ZeniRemoteMissionLogsController {
       );
     }
 
+    final startingUserId = authState.user?.id;
     final remoteFamily = await _ref.read(remoteFamilySummaryProvider.future);
     if (remoteFamily == null) {
       return const ZeniEnsureRemoteMissionLogsResult.failure(
@@ -99,6 +103,13 @@ class ZeniRemoteMissionLogsController {
     };
 
     final appState = await _ref.read(zeniAppStateControllerProvider.future);
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    await _ref.read(zeniAppStateControllerProvider.future);
+    if (startingUserId != identity.userId || !identity.canSync) {
+      return const ZeniEnsureRemoteMissionLogsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final result = await _ref
         .read(remoteMissionLogsRepositoryProvider)
         .ensureRemoteMissionLogs(
@@ -107,6 +118,11 @@ class ZeniRemoteMissionLogsController {
           remoteChildIdByLocalChildId: remoteChildIdByLocalChildId,
           remoteMissionIdByLocalMissionId: remoteMissionIdByLocalMissionId,
         );
+    if (!identity.canSync) {
+      return const ZeniEnsureRemoteMissionLogsResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     if (result.isSuccess) {
       await _ref
           .read(zeniAppStateControllerProvider.notifier)

@@ -14,6 +14,7 @@ import '../../features/rewards/data/models/reward_request.dart';
 import '../../features/settings/data/models/app_settings.dart';
 import '../../features/sync/data/models/device_bootstrap_result.dart';
 import '../../features/sync/data/models/historical_restore_result.dart';
+import '../../features/sync/domain/family_identity.dart';
 import '../../features/tasks/data/models/mission.dart';
 import '../../features/tasks/data/models/mission_log.dart';
 import '../../features/tasks/domain/mission_undo_policy.dart';
@@ -348,12 +349,19 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     DeviceBootstrapPayload payload,
   ) async {
     final current = _requireState();
-    if (current.hasUserContent) {
+    if (!FamilyIdentity.isEmptySafe(current)) {
       return const DeviceBootstrapApplyResult.failure(
         'Este aparelho já possui dados locais.',
       );
     }
 
+    final identity = FamilyIdentity.evaluate(current, payload.family.id);
+    if (identity != FamilyIdentityStatus.localUnboundSafe &&
+        identity != FamilyIdentityStatus.bound) {
+      return const DeviceBootstrapApplyResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final parentMembers = current.familyMembers
         .where((member) => member.role == ZeniUserRole.parent)
         .toList();
@@ -411,6 +419,10 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     DeviceBootstrapPayload payload,
   ) async {
     final current = _requireState();
+    if (FamilyIdentity.evaluate(current, payload.family.id) !=
+        FamilyIdentityStatus.bound) {
+      throw StateError(familyIdentityBlockedMessage);
+    }
     final parentMembers = current.familyMembers
         .where((member) => member.role == ZeniUserRole.parent)
         .toList();

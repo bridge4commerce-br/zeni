@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/supabase/zeni_supabase.dart';
+import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../family/presentation/providers/remote_children_providers.dart';
 import '../../../rewards/presentation/providers/remote_reward_requests_providers.dart';
 import '../../../rewards/presentation/providers/remote_rewards_providers.dart';
 import '../../../tasks/presentation/providers/remote_mission_logs_providers.dart';
 import '../../../tasks/presentation/providers/remote_missions_providers.dart';
+import '../../../sync/domain/family_identity.dart';
 import '../../data/repositories/supabase_auth_repository.dart';
 import '../../data/repositories/zeni_auth_repository.dart';
 import 'zeni_account_providers.dart';
@@ -173,6 +175,18 @@ class ZeniAuthController {
     ZeniAuthUser user,
   ) async {
     if (!ZeniSupabaseBootstrap.state.isAvailable) return null;
+
+    final accountRepository = _ref.read(accountRepositoryProvider);
+    final existingFamily = await accountRepository
+        .getCurrentRemoteFamilySummary();
+    if (existingFamily != null) return null;
+    if (_ref.read(authStateProvider).user?.id != user.id) return null;
+
+    final localState = await _ref.read(zeniAppStateControllerProvider.future);
+    if (!FamilyIdentity.isEmptySafe(localState)) {
+      return null;
+    }
+    if (_ref.read(authStateProvider).user?.id != user.id) return null;
 
     final ensureResult = await _ref
         .read(zeniAccountControllerProvider)

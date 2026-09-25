@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/family_identity.dart';
+import 'family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -47,6 +50,30 @@ final historicalRestoreActionStateProvider =
         );
       }
 
+      final identity = FamilyIdentityGuard(
+        ref,
+        familyId: remoteFamily.familyId,
+      );
+      if (!identity.canSync) {
+        return const HistoricalRestoreActionState(
+          isVisible: false,
+          showAction: false,
+          isEnabled: false,
+          message: familyIdentityBlockedMessage,
+        );
+      }
+
+      final hasLocalActivity = !hasEmptyHistory || !hasZeroBalances;
+      if (hasLocalActivity) {
+        return const HistoricalRestoreActionState(
+          isVisible: true,
+          showAction: true,
+          isEnabled: false,
+          message:
+              'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
+        );
+      }
+
       final remoteMissionLogs = await ref.watch(
         remoteMissionLogsProvider.future,
       );
@@ -60,18 +87,6 @@ final historicalRestoreActionStateProvider =
           (remoteMissionLogs?.isNotEmpty ?? false) ||
           (remoteRewardRequests?.isNotEmpty ?? false) ||
           (remoteStarLedgerEntries?.isNotEmpty ?? false);
-      final hasLocalActivity = !hasEmptyHistory || !hasZeroBalances;
-
-      if (hasLocalActivity) {
-        return const HistoricalRestoreActionState(
-          isVisible: true,
-          showAction: true,
-          isEnabled: false,
-          message:
-              'Este aparelho já possui atividade local. A restauração histórica foi bloqueada para evitar duplicidade.',
-        );
-      }
-
       if (!hasRemoteHistory) {
         return const HistoricalRestoreActionState(
           isVisible: true,
@@ -141,6 +156,13 @@ class HistoricalRestoreController {
       );
     }
 
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    if (identity.userId != authState.user?.id || !identity.canSync) {
+      return const HistoricalRestoreResult.failure(
+        status: HistoricalRestoreResultStatus.applyBlocked,
+        message: familyIdentityBlockedMessage,
+      );
+    }
     try {
       final remoteChildren = await _ref
           .read(remoteChildrenRepositoryProvider)
@@ -191,6 +213,12 @@ class HistoricalRestoreController {
         return mappedResult;
       }
 
+      if (!identity.canSync) {
+        return const HistoricalRestoreResult.failure(
+          status: HistoricalRestoreResultStatus.applyBlocked,
+          message: familyIdentityBlockedMessage,
+        );
+      }
       final applyResult = await _ref
           .read(zeniAppStateControllerProvider.notifier)
           .applyHistoricalRestoreIfSafe(mappedResult.payload!);

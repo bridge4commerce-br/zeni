@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/family_identity.dart';
+import 'family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -28,7 +31,8 @@ final deviceBootstrapControllerProvider = Provider<DeviceBootstrapController>((
 final deviceBootstrapActionStateProvider =
     FutureProvider<DeviceBootstrapActionState>((ref) async {
       final authState = ref.watch(authStateProvider);
-      if (!ZeniSupabaseBootstrap.state.isAvailable || !authState.isAuthenticated) {
+      if (!ZeniSupabaseBootstrap.state.isAvailable ||
+          !authState.isAuthenticated) {
         return const DeviceBootstrapActionState(
           isVisible: false,
           showAction: false,
@@ -37,7 +41,7 @@ final deviceBootstrapActionStateProvider =
         );
       }
 
-      final localState = await ref.watch(zeniAppStateControllerProvider.future);
+      await ref.watch(zeniAppStateControllerProvider.future);
       final remoteFamily = await ref.watch(remoteFamilySummaryProvider.future);
       if (remoteFamily == null) {
         return const DeviceBootstrapActionState(
@@ -48,24 +52,26 @@ final deviceBootstrapActionStateProvider =
         );
       }
 
-      if (localState.hasUserContent) {
+      final identity = FamilyIdentityGuard(
+        ref,
+        familyId: remoteFamily.familyId,
+      );
+      if (!identity.canBootstrap) {
         return const DeviceBootstrapActionState(
-          isVisible: true,
-          showAction: true,
+          isVisible: false,
+          showAction: false,
           isEnabled: false,
-          message: 'Este aparelho já possui dados locais.',
+          message: familyIdentityBlockedMessage,
         );
       }
 
       final remoteChildren =
-          await ref.watch(remoteChildrenProvider.future) ??
-          const [];
+          await ref.watch(remoteChildrenProvider.future) ?? const [];
       final remoteMissions =
           await ref.watch(remoteMissionsProvider.future) ??
           const <RemoteMissionSummary>[];
       final remoteRewards =
-          await ref.watch(remoteRewardsProvider.future) ??
-          const [];
+          await ref.watch(remoteRewardsProvider.future) ?? const [];
       final hasRemoteCatalogData =
           remoteChildren.isNotEmpty ||
           remoteMissions.isNotEmpty ||
@@ -124,7 +130,7 @@ class DeviceBootstrapController {
     }
 
     final localState = await _ref.read(zeniAppStateControllerProvider.future);
-    if (localState.hasUserContent) {
+    if (!FamilyIdentity.isEmptySafe(localState)) {
       return const DeviceBootstrapResult.failure(
         'Este aparelho já possui dados locais.',
       );
@@ -138,6 +144,15 @@ class DeviceBootstrapController {
         );
       }
 
+      final identity = FamilyIdentityGuard(
+        _ref,
+        familyId: remoteFamily.familyId,
+      );
+      if (identity.userId != authState.user?.id || !identity.canBootstrap) {
+        return const DeviceBootstrapResult.failure(
+          familyIdentityBlockedMessage,
+        );
+      }
       final remoteChildren = await _ref
           .read(remoteChildrenRepositoryProvider)
           .getRemoteChildren(familyId: remoteFamily.familyId);
@@ -166,6 +181,14 @@ class DeviceBootstrapController {
         );
       }
 
+      if (!identity.canBootstrap ||
+          remoteChildren.any((item) => item.familyId != identity.familyId) ||
+          remoteMissions.any((item) => item.familyId != identity.familyId) ||
+          remoteRewards.any((item) => item.familyId != identity.familyId)) {
+        return const DeviceBootstrapResult.failure(
+          familyIdentityBlockedMessage,
+        );
+      }
       final payload = _ref
           .read(remoteDeviceBootstrapMapperProvider)
           .map(
@@ -232,7 +255,9 @@ class DeviceBootstrapController {
     for (var index = 0; index < remoteChildren.length; index += 1) {
       final remoteChild = remoteChildren[index];
       final localChild = payload.children[index];
-      _debugLog('Child mapping: remote=${remoteChild.id} -> local=${localChild.id}');
+      _debugLog(
+        'Child mapping: remote=${remoteChild.id} -> local=${localChild.id}',
+      );
     }
 
     final localChildIdByRemoteChildId = <String, String>{

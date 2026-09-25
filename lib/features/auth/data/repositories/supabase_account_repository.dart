@@ -4,7 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'zeni_account_repository.dart';
 
 class SupabaseAccountRepository implements ZeniAccountRepository {
-  SupabaseAccountRepository({required SupabaseClient? client}) : _client = client;
+  SupabaseAccountRepository({required SupabaseClient? client})
+    : _client = client;
 
   final SupabaseClient? _client;
 
@@ -22,11 +23,14 @@ class SupabaseAccountRepository implements ZeniAccountRepository {
           .from('family_members')
           .select('role, family:families!inner(id, name)')
           .eq('user_id', currentUser.id)
-          .limit(1)
-          .maybeSingle();
+          .limit(2);
 
-      if (response == null) return null;
-      return _parseSummary(response);
+      // Ambiguous membership is not permission to select a destination.
+      if (response.length != 1 ||
+          client.auth.currentUser?.id != currentUser.id) {
+        return null;
+      }
+      return _parseSummary(response.single);
     } on PostgrestException catch (error) {
       _debugLog('getCurrentRemoteFamilySummary error: ${error.message}');
       return null;
@@ -37,7 +41,8 @@ class SupabaseAccountRepository implements ZeniAccountRepository {
   }
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult> ensureRemoteFamilyForCurrentUser() async {
+  Future<ZeniEnsureRemoteFamilyResult>
+  ensureRemoteFamilyForCurrentUser() async {
     final client = _client;
     if (client == null) {
       return const ZeniEnsureRemoteFamilyResult.failure(
@@ -191,7 +196,9 @@ class SupabaseAccountRepository implements ZeniAccountRepository {
     if (isSuccess) {
       return ZeniDeleteAccountResult.success(
         familyId: familyId,
-        message: message ?? 'Sua conta e os dados da família foram removidos da nuvem.',
+        message:
+            message ??
+            'Sua conta e os dados da família foram removidos da nuvem.',
       );
     }
 

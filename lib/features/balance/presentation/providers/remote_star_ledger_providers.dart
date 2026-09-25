@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../sync/domain/family_identity.dart';
+import '../../../sync/presentation/providers/family_identity_guard.dart';
+
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
@@ -67,6 +70,7 @@ class ZeniRemoteStarLedgerController {
       );
     }
 
+    final startingUserId = authState.user?.id;
     final remoteFamily = await _ref.read(remoteFamilySummaryProvider.future);
     if (remoteFamily == null) {
       return const ZeniEnsureRemoteStarLedgerResult.failure(
@@ -111,6 +115,13 @@ class ZeniRemoteStarLedgerController {
           request.localId!: request.id,
     };
 
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    await _ref.read(zeniAppStateControllerProvider.future);
+    if (startingUserId != identity.userId || !identity.canSync) {
+      return const ZeniEnsureRemoteStarLedgerResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     final result = await _ref
         .read(remoteStarLedgerRepositoryProvider)
         .ensureRemoteStarLedger(
@@ -123,6 +134,11 @@ class ZeniRemoteStarLedgerController {
               remoteRewardRequestIdByLocalRewardRequestId,
         );
 
+    if (!identity.canSync) {
+      return const ZeniEnsureRemoteStarLedgerResult.failure(
+        familyIdentityBlockedMessage,
+      );
+    }
     if (result.isSuccess) {
       await _ref
           .read(zeniAppStateControllerProvider.notifier)

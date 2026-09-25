@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/family_identity.dart';
+import 'family_identity_guard.dart';
+import 'device_bootstrap_providers.dart';
+
 import '../../../../core/state/zeni_app_state.dart';
 import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
@@ -48,7 +52,7 @@ class ZeniCloudSyncResult {
   bool get isSuccess => status == ZeniCloudSyncStatus.success;
 }
 
-enum ZeniCloudSyncStatus { success, noSession, offline, error }
+enum ZeniCloudSyncStatus { success, noSession, offline, error, familyMismatch }
 
 final zeniCloudSyncControllerProvider = Provider<ZeniCloudSyncController>((
   ref,
@@ -83,23 +87,9 @@ class ZeniCloudSyncController {
         );
       }
 
-      final ensureRemoteFamily = await _ref
-          .read(zeniAccountControllerProvider)
-          .ensureRemoteFamilyForCurrentUser();
-      if (!ensureRemoteFamily.isSuccess) {
-        _debugLog(
-          'Manual sync could not prepare remote family: ${ensureRemoteFamily.message}',
-        );
-        return const ZeniCloudSyncResult.failure(
-          'Não foi possível sincronizar agora. Tente novamente em instantes.',
-        );
-      }
-
       final result = await _performSync();
       if (!result.isSuccess) {
-        return const ZeniCloudSyncResult.failure(
-          'Não foi possível sincronizar agora. Tente novamente em instantes.',
-        );
+        return result;
       }
 
       return const ZeniCloudSyncResult(
@@ -121,6 +111,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    await _ref.read(zeniAppStateControllerProvider.future);
     final authState = _ref.read(authStateProvider);
     if (!authState.isAuthenticated) {
       return const ZeniCloudSyncResult.noSession(
@@ -135,6 +126,22 @@ class ZeniCloudSyncController {
       );
     }
 
+    await _ref.read(zeniAppStateControllerProvider.future);
+    final identity = FamilyIdentityGuard(_ref, familyId: remoteFamily.familyId);
+    if (identity.userId != authState.user?.id) return _identityBlocked;
+    if (identity.status == FamilyIdentityStatus.localUnboundSafe &&
+        identity.canBootstrap) {
+      final bootstrap = await _ref
+          .read(deviceBootstrapControllerProvider)
+          .bootstrapFromRemoteFamily();
+      if (!bootstrap.isSuccess) {
+        return ZeniCloudSyncResult.failure(
+          bootstrap.message ?? 'Falha na recuperação.',
+        );
+      }
+    }
+    if (!identity.canSync) return _identityBlocked;
+
     final childrenResult = await _ref
         .read(zeniRemoteChildrenControllerProvider)
         .ensureRemoteChildrenForCurrentFamily();
@@ -145,6 +152,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final missionsResult = await _ref
         .read(zeniRemoteMissionsControllerProvider)
         .ensureRemoteMissionsForCurrentFamily();
@@ -155,6 +163,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final rewardsResult = await _ref
         .read(zeniRemoteRewardsControllerProvider)
         .ensureRemoteRewardsForCurrentFamily();
@@ -165,6 +174,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final missionLogsResult = await _ref
         .read(zeniRemoteMissionLogsControllerProvider)
         .ensureRemoteMissionLogsForCurrentFamily();
@@ -175,6 +185,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final rewardRequestsResult = await _ref
         .read(zeniRemoteRewardRequestsControllerProvider)
         .ensureRemoteRewardRequestsForCurrentFamily();
@@ -185,6 +196,7 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final starLedgerResult = await _ref
         .read(zeniRemoteStarLedgerControllerProvider)
         .ensureRemoteStarLedgerForCurrentFamily();
@@ -195,7 +207,9 @@ class ZeniCloudSyncController {
       );
     }
 
+    if (!identity.canSync) return _identityBlocked;
     final pullResult = await _pullRemoteChanges(
+      identity: identity,
       remoteFamilyId: remoteFamily.familyId,
       remoteChildren: childrenResult.children,
       remoteMissions: missionsResult.missions,
@@ -210,6 +224,7 @@ class ZeniCloudSyncController {
     }
 
     final appState = await _ref.read(zeniAppStateControllerProvider.future);
+    if (!identity.canSync) return _identityBlocked;
     await _ref
         .read(zeniAppStateControllerProvider.notifier)
         .updateAppSettings(
@@ -220,6 +235,7 @@ class ZeniCloudSyncController {
   }
 
   Future<HistoricalRestoreResult> _pullRemoteChanges({
+    required FamilyIdentityGuard identity,
     required String remoteFamilyId,
     required List<RemoteChildSummary> remoteChildren,
     required List<RemoteMissionSummary> remoteMissions,
@@ -236,6 +252,7 @@ class ZeniCloudSyncController {
       'starLedgerEntries=${remoteStarLedgerEntries.length}',
     );
     final localState = await _ref.read(zeniAppStateControllerProvider.future);
+    if (!identity.canSync) return _identityPullBlocked;
     final catalogPayload = _buildRemoteCatalogPayload(
       localState: localState,
       remoteFamily: remoteFamilyId,
@@ -251,6 +268,7 @@ class ZeniCloudSyncController {
     final remoteChildBalances = await _ref
         .read(remoteChildBalanceRepositoryProvider)
         .getRemoteChildStarBalances(familyId: remoteFamilyId);
+    if (!identity.canSync) return _identityPullBlocked;
     final mappedResult = _ref
         .read(remoteIncrementalSyncMapperProvider)
         .map(
@@ -485,4 +503,14 @@ class ZeniCloudSyncController {
     _inFlightSync = future;
     return future;
   }
+
+  static const _identityBlocked = ZeniCloudSyncResult(
+    status: ZeniCloudSyncStatus.familyMismatch,
+    message: familyIdentityBlockedMessage,
+  );
+
+  static const _identityPullBlocked = HistoricalRestoreResult.failure(
+    status: HistoricalRestoreResultStatus.applyBlocked,
+    message: familyIdentityBlockedMessage,
+  );
 }
