@@ -1,9 +1,17 @@
 class ZeniAuthUser {
-  const ZeniAuthUser({required this.id, this.email});
+  const ZeniAuthUser({required this.id, this.email, this.displayName});
 
   final String id;
   final String? email;
+  final String? displayName;
 }
+
+enum ZeniAuthIssue { localFamilyConflict }
+
+const localFamilyConflictTitle = 'Este aparelho tem dados antigos';
+const localFamilyConflictMessage =
+    'Esta família foi criada antes de ser vinculada a uma conta. '
+    'Para evitar misturar informações, o Zeni não vai conectá-la automaticamente.';
 
 class ZeniAuthOperationResult {
   const ZeniAuthOperationResult({
@@ -11,12 +19,11 @@ class ZeniAuthOperationResult {
     this.user,
     this.message,
     this.requiresEmailConfirmation = false,
+    this.issue,
   });
 
-  const ZeniAuthOperationResult.success({
-    ZeniAuthUser? user,
-    String? message,
-  }) : this(isSuccess: true, user: user, message: message);
+  const ZeniAuthOperationResult.success({ZeniAuthUser? user, String? message})
+    : this(isSuccess: true, user: user, message: message);
 
   const ZeniAuthOperationResult.pendingEmailConfirmation({
     ZeniAuthUser? user,
@@ -31,10 +38,19 @@ class ZeniAuthOperationResult {
   const ZeniAuthOperationResult.failure(String message)
     : this(isSuccess: false, message: message);
 
+  const ZeniAuthOperationResult.localFamilyConflict({ZeniAuthUser? user})
+    : this(
+        isSuccess: false,
+        user: user,
+        message: localFamilyConflictMessage,
+        issue: ZeniAuthIssue.localFamilyConflict,
+      );
+
   final bool isSuccess;
   final ZeniAuthUser? user;
   final String? message;
   final bool requiresEmailConfirmation;
+  final ZeniAuthIssue? issue;
 }
 
 abstract class ZeniAuthRepository {
@@ -46,6 +62,7 @@ abstract class ZeniAuthRepository {
   bool get isAppleSignInAvailable;
 
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   });

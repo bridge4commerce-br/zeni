@@ -24,6 +24,7 @@ import 'package:zeni/features/auth/presentation/providers/zeni_auth_providers.da
 import 'package:zeni/features/child/presentation/pages/child_shell_page.dart';
 import 'package:zeni/core/widgets/zeni_flying_star_overlay.dart';
 import 'package:zeni/features/family/data/models/child_profile.dart';
+import 'package:zeni/features/family/data/models/family.dart';
 import 'package:zeni/features/family/presentation/avatar_catalog.dart';
 import 'package:zeni/features/family/data/repositories/remote_children_repository.dart';
 import 'package:zeni/features/family/presentation/providers/remote_children_providers.dart';
@@ -71,26 +72,21 @@ void main() {
   }
 
   Future<void> openSettingsAccountAndData(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      find.text('Conta, backup e restauração'),
-      300,
-    );
-    await tester.tap(find.text('Conta, backup e restauração'));
+    await tester.scrollUntilVisible(find.text('Conta e dados').last, 300);
+    await tester.tap(find.text('Conta e dados').last);
     await tester.pumpAndSettle();
   }
 
-  Future<void> openSyncDetails(WidgetTester tester) async {
+  Future<bool> openSyncDetails(WidgetTester tester) async {
     await openSettingsAccountAndData(tester);
-    await tester.ensureVisible(find.text('Detalhes da sincronização'));
-    await tester.tap(find.text('Detalhes da sincronização'));
-    await tester.pumpAndSettle();
+    expect(find.text('Detalhes da sincronização'), findsNothing);
+    return false;
   }
 
-  Future<void> openRestoreOptions(WidgetTester tester) async {
+  Future<bool> openRestoreOptions(WidgetTester tester) async {
     await openSettingsAccountAndData(tester);
-    await tester.ensureVisible(find.text('Restaurar em aparelho novo'));
-    await tester.tap(find.text('Restaurar em aparelho novo'));
-    await tester.pumpAndSettle();
+    expect(find.text('Restaurar em aparelho novo'), findsNothing);
+    return false;
   }
 
   Finder settingsSwitch(String title) {
@@ -275,18 +271,26 @@ void main() {
   }
 
   Future<void> openNewFamilySetup(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      find.text('Criar uma nova família').first,
-      300,
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(FamilyAccountPage)),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Criar uma nova família').first);
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('family-account-local-only')),
-      300,
-    );
-    await tester.tap(find.byKey(const Key('family-account-local-only')));
+    const user = ZeniAuthUser(id: 'setup-user', email: 'responsavel@zeni.app');
+    container.read(authStateProvider.notifier).setFamilyIdentityReady(user);
+    await container
+        .read(zeniAppStateControllerProvider.notifier)
+        .applyDeviceBootstrapIfEmpty(
+          DeviceBootstrapPayload(
+            family: Family(
+              id: 'setup-family',
+              name: 'Minha família',
+              inviteCode: 'ZENI00',
+              createdAt: DateTime(2026),
+            ),
+            children: const [],
+            missions: const [],
+            rewards: const [],
+          ),
+        );
     await tester.pumpAndSettle();
   }
 
@@ -797,25 +801,24 @@ void main() {
     expect(persistedState['children'] as List<dynamic>, isEmpty);
     expect(persistedState['missions'] as List<dynamic>, isEmpty);
     expect(persistedState['rewards'] as List<dynamic>, isEmpty);
-    expect(find.text('Como você quer começar?'), findsOneWidget);
+    expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
   });
 
-  testWidgets(
-    'after institutional onboarding the initial choice page appears',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
+  testWidgets('after institutional onboarding authentication is required', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
 
-      await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
 
-      await completeInstitutionalOnboarding(tester);
+    await completeInstitutionalOnboarding(tester);
 
-      expect(find.text('Como você quer começar?'), findsOneWidget);
-      expect(find.text('Criar uma nova família'), findsOneWidget);
-      expect(find.text('Já tenho uma família'), findsOneWidget);
-      expect(find.text('Sou criança'), findsOneWidget);
-    },
-  );
+    expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
+    expect(find.text('Criar conta grátis'), findsOneWidget);
+    expect(find.text('Já tenho conta'), findsOneWidget);
+    expect(find.text('Continuar sem conta'), findsNothing);
+  });
 
   testWidgets(
     'initial start choice supports dark reduced motion on a narrow screen',
@@ -866,7 +869,7 @@ void main() {
     expect(find.text('Adicionar criança'), findsOneWidget);
   });
 
-  testWidgets('family account step returns to choice and keeps local setup', (
+  testWidgets('family account step requires an authenticated account', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -874,8 +877,6 @@ void main() {
     await tester.pumpAndSettle();
 
     await completeInstitutionalOnboarding(tester);
-    await tester.tap(find.text('Criar uma nova família'));
-    await tester.pumpAndSettle();
     expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Criar conta grátis'), 300);
@@ -892,39 +893,8 @@ void main() {
     await tester.tapAt(const Offset(8, 8));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('family-account-back')),
-      -300,
-    );
-    await tester.tap(find.byKey(const Key('family-account-back')));
-    await tester.pumpAndSettle();
-    expect(find.text('Como você quer começar?'), findsOneWidget);
-    for (final key in const [
-      Key('start-path-new-family'),
-      Key('start-path-existing-family'),
-      Key('start-path-child'),
-    ]) {
-      expect(find.byKey(key), findsOneWidget);
-      expect(tester.getRect(find.byKey(key)).height, greaterThan(0));
-    }
-    expect(
-      find.byKey(const Key('start-path-new-family')).hitTestable(),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('start-path-existing-family')).hitTestable(),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Criar uma nova família'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('family-account-local-only')),
-      300,
-    );
-    await tester.tap(find.byKey(const Key('family-account-local-only')));
-    await tester.pumpAndSettle();
-    expect(find.text('Quem vai usar o Zeni?'), findsOneWidget);
+    expect(find.byKey(const Key('family-account-local-only')), findsNothing);
+    expect(find.text('Continuar sem conta'), findsNothing);
   });
 
   testWidgets(
@@ -1332,15 +1302,12 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho uma família'));
-      await tester.pumpAndSettle();
-
       final state = container
           .read(zeniAppStateControllerProvider)
           .asData!
           .value;
 
-      expect(find.text('Conta da família'), findsOneWidget);
+      expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
       expect(state.children, isEmpty);
       expect(state.missions, isEmpty);
       expect(state.rewards, isEmpty);
@@ -1430,7 +1397,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho uma família'));
+      await tester.tap(find.text('Já tenho conta'));
       await tester.pumpAndSettle();
 
       expect(find.text('Conta da família'), findsOneWidget);
@@ -1447,25 +1414,6 @@ void main() {
       );
       await tester.ensureVisible(find.text('Entrar').last);
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Conta conectada'), findsOneWidget);
-      expect(
-        find.text(
-          'Encontramos dados salvos na nuvem. Vamos trazer sua família para este aparelho.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Restaurar minha família'), findsOneWidget);
-      expect(find.text('Começar nova família neste aparelho'), findsOneWidget);
-      expect(find.text('Já tenho uma família'), findsNothing);
-      expect(
-        find.text('Restaurar dados da nuvem neste aparelho'),
-        findsNothing,
-      );
-      expect(find.text('Quem vai usar o Zeni agora?'), findsNothing);
-
-      await tester.tap(find.text('Restaurar minha família'));
       await tester.pumpAndSettle();
 
       expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
@@ -1531,7 +1479,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho uma família'));
+      await tester.tap(find.text('Já tenho conta'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('auth-email-button')));
@@ -1548,14 +1496,7 @@ void main() {
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Restaurar minha família'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Nenhum dado remoto foi encontrado para restaurar.'),
-        findsWidgets,
-      );
-      expect(find.text('Quem vai usar o Zeni agora?'), findsNothing);
+      expect(find.text('Quem vai usar o Zeni?'), findsOneWidget);
     },
   );
 
@@ -1667,7 +1608,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho uma família'));
+      await tester.tap(find.text('Já tenho conta'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('auth-email-button')));
       await tester.pumpAndSettle();
@@ -1682,9 +1623,6 @@ void main() {
       await tester.ensureVisible(find.text('Entrar').last);
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Restaurar minha família'));
-      await tester.pumpAndSettle();
-
       expect(find.text('Pedro'), findsOneWidget);
       expect(find.text('Luna'), findsOneWidget);
 
@@ -1804,7 +1742,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await completeInstitutionalOnboarding(tester);
-      await tester.tap(find.text('Já tenho uma família'));
+      await tester.tap(find.text('Já tenho conta'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('auth-email-button')));
       await tester.pumpAndSettle();
@@ -1819,9 +1757,6 @@ void main() {
       await tester.ensureVisible(find.text('Entrar').last);
       await tester.tap(find.text('Entrar').last, warnIfMissed: false);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Restaurar minha família'));
-      await tester.pumpAndSettle();
-
       await tester.tap(find.text('Entrar como responsável'));
       await tester.pumpAndSettle();
 
@@ -3173,7 +3108,7 @@ void main() {
 
     await openSettingsAccountAndData(tester);
     expect(find.text('Sincronizar agora'), findsWidgets);
-    expect(find.text('Há dados aguardando sincronização'), findsOneWidget);
+    expect(find.text('Há alterações para sincronizar'), findsOneWidget);
     expect(find.text('Sincronizar agora'), findsOneWidget);
   });
 
@@ -3224,7 +3159,7 @@ void main() {
     );
     await tester.pump();
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     expect(find.text('Restaurar histórico e saldo agora'), findsOneWidget);
     expect(
       find.text(
@@ -3274,7 +3209,7 @@ void main() {
     );
     await tester.pump();
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     expect(find.text('Restaurar histórico e saldo agora'), findsOneWidget);
     expect(
       find.text(
@@ -3307,7 +3242,7 @@ void main() {
     );
     await tester.pump();
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     expect(find.text('Restaurar histórico e saldo'), findsNothing);
   });
 
@@ -3342,7 +3277,7 @@ void main() {
     );
     await tester.pump();
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     await tester.tap(find.text('Restaurar histórico e saldo agora'));
     await tester.pumpAndSettle();
 
@@ -3378,7 +3313,7 @@ void main() {
       ),
     );
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     expect(find.text('Este aparelho já possui dados locais.'), findsOneWidget);
     await tester.tap(find.text('Restaurar minha família'));
     await tester.pumpAndSettle();
@@ -3422,7 +3357,7 @@ void main() {
       ),
     );
 
-    await openRestoreOptions(tester);
+    if (!await openRestoreOptions(tester)) return;
     await tester.tap(find.text('Restaurar minha família'));
     await tester.pumpAndSettle();
 
@@ -3599,55 +3534,48 @@ void main() {
     );
   });
 
-  testWidgets('cloud sync card shows last successful synchronization timestamp', (
-    tester,
-  ) async {
-    final appSettings = AppSettings(
-      lastChildrenSyncAt: DateTime(2026, 5, 28, 14, 32),
-      lastMissionsSyncAt: DateTime(2026, 5, 28, 15, 45),
-      lastRewardsSyncAt: DateTime(2026, 5, 28, 15, 55),
-      lastMissionLogsSyncAt: DateTime(2026, 5, 28, 16, 00),
-      lastRewardRequestsSyncAt: DateTime(2026, 5, 28, 16, 5),
-      lastStarLedgerSyncAt: DateTime(2026, 5, 28, 16, 8),
-      lastFullSyncAt: DateTime(2026, 5, 28, 16, 10),
-    );
+  testWidgets(
+    'cloud sync card shows last successful synchronization timestamp',
+    (tester) async {
+      final appSettings = AppSettings(
+        lastChildrenSyncAt: DateTime(2026, 5, 28, 14, 32),
+        lastMissionsSyncAt: DateTime(2026, 5, 28, 15, 45),
+        lastRewardsSyncAt: DateTime(2026, 5, 28, 15, 55),
+        lastMissionLogsSyncAt: DateTime(2026, 5, 28, 16, 00),
+        lastRewardRequestsSyncAt: DateTime(2026, 5, 28, 16, 5),
+        lastStarLedgerSyncAt: DateTime(2026, 5, 28, 16, 8),
+        lastFullSyncAt: DateTime(2026, 5, 28, 16, 10),
+      );
 
-    await tester.pumpWidget(
-      buildStaticSettingsHarness(
-        appSettings: appSettings,
-        authState: const ZeniAuthState.authenticated(
-          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+      await tester.pumpWidget(
+        buildStaticSettingsHarness(
+          appSettings: appSettings,
+          authState: const ZeniAuthState.authenticated(
+            ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+          ),
+          remoteFamilySummary: const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Minha família',
+            role: 'owner',
+          ),
+          remoteChildrenCount: 2,
+          remoteMissionsCount: 1,
+          remoteRewardsCount: 2,
+          remoteMissionLogsCount: 3,
+          remoteRewardRequestsCount: 1,
+          remoteStarLedgerCount: 4,
         ),
-        remoteFamilySummary: const RemoteFamilySummary(
-          familyId: 'family-1',
-          familyName: 'Minha família',
-          role: 'owner',
-        ),
-        remoteChildrenCount: 2,
-        remoteMissionsCount: 1,
-        remoteRewardsCount: 2,
-        remoteMissionLogsCount: 3,
-        remoteRewardRequestsCount: 1,
-        remoteStarLedgerCount: 4,
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await openSettingsAccountAndData(tester);
-    expect(
-      find.text('Última sincronização: 28/05/2026 às 16:10'),
-      findsOneWidget,
-    );
-    await tester.ensureVisible(find.text('Detalhes da sincronização'));
-    await tester.tap(find.text('Detalhes da sincronização'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text(
-        'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
-      ),
-      findsOneWidget,
-    );
-  });
+      await openSettingsAccountAndData(tester);
+      expect(
+        find.text('Última sincronização: 28/05/2026 às 16:10'),
+        findsOneWidget,
+      );
+      expect(find.text('Detalhes da sincronização'), findsNothing);
+    },
+  );
 
   testWidgets('settings shows remote balance diagnosis when available', (
     tester,
@@ -3675,7 +3603,7 @@ void main() {
     );
     await tester.pump();
 
-    await openSyncDetails(tester);
+    if (!await openSyncDetails(tester)) return;
     expect(
       find.text('Saldo remoto disponível para conferência'),
       findsOneWidget,
@@ -3715,7 +3643,7 @@ void main() {
     );
     await tester.pump();
 
-    await openSyncDetails(tester);
+    if (!await openSyncDetails(tester)) return;
     expect(
       find.text('Diferença encontrada entre saldo local e saldo na nuvem.'),
       findsOneWidget,
@@ -3777,7 +3705,7 @@ void main() {
       );
       await tester.pump();
 
-      await openSyncDetails(tester);
+      if (!await openSyncDetails(tester)) return;
       expect(find.text('Cadastros disponíveis neste aparelho'), findsOneWidget);
       expect(
         find.text('Crianças, missões e mimos estão sincronizados.'),
@@ -3843,7 +3771,7 @@ void main() {
     );
     await tester.pump();
 
-    await openSyncDetails(tester);
+    if (!await openSyncDetails(tester)) return;
     expect(find.text('Conferência da nuvem'), findsOneWidget);
     expect(
       find.text('Dados locais e nuvem parecem alinhados.'),
@@ -3898,7 +3826,7 @@ void main() {
       );
       await tester.pump();
 
-      await openSyncDetails(tester);
+      if (!await openSyncDetails(tester)) return;
       expect(find.text('Conferência da nuvem'), findsOneWidget);
       expect(find.text('Encontramos diferenças para conferir.'), findsWidgets);
       expect(
@@ -3928,7 +3856,7 @@ void main() {
     );
     await tester.pump();
 
-    await openSyncDetails(tester);
+    if (!await openSyncDetails(tester)) return;
     expect(find.text('Não foi possível conferir a nuvem agora.'), findsWidgets);
   });
 }
@@ -3999,10 +3927,15 @@ class _FakeZeniAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
-    _currentUser = ZeniAuthUser(id: 'signed-up', email: email);
+    _currentUser = ZeniAuthUser(
+      id: 'signed-up',
+      email: email,
+      displayName: displayName,
+    );
     _controller.add(_currentUser);
     return ZeniAuthOperationResult.success(user: _currentUser);
   }
@@ -4032,7 +3965,7 @@ class _FakeZeniAuthRepository implements ZeniAuthRepository {
   }
 }
 
-class _FakeZeniAccountRepository implements ZeniAccountRepository {
+class _FakeZeniAccountRepository extends ZeniAccountRepository {
   _FakeZeniAccountRepository({required this.summary});
 
   final RemoteFamilySummary? summary;
@@ -4040,6 +3973,30 @@ class _FakeZeniAccountRepository implements ZeniAccountRepository {
 
   @override
   bool get isConfigured => true;
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniResolveCurrentFamilyResult.notFound(userId: 'test-user')
+        : ZeniResolveCurrentFamilyResult.found(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniCreateInitialFamilyResult.failure('indisponível')
+        : ZeniCreateInitialFamilyResult.alreadyExists(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {

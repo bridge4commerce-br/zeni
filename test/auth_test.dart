@@ -4983,10 +4983,15 @@ class _TestAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
-    _currentUser = ZeniAuthUser(id: 'user-2', email: email);
+    _currentUser = ZeniAuthUser(
+      id: 'user-2',
+      email: email,
+      displayName: displayName,
+    );
     _controller.add(_currentUser);
     return ZeniAuthOperationResult.success(user: _currentUser);
   }
@@ -5014,13 +5019,33 @@ class _TestAuthRepository implements ZeniAuthRepository {
   Future<void> dispose() => _controller.close();
 }
 
-class _FakeAccountRepository implements ZeniAccountRepository {
+class _FakeAccountRepository extends ZeniAccountRepository {
   int ensureCalls = 0;
+  int createCalls = 0;
   int updateCalls = 0;
   int deleteCalls = 0;
 
   @override
   bool get isConfigured => true;
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    return const ZeniResolveCurrentFamilyResult.notFound(userId: 'test-user');
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    createCalls += 1;
+    return const ZeniCreateInitialFamilyResult.created(
+      summary: RemoteFamilySummary(
+        familyId: 'family-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+      userId: 'test-user',
+      membershipId: 'membership-test',
+    );
+  }
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {

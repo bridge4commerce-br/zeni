@@ -273,6 +273,7 @@ class _TestAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async => ZeniAuthOperationResult.success(user: currentUser);
@@ -313,6 +314,7 @@ class _UnauthenticatedTestAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async => const ZeniAuthOperationResult.failure('indisponível');
@@ -326,11 +328,37 @@ class _UnauthenticatedTestAuthRepository implements ZeniAuthRepository {
       const ZeniAuthOperationResult.failure('indisponível');
 }
 
-class _TestAccountRepository implements ZeniAccountRepository {
+class _TestAccountRepository extends ZeniAccountRepository {
   const _TestAccountRepository();
 
   @override
   bool get isConfigured => true;
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    return const ZeniResolveCurrentFamilyResult.found(
+      summary: RemoteFamilySummary(
+        familyId: 'family-remote-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+      userId: 'test-user',
+      membershipId: 'membership-test',
+    );
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    return const ZeniCreateInitialFamilyResult.alreadyExists(
+      summary: RemoteFamilySummary(
+        familyId: 'family-remote-1',
+        familyName: 'Minha família',
+        role: 'owner',
+      ),
+      userId: 'test-user',
+      membershipId: 'membership-test',
+    );
+  }
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {
@@ -953,24 +981,144 @@ void familyIdentityTests() {
     );
   });
 
-  test('login with an existing remote family never calls ensure', () async {
-    final h = await setup(boundState(), familyId: 'family-B');
+  test('login with found family does not create another family', () async {
+    final h = await setup(boundState());
     final result = await h.container
         .read(zeniAuthControllerProvider)
         .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
     expect(result.isSuccess, isTrue);
     expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+    expect(
+      h.container.read(authStateProvider).familyIdentityAccess,
+      ZeniFamilyIdentityAccess.ready,
+    );
+    expect(h.account.resolveCalls, 1);
+    expect(h.account.createCalls, 0);
     expect(h.account.ensureCalls, 0);
   });
 
-  test('login may ensure a remote family for an empty safe base', () async {
+  test('Google name initializes the profile on first login', () async {
+    final h = await setup(boundState());
+    h.account.profile = null;
+
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithGoogle();
+
+    expect(result.isSuccess, isTrue);
+    expect(h.account.profile?.displayName, 'Nome do Google');
+    expect(h.account.profileInitializationCalls, 1);
+  });
+
+  test('Google login does not overwrite an existing profile name', () async {
+    final h = await setup(boundState());
+    h.account.profile = const ZeniAccountProfile(
+      userId: 'user-B',
+      displayName: 'Nome escolhido no Zeni',
+      email: 'b@zeni.app',
+    );
+
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithGoogle();
+
+    expect(result.isSuccess, isTrue);
+    expect(h.account.profile?.displayName, 'Nome escolhido no Zeni');
+    expect(h.account.profileInitializationCalls, 1);
+  });
+
+  test('login not found with empty safe base creates initial family', () async {
     final h = await setup(ZeniAppState.initial());
     h.account.hasRemoteFamily = false;
     final result = await h.container
         .read(zeniAuthControllerProvider)
         .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
     expect(result.isSuccess, isTrue);
-    expect(h.account.ensureCalls, 1);
+    expect(h.account.resolveCalls, 1);
+    expect(h.account.createCalls, 1);
+    expect(h.account.ensureCalls, 0);
+    final localState = await h.container.read(
+      zeniAppStateControllerProvider.future,
+    );
+    expect(localState.family.id, 'family-remote-1');
+    expect(
+      h.container.read(authStateProvider).familyIdentityAccess,
+      ZeniFamilyIdentityAccess.ready,
+    );
+  });
+
+  test('create initial family accepts already exists after retry', () async {
+    final h = await setup(ZeniAppState.initial());
+    h.account.hasRemoteFamily = false;
+    h.account.createStatus = ZeniCreateInitialFamilyStatus.alreadyExists;
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+    expect(result.isSuccess, isTrue);
+    expect(h.account.resolveCalls, 1);
+    expect(h.account.createCalls, 1);
+  });
+
+  for (final blockedStatus in [
+    ZeniResolveCurrentFamilyStatus.ambiguous,
+    ZeniResolveCurrentFamilyStatus.inconsistent,
+  ]) {
+    test('login $blockedStatus blocks cloud identity without create', () async {
+      final h = await setup(ZeniAppState.initial());
+      h.account.forcedResolveStatus = blockedStatus;
+      final result = await h.container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+      expect(result.isSuccess, isFalse);
+      expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+      expect(
+        result.message,
+        blockedStatus == ZeniResolveCurrentFamilyStatus.ambiguous
+            ? canonicalFamilyAmbiguousMessage
+            : canonicalFamilyInconsistentMessage,
+      );
+      expect(h.account.createCalls, 0);
+      final syncResult = await h.container
+          .read(zeniCloudSyncControllerProvider)
+          .syncCloudDataNow();
+      expect(syncResult.isSuccess, isFalse);
+      expect(h.children.pushes, 0);
+      expect(h.children.reads, 0);
+    });
+  }
+
+  test('session disappearing after resolve prevents creation', () async {
+    final h = await setup(ZeniAppState.initial());
+    h.account.hasRemoteFamily = false;
+    h.account.beforeResolveReturn = h.auth.signOut;
+    final result = await h.container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+    expect(result.isSuccess, isFalse);
+    expect(result.message, canonicalFamilySessionChangedMessage);
+    expect(h.account.createCalls, 0);
+  });
+
+  test('concurrent login preparation creates the family once', () async {
+    final h = await setup(ZeniAppState.initial());
+    h.account.hasRemoteFamily = false;
+    h.account.createStarted = Completer<void>();
+    h.account.createGate = Completer<void>();
+    final controller = h.container.read(zeniAuthControllerProvider);
+    final first = controller.signInWithEmailPassword(
+      email: 'b@zeni.app',
+      password: 'test',
+    );
+    await h.account.createStarted!.future;
+    final second = controller.signInWithEmailPassword(
+      email: 'b@zeni.app',
+      password: 'test',
+    );
+    h.account.createGate!.complete();
+    final results = await Future.wait([first, second]);
+    expect(results.every((result) => result.isSuccess), isTrue);
+    expect(h.account.resolveCalls, 1);
+    expect(h.account.createCalls, 1);
   });
 
   test(
@@ -989,9 +1137,34 @@ void familyIdentityTests() {
       final result = await h.container
           .read(zeniAuthControllerProvider)
           .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
-      expect(result.isSuccess, isTrue);
+      expect(result.isSuccess, isFalse);
+      expect(result.issue, ZeniAuthIssue.localFamilyConflict);
+      expect(result.message, localFamilyConflictMessage);
       expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+      expect(
+        h.container.read(authStateProvider).familyIdentityAccess,
+        ZeniFamilyIdentityAccess.blocked,
+      );
+      expect(h.auth.currentUser, isNotNull);
+      expect(h.account.createCalls, 0);
       expect(h.account.ensureCalls, 0);
+      expect(
+        jsonEncode(
+          (await h.container.read(
+            zeniAppStateControllerProvider.future,
+          )).toJson(),
+        ),
+        before,
+      );
+
+      await h.container.read(zeniAuthControllerProvider).signOut();
+      final signedOutState = h.container.read(authStateProvider);
+      expect(signedOutState.isAuthenticated, isFalse);
+      expect(signedOutState.user, isNull);
+      expect(
+        signedOutState.familyIdentityAccess,
+        ZeniFamilyIdentityAccess.pending,
+      );
       expect(
         jsonEncode(
           (await h.container.read(
@@ -1147,9 +1320,18 @@ void familyIdentityTests() {
         before,
       );
       h.account.familyId = 'family-B';
-      await h.container
+      final resolveCallsBeforeLogin = h.account.resolveCalls;
+      final loginResult = await h.container
           .read(zeniAuthControllerProvider)
           .signInWithEmailPassword(email: 'b@zeni.app', password: 'test');
+      expect(loginResult.issue, ZeniAuthIssue.localFamilyConflict);
+      expect(h.account.resolveCalls, resolveCallsBeforeLogin + 1);
+      expect(h.container.read(authStateProvider).isAuthenticated, isTrue);
+      expect(
+        h.container.read(authStateProvider).isFamilyIdentityBlocked,
+        isTrue,
+      );
+      expect(h.auth.currentUser, isNotNull);
       final result = await h.container
           .read(zeniCloudSyncControllerProvider)
           .syncNowManually();
@@ -1386,20 +1568,126 @@ class _MutableIdentityAuth extends _TestAuthRepository {
     events.add(user);
     return ZeniAuthOperationResult.success(user: user);
   }
+
+  @override
+  Future<ZeniAuthOperationResult> signInWithGoogle() async {
+    user = const ZeniAuthUser(
+      id: 'user-B',
+      email: 'b@zeni.app',
+      displayName: 'Nome do Google',
+    );
+    events.add(user);
+    return ZeniAuthOperationResult.success(user: user);
+  }
 }
 
 class _IdentityAccount extends _TestAccountRepository {
   String familyId = 'family-remote-1';
   bool hasRemoteFamily = true;
+  ZeniResolveCurrentFamilyStatus? forcedResolveStatus;
+  ZeniCreateInitialFamilyStatus createStatus =
+      ZeniCreateInitialFamilyStatus.created;
+  Future<void> Function()? beforeResolveReturn;
+  Completer<void>? createStarted;
+  Completer<void>? createGate;
+  int resolveCalls = 0;
+  int createCalls = 0;
   int ensureCalls = 0;
+  int profileInitializationCalls = 0;
+  ZeniAccountProfile? profile;
+
+  @override
+  Future<ZeniAccountProfile?> getCurrentAccountProfile() async => profile;
+
+  @override
+  Future<ZeniUpdateAccountProfileResult> initializeCurrentAccountProfile({
+    String? suggestedDisplayName,
+  }) async {
+    profileInitializationCalls++;
+    final existing = profile;
+    if (existing != null) {
+      return ZeniUpdateAccountProfileResult.success(existing);
+    }
+    final created = ZeniAccountProfile(
+      userId: 'user-B',
+      displayName: suggestedDisplayName?.trim() ?? '',
+      email: 'b@zeni.app',
+    );
+    profile = created;
+    return ZeniUpdateAccountProfileResult.success(created);
+  }
+
+  RemoteFamilySummary get _summary => RemoteFamilySummary(
+    familyId: familyId,
+    familyName: 'Família',
+    role: 'owner',
+  );
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    resolveCalls++;
+    await beforeResolveReturn?.call();
+    final status = forcedResolveStatus;
+    if (status == ZeniResolveCurrentFamilyStatus.ambiguous) {
+      return const ZeniResolveCurrentFamilyResult.ambiguous(
+        userId: 'user-B',
+        reason: 'multiple_memberships',
+      );
+    }
+    if (status == ZeniResolveCurrentFamilyStatus.inconsistent) {
+      return const ZeniResolveCurrentFamilyResult.inconsistent(
+        userId: 'user-B',
+        reason: 'invalid_membership_or_owner',
+      );
+    }
+    if (!hasRemoteFamily || status == ZeniResolveCurrentFamilyStatus.notFound) {
+      return const ZeniResolveCurrentFamilyResult.notFound(userId: 'user-B');
+    }
+    return ZeniResolveCurrentFamilyResult.found(
+      summary: _summary,
+      userId: 'user-B',
+      membershipId: 'membership-B',
+    );
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    createCalls++;
+    createStarted?.complete();
+    await createGate?.future;
+    hasRemoteFamily = true;
+    return switch (createStatus) {
+      ZeniCreateInitialFamilyStatus.created =>
+        ZeniCreateInitialFamilyResult.created(
+          summary: _summary,
+          userId: 'user-B',
+          membershipId: 'membership-B',
+        ),
+      ZeniCreateInitialFamilyStatus.alreadyExists =>
+        ZeniCreateInitialFamilyResult.alreadyExists(
+          summary: _summary,
+          userId: 'user-B',
+          membershipId: 'membership-B',
+        ),
+      ZeniCreateInitialFamilyStatus.ambiguous =>
+        const ZeniCreateInitialFamilyResult.ambiguous(
+          userId: 'user-B',
+          reason: 'multiple_memberships',
+        ),
+      ZeniCreateInitialFamilyStatus.inconsistent =>
+        const ZeniCreateInitialFamilyResult.inconsistent(
+          userId: 'user-B',
+          reason: 'invalid_membership_or_owner',
+        ),
+      ZeniCreateInitialFamilyStatus.failure =>
+        const ZeniCreateInitialFamilyResult.failure('create failed'),
+    };
+  }
+
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {
     if (!hasRemoteFamily) return null;
-    return RemoteFamilySummary(
-      familyId: familyId,
-      familyName: 'Família',
-      role: 'owner',
-    );
+    return _summary;
   }
 
   @override

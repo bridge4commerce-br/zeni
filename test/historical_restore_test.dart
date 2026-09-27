@@ -1101,10 +1101,15 @@ class _TestAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
-    _currentUser = ZeniAuthUser(id: 'signed-up', email: email);
+    _currentUser = ZeniAuthUser(
+      id: 'signed-up',
+      email: email,
+      displayName: displayName,
+    );
     _controller.add(_currentUser);
     return ZeniAuthOperationResult.success(user: _currentUser);
   }

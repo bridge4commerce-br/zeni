@@ -14,15 +14,40 @@ final accountRepositoryProvider = Provider<ZeniAccountRepository>((ref) {
   return SupabaseAccountRepository(client: ZeniSupabaseBootstrap.client);
 });
 
+final remoteFamilyResolutionProvider =
+    FutureProvider<ZeniResolveCurrentFamilyResult>((ref) async {
+      final authState = ref.watch(authStateProvider);
+      if (!ZeniSupabaseBootstrap.state.isAvailable) {
+        return const ZeniResolveCurrentFamilyResult.failure(
+          'Conta remota indisponível neste build.',
+        );
+      }
+      if (!authState.isAuthenticated) {
+        return const ZeniResolveCurrentFamilyResult.failure(
+          'Faça login para identificar a família remota.',
+        );
+      }
+
+      return ref.watch(accountRepositoryProvider).resolveCurrentFamily();
+    });
+
 final remoteFamilySummaryProvider = FutureProvider<RemoteFamilySummary?>((
+  ref,
+) async {
+  final resolution = await ref.watch(remoteFamilyResolutionProvider.future);
+  return resolution.status == ZeniResolveCurrentFamilyStatus.found
+      ? resolution.summary
+      : null;
+});
+
+final currentAccountProfileProvider = FutureProvider<ZeniAccountProfile?>((
   ref,
 ) async {
   final authState = ref.watch(authStateProvider);
   if (!ZeniSupabaseBootstrap.state.isAvailable || !authState.isAuthenticated) {
     return null;
   }
-
-  return ref.watch(accountRepositoryProvider).getCurrentRemoteFamilySummary();
+  return ref.watch(accountRepositoryProvider).getCurrentAccountProfile();
 });
 
 final zeniAccountControllerProvider = Provider<ZeniAccountController>((ref) {
@@ -34,7 +59,88 @@ class ZeniAccountController {
 
   final Ref _ref;
 
-  Future<ZeniEnsureRemoteFamilyResult> ensureRemoteFamilyForCurrentUser() async {
+  Future<ZeniUpdateAccountProfileResult> initializeCurrentAccountProfile({
+    String? suggestedDisplayName,
+  }) async {
+    final result = await _ref
+        .read(accountRepositoryProvider)
+        .initializeCurrentAccountProfile(
+          suggestedDisplayName: suggestedDisplayName,
+        );
+    _ref.invalidate(currentAccountProfileProvider);
+    return result;
+  }
+
+  Future<ZeniUpdateAccountProfileResult> updateCurrentAccountDisplayName({
+    required String displayName,
+  }) async {
+    final trimmedName = displayName.trim();
+    if (trimmedName.isEmpty) {
+      return const ZeniUpdateAccountProfileResult.failure('Informe seu nome.');
+    }
+    if (!ZeniSupabaseBootstrap.state.isAvailable) {
+      return const ZeniUpdateAccountProfileResult.failure(
+        'Conecte-se à internet para atualizar seu nome.',
+      );
+    }
+    if (!_ref.read(authStateProvider).isAuthenticated) {
+      return const ZeniUpdateAccountProfileResult.failure(
+        'Faça login para editar seu nome.',
+      );
+    }
+
+    final result = await _ref
+        .read(accountRepositoryProvider)
+        .updateCurrentAccountDisplayName(displayName: trimmedName);
+    _ref.invalidate(currentAccountProfileProvider);
+    return result;
+  }
+
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    if (!ZeniSupabaseBootstrap.state.isAvailable) {
+      return const ZeniResolveCurrentFamilyResult.failure(
+        'Conta remota indisponível neste build.',
+      );
+    }
+
+    if (!_ref.read(authStateProvider).isAuthenticated) {
+      return const ZeniResolveCurrentFamilyResult.failure(
+        'Faça login para identificar a família remota.',
+      );
+    }
+
+    final result = await _ref
+        .read(accountRepositoryProvider)
+        .resolveCurrentFamily();
+    _ref.invalidate(remoteFamilyResolutionProvider);
+    _ref.invalidate(remoteFamilySummaryProvider);
+    return result;
+  }
+
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    if (!ZeniSupabaseBootstrap.state.isAvailable) {
+      return const ZeniCreateInitialFamilyResult.failure(
+        'Conta remota indisponível neste build.',
+      );
+    }
+
+    if (!_ref.read(authStateProvider).isAuthenticated) {
+      return const ZeniCreateInitialFamilyResult.failure(
+        'Faça login para criar a família remota.',
+      );
+    }
+
+    final result = await _ref
+        .read(accountRepositoryProvider)
+        .createInitialFamily();
+    _ref.invalidate(remoteFamilyResolutionProvider);
+    _ref.invalidate(remoteFamilySummaryProvider);
+    return result;
+  }
+
+  @Deprecated('Use resolveCurrentFamily/createInitialFamily.')
+  Future<ZeniEnsureRemoteFamilyResult>
+  ensureRemoteFamilyForCurrentUser() async {
     if (!ZeniSupabaseBootstrap.state.isAvailable) {
       return const ZeniEnsureRemoteFamilyResult.failure(
         'Conta remota indisponível neste build.',
@@ -51,6 +157,7 @@ class ZeniAccountController {
     final result = await _ref
         .read(accountRepositoryProvider)
         .ensureRemoteFamilyForCurrentUser();
+    _ref.invalidate(remoteFamilyResolutionProvider);
     _ref.invalidate(remoteFamilySummaryProvider);
     return result;
   }
@@ -81,6 +188,7 @@ class ZeniAccountController {
     final result = await _ref
         .read(accountRepositoryProvider)
         .updateRemoteFamilyName(familyId: familyId, name: name);
+    _ref.invalidate(remoteFamilyResolutionProvider);
     _ref.invalidate(remoteFamilySummaryProvider);
     return result;
   }
@@ -111,6 +219,7 @@ class ZeniAccountController {
     final signOutResult = await _ref.read(zeniAuthControllerProvider).signOut();
     if (!signOutResult.isSuccess) {
       _ref.read(authStateProvider.notifier).setSignedOut();
+      _ref.invalidate(remoteFamilyResolutionProvider);
       _ref.invalidate(remoteFamilySummaryProvider);
       _ref.invalidate(remoteChildrenProvider);
       _ref.invalidate(remoteMissionsProvider);

@@ -217,6 +217,38 @@ void main() {
     expect(states, contains(ZeniAuthStatus.authenticated));
   });
 
+  test('sign out clears a ready family identity session', () async {
+    final repository = TestAuthRepository();
+    final container = ProviderContainer(
+      overrides: [authRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(() async {
+      await repository.dispose();
+      container.dispose();
+    });
+
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    final user = container.read(authStateProvider).user!;
+    container.read(authStateProvider.notifier).setFamilyIdentityReady(user);
+    expect(
+      container.read(authStateProvider).familyIdentityAccess,
+      ZeniFamilyIdentityAccess.ready,
+    );
+
+    await container.read(zeniAuthControllerProvider).signOut();
+    await container.pump();
+
+    final state = container.read(authStateProvider);
+    expect(state.status, ZeniAuthStatus.unauthenticated);
+    expect(state.user, isNull);
+    expect(state.familyIdentityAccess, ZeniFamilyIdentityAccess.pending);
+  });
+
   test('auth state provider reacts to Google sign in', () async {
     final repository = TestAuthRepository();
     final container = ProviderContainer(

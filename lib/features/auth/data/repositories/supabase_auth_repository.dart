@@ -15,6 +15,7 @@ abstract class ZeniSupabaseAuthClient {
   Stream<User?> authStateChanges();
 
   Future<AuthResponse> signUp({
+    required String displayName,
     required String email,
     required String password,
   });
@@ -47,17 +48,20 @@ class SupabaseGoTrueAuthClient implements ZeniSupabaseAuthClient {
 
   @override
   Stream<User?> authStateChanges() {
-    return _auth.onAuthStateChange.map((authState) {
-      return authState.session?.user ?? _auth.currentUser;
-    });
+    return _auth.onAuthStateChange.map((authState) => authState.session?.user);
   }
 
   @override
   Future<AuthResponse> signUp({
+    required String displayName,
     required String email,
     required String password,
   }) {
-    return _auth.signUp(email: email, password: password);
+    return _auth.signUp(
+      email: email,
+      password: password,
+      data: {'display_name': displayName, 'full_name': displayName},
+    );
   }
 
   @override
@@ -117,7 +121,11 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
   }
 
   @override
-  ZeniAuthUser? get currentUser => _mapUser(_authClient?.currentUser);
+  ZeniAuthUser? get currentUser {
+    final authClient = _authClient;
+    if (authClient == null || authClient.currentSession == null) return null;
+    return _mapUser(authClient.currentUser);
+  }
 
   @override
   bool get isGoogleSignInAvailable => _googleSignInClient.isConfigured;
@@ -137,6 +145,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
@@ -147,6 +156,7 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
 
     try {
       final response = await authClient.signUp(
+        displayName: displayName,
         email: email,
         password: password,
       );
@@ -299,7 +309,26 @@ class SupabaseAuthRepository implements ZeniAuthRepository {
 
   ZeniAuthUser? _mapUser(User? user) {
     if (user == null) return null;
-    return ZeniAuthUser(id: user.id, email: user.email);
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final displayName = _firstNonEmpty([
+      metadata['display_name'],
+      metadata['full_name'],
+      metadata['name'],
+    ]);
+    return ZeniAuthUser(
+      id: user.id,
+      email: user.email,
+      displayName: displayName,
+    );
+  }
+
+  String? _firstNonEmpty(List<Object?> values) {
+    for (final value in values) {
+      if (value is! String) continue;
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return null;
   }
 
   String? _normalizeToken(String? token) {

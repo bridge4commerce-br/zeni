@@ -14,6 +14,7 @@ import '../../../../core/widgets/base/zeni_surface.dart';
 import '../../../../core/widgets/feedback/zeni_error_popup.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../family/presentation/avatar_catalog.dart';
+import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 
 class InitialFamilySetupPage extends ConsumerStatefulWidget {
   const InitialFamilySetupPage({super.key});
@@ -54,6 +55,21 @@ class _InitialFamilySetupPageState
 
   Future<void> _finish() async {
     if (_children.isEmpty || _isSaving) return;
+    final authState = ref.read(authStateProvider);
+    final localState = await ref.read(zeniAppStateControllerProvider.future);
+    if (!authState.isAuthenticated ||
+        authState.familyIdentityAccess != ZeniFamilyIdentityAccess.ready ||
+        localState.family.id == 'local-family') {
+      if (!mounted) return;
+      await ZeniErrorPopup.show(
+        context,
+        title: 'Conta necessária',
+        message:
+            'Entre com a conta do responsável antes de configurar a família.',
+      );
+      if (mounted) context.go('/');
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       final controller = ref.read(zeniAppStateControllerProvider.notifier);

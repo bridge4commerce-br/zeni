@@ -33,6 +33,7 @@ import '../../../auth/local/parent_biometric_auth.dart';
 import '../../../auth/presentation/providers/zeni_account_providers.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../auth/presentation/widgets/auth_account_sheet.dart';
+import '../../../auth/presentation/widgets/clear_local_device_data_sheet.dart';
 import '../../../balance/domain/monthly_star_projection.dart';
 import '../../../balance/presentation/providers/remote_child_balance_providers.dart';
 import '../../../balance/presentation/providers/remote_star_ledger_providers.dart';
@@ -989,7 +990,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: _ClearLocalDeviceDataSheet(
+          child: ClearLocalDeviceDataSheet(
             onConfirm: () async {
               await ref
                   .read(zeniAppStateControllerProvider.notifier)
@@ -1098,6 +1099,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
         final authState = ref.watch(authStateProvider);
         final remoteFamilySummary = ref
             .watch(remoteFamilySummaryProvider)
+            .asData
+            ?.value;
+        final accountProfile = ref
+            .watch(currentAccountProfileProvider)
             .asData
             ?.value;
         final remoteChildren = ref.watch(remoteChildrenProvider).asData?.value;
@@ -1256,7 +1261,9 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               enabled: value,
             ),
             authState: authState,
+            isFamilyLinked: data.family.id != 'local-family',
             remoteFamilySummary: remoteFamilySummary,
+            accountProfile: accountProfile,
             localChildrenCount: data.children.length,
             remoteChildrenCount: remoteChildren?.length,
             localMissionsCount: data.missions.length,
@@ -1307,6 +1314,11 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
               return ref
                   .read(zeniAccountControllerProvider)
                   .updateRemoteFamilyName(familyId: familyId, name: name);
+            },
+            onUpdateAccountDisplayName: (displayName) {
+              return ref
+                  .read(zeniAccountControllerProvider)
+                  .updateCurrentAccountDisplayName(displayName: displayName);
             },
             onSyncCloudData: () {
               return _syncCloudDataAndNotifyIfNeeded();

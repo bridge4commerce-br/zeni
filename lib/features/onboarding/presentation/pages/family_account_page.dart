@@ -48,7 +48,7 @@ class FamilyAccountPage extends ConsumerWidget {
               ),
               const SizedBox(height: ZeniSpacing.sm),
               Text(
-                'Crie uma conta grátis para recuperar seus dados e usar o Zeni em outros aparelhos.',
+                'Entre ou crie sua conta para identificar sua família com segurança em todos os aparelhos.',
                 style: typography.body,
               ),
               const SizedBox(height: ZeniSpacing.lg),
@@ -90,21 +90,6 @@ class FamilyAccountPage extends ConsumerWidget {
                   preferredEmailAction: AuthEmailAction.signIn,
                 ),
               ),
-              const SizedBox(height: ZeniSpacing.md),
-              Center(
-                child: TextButton(
-                  key: const Key('family-account-local-only'),
-                  onPressed: () => context.go('/initial-setup'),
-                  child: const Text('Continuar sem conta'),
-                ),
-              ),
-              const SizedBox(height: ZeniSpacing.xs),
-              Center(
-                child: Text(
-                  'Você pode criar uma conta depois.',
-                  style: typography.metadata,
-                ),
-              ),
             ],
           ),
         ),
@@ -141,7 +126,7 @@ class FamilyAccountPage extends ConsumerWidget {
           );
 
     if (context.mounted && didAuthenticate == true) {
-      context.go('/initial-setup');
+      context.go('/');
     }
   }
 }

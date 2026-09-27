@@ -14,6 +14,7 @@ import '../../../../core/widgets/inputs/zeni_switch.dart';
 import '../../../../core/widgets/inputs/zeni_text_input.dart';
 import '../../../../core/widgets/layout/zeni_modal_sheet_container.dart';
 import '../../../auth/data/repositories/zeni_account_repository.dart';
+import '../../../auth/data/repositories/zeni_auth_repository.dart';
 import '../../../auth/presentation/providers/zeni_auth_providers.dart';
 import '../../../settings/data/models/app_settings.dart';
 import '../../../sync/data/models/device_bootstrap_result.dart';
@@ -39,7 +40,9 @@ class ParentSettingsTab extends StatelessWidget {
     required this.onConfigurePin,
     required this.onBiometricsChanged,
     required this.authState,
+    this.isFamilyLinked = false,
     required this.remoteFamilySummary,
+    this.accountProfile,
     required this.localChildrenCount,
     required this.remoteChildrenCount,
     required this.localMissionsCount,
@@ -81,6 +84,7 @@ class ParentSettingsTab extends StatelessWidget {
     required this.onClearLocalDeviceData,
     required this.onUpdateParentDisplayName,
     required this.onUpdateRemoteFamilyName,
+    this.onUpdateAccountDisplayName,
     required this.onSyncCloudData,
     required this.onDeviceBootstrap,
     required this.onHistoricalRestore,
@@ -99,7 +103,9 @@ class ParentSettingsTab extends StatelessWidget {
   final VoidCallback onConfigurePin;
   final ValueChanged<bool> onBiometricsChanged;
   final ZeniAuthState authState;
+  final bool isFamilyLinked;
   final RemoteFamilySummary? remoteFamilySummary;
+  final ZeniAccountProfile? accountProfile;
   final int localChildrenCount;
   final int? remoteChildrenCount;
   final int localMissionsCount;
@@ -145,6 +151,8 @@ class ParentSettingsTab extends StatelessWidget {
     required String name,
   })
   onUpdateRemoteFamilyName;
+  final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
+  onUpdateAccountDisplayName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
   final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
   final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
@@ -191,7 +199,9 @@ class ParentSettingsTab extends StatelessWidget {
               onConfigurePin: onConfigurePin,
               onBiometricsChanged: onBiometricsChanged,
               authState: authState,
+              isFamilyLinked: isFamilyLinked,
               remoteFamilySummary: remoteFamilySummary,
+              accountProfile: accountProfile,
               localChildrenCount: localChildrenCount,
               remoteChildrenCount: remoteChildrenCount,
               localMissionsCount: localMissionsCount,
@@ -233,6 +243,7 @@ class ParentSettingsTab extends StatelessWidget {
               onClearLocalDeviceData: onClearLocalDeviceData,
               onUpdateParentDisplayName: onUpdateParentDisplayName,
               onUpdateRemoteFamilyName: onUpdateRemoteFamilyName,
+              onUpdateAccountDisplayName: onUpdateAccountDisplayName,
               onSyncCloudData: onSyncCloudData,
               onDeviceBootstrap: onDeviceBootstrap,
               onHistoricalRestore: onHistoricalRestore,
@@ -259,7 +270,9 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.onConfigurePin,
     required this.onBiometricsChanged,
     required this.authState,
+    required this.isFamilyLinked,
     required this.remoteFamilySummary,
+    required this.accountProfile,
     required this.localChildrenCount,
     required this.remoteChildrenCount,
     required this.localMissionsCount,
@@ -301,6 +314,7 @@ class _ParentSettingsGroup extends StatelessWidget {
     required this.onClearLocalDeviceData,
     required this.onUpdateParentDisplayName,
     required this.onUpdateRemoteFamilyName,
+    required this.onUpdateAccountDisplayName,
     required this.onSyncCloudData,
     required this.onDeviceBootstrap,
     required this.onHistoricalRestore,
@@ -319,7 +333,9 @@ class _ParentSettingsGroup extends StatelessWidget {
   final VoidCallback onConfigurePin;
   final ValueChanged<bool> onBiometricsChanged;
   final ZeniAuthState authState;
+  final bool isFamilyLinked;
   final RemoteFamilySummary? remoteFamilySummary;
+  final ZeniAccountProfile? accountProfile;
   final int localChildrenCount;
   final int? remoteChildrenCount;
   final int localMissionsCount;
@@ -365,6 +381,8 @@ class _ParentSettingsGroup extends StatelessWidget {
     required String name,
   })
   onUpdateRemoteFamilyName;
+  final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
+  onUpdateAccountDisplayName;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
   final Future<DeviceBootstrapResult> Function() onDeviceBootstrap;
   final Future<HistoricalRestoreResult> Function() onHistoricalRestore;
@@ -433,8 +451,12 @@ class _ParentSettingsGroup extends StatelessWidget {
         _SettingsMenuSurface(
           children: [
             _SettingsMenuRow(
-              title: 'Conta, backup e restauração',
-              subtitle: authState.user?.email ?? 'Conta não conectada',
+              title: 'Conta e dados',
+              subtitle: authState.isAuthenticated
+                  ? '$_accountDisplayName · ${authState.user?.email ?? accountProfile?.email ?? 'E-mail não informado'}'
+                  : isFamilyLinked
+                  ? 'Sessão encerrada neste aparelho'
+                  : 'Conta não conectada',
               leading: const Icon(Icons.cloud_outlined),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => _openAccountAndDataSheet(context),
@@ -847,7 +869,11 @@ class _ParentSettingsGroup extends StatelessWidget {
 
   Future<void> _openAccountAndDataSheet(BuildContext context) async {
     final content = _AccountAndDataSheet(
+      parentDisplayName: parentDisplayName,
       authState: authState,
+      isFamilyLinked: isFamilyLinked,
+      accountProfile: accountProfile,
+      onUpdateAccountDisplayName: onUpdateAccountDisplayName,
       onOpenAccount: onOpenAccount,
       onSignOut: onSignOut,
       onClearLocalDeviceData: onClearLocalDeviceData,
@@ -901,6 +927,13 @@ class _ParentSettingsGroup extends StatelessWidget {
       useSafeArea: true,
       builder: (_) => content,
     );
+  }
+
+  String get _accountDisplayName {
+    final profileName = accountProfile?.displayName.trim() ?? '';
+    if (profileName.isNotEmpty) return profileName;
+    final providerName = authState.user?.displayName?.trim() ?? '';
+    return providerName.isNotEmpty ? providerName : parentDisplayName;
   }
 
   Future<void> _openTextScalePicker(BuildContext context) async {
@@ -1040,7 +1073,11 @@ class _ParentSettingsGroup extends StatelessWidget {
 
 class _AccountAndDataSheet extends StatelessWidget {
   const _AccountAndDataSheet({
+    required this.parentDisplayName,
     required this.authState,
+    required this.isFamilyLinked,
+    required this.accountProfile,
+    required this.onUpdateAccountDisplayName,
     required this.onOpenAccount,
     required this.onSignOut,
     required this.onClearLocalDeviceData,
@@ -1082,7 +1119,12 @@ class _AccountAndDataSheet extends StatelessWidget {
     required this.showDragHandle,
   });
 
+  final String parentDisplayName;
   final ZeniAuthState authState;
+  final bool isFamilyLinked;
+  final ZeniAccountProfile? accountProfile;
+  final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
+  onUpdateAccountDisplayName;
   final VoidCallback onOpenAccount;
   final VoidCallback onSignOut;
   final Future<void> Function() onClearLocalDeviceData;
@@ -1129,24 +1171,35 @@ class _AccountAndDataSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ZeniTypography.of(context);
     return ZeniModalSheetContainer(
-      title: 'Conta, backup e restauração',
+      title: 'Conta e dados',
       showDragHandle: showDragHandle,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Conta', style: typography.cardTitle),
+            Text('Minha conta', style: typography.cardTitle),
             const SizedBox(height: ZeniSpacing.spaceInline),
             if (_isAuthenticated)
               _SettingsMenuRow(
-                title: authState.user!.email ?? 'Conta conectada',
-                subtitle: 'Conta conectada',
+                title: _displayName,
+                subtitle:
+                    authState.user!.email ??
+                    accountProfile?.email ??
+                    'E-mail não informado',
                 leading: const Icon(Icons.account_circle_outlined),
-                trailing: const Icon(Icons.chevron_right_rounded),
+                trailing: const _SettingsValueTrailing(value: 'Conectado'),
+                onTap: () => _openAccountDetails(context),
+              )
+            else if (isFamilyLinked)
+              _SettingsMenuRow(
+                title: 'Minha conta',
+                subtitle: 'Sessão encerrada neste aparelho',
+                leading: const Icon(Icons.account_circle_outlined),
+                trailing: const _SettingsValueTrailing(value: 'Entrar'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  onSignOut();
+                  onOpenAccount();
                 },
               )
             else
@@ -1161,9 +1214,15 @@ class _AccountAndDataSheet extends StatelessWidget {
                   onOpenAccount();
                 },
               ),
-            if (_isAuthenticated) ...[
+            if (authState.isFamilyIdentityBlocked) ...[
               const SizedBox(height: ZeniSpacing.spaceSection),
-              Text('Backup e restauração', style: typography.cardTitle),
+              Text(localFamilyConflictTitle, style: typography.cardTitle),
+              const SizedBox(height: ZeniSpacing.spaceInline),
+              Text(localFamilyConflictMessage, style: typography.metadata),
+            ],
+            if (_isAuthenticated && !authState.isFamilyIdentityBlocked) ...[
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              Text('Sincronização', style: typography.cardTitle),
               const SizedBox(height: ZeniSpacing.spaceInline),
               _CloudSyncSection(
                 localChildrenCount: localChildrenCount,
@@ -1189,28 +1248,24 @@ class _AccountAndDataSheet extends StatelessWidget {
                 lastRewardRequestsSyncAt: lastRewardRequestsSyncAt,
                 lastStarLedgerSyncAt: lastStarLedgerSyncAt,
                 lastFullSyncAt: lastFullSyncAt,
+                isAvailable: isSupabaseConfigured,
                 onSyncCloudData: onSyncCloudData,
               ),
+            ] else if (isFamilyLinked &&
+                !authState.isFamilyIdentityBlocked) ...[
               const SizedBox(height: ZeniSpacing.spaceSection),
-              _BackupRestoreSection(
-                isAvailable: isSupabaseConfigured,
-                showDeviceBootstrapStatus: showDeviceBootstrapStatus,
-                showHistoricalRestoreStatus: showHistoricalRestoreStatus,
-                showDeviceBootstrapAction: showDeviceBootstrapAction,
-                canRunDeviceBootstrap: canRunDeviceBootstrap,
-                deviceBootstrapMessage: deviceBootstrapMessage,
-                showHistoricalRestoreAction: showHistoricalRestoreAction,
-                canRunHistoricalRestore: canRunHistoricalRestore,
-                historicalRestoreMessage: historicalRestoreMessage,
-                onDeviceBootstrap: onDeviceBootstrap,
-                onHistoricalRestore: onHistoricalRestore,
+              Text('Sincronização', style: typography.cardTitle),
+              const SizedBox(height: ZeniSpacing.spaceInline),
+              Text(
+                'Pausada até você entrar novamente. Os dados deste aparelho continuam disponíveis.',
+                style: typography.metadata,
               ),
             ],
             const SizedBox(height: ZeniSpacing.spaceSection),
             Text('Dados neste aparelho', style: typography.cardTitle),
             const SizedBox(height: ZeniSpacing.spaceInline),
             Text(
-              'Os dados principais do Zeni ficam neste aparelho e funcionam offline.',
+              'Seus dados ficam disponíveis neste aparelho mesmo sem internet.',
               style: typography.metadata,
             ),
             const SizedBox(height: ZeniSpacing.spaceInline),
@@ -1229,18 +1284,192 @@ class _AccountAndDataSheet extends StatelessWidget {
                 await onClearLocalDeviceData();
               },
             ),
-            const SizedBox(height: ZeniSpacing.spaceSection),
-            Text('Dados da nuvem', style: typography.cardTitle),
-            const SizedBox(height: ZeniSpacing.spaceInline),
-            _SettingsMenuRow(
-              title: 'Excluir conta e dados da nuvem',
-              subtitle: 'Indisponível nesta versão',
-              leading: const Icon(Icons.cloud_off_rounded),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _openAccountDetails(BuildContext context) async {
+    final shouldSignOut = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AccountDetailsSheet(
+        name: _displayName,
+        email: authState.user?.email ?? accountProfile?.email,
+        onUpdateDisplayName: onUpdateAccountDisplayName,
+      ),
+    );
+    if (shouldSignOut != true || !context.mounted) return;
+    Navigator.of(context).pop();
+    onSignOut();
+  }
+
+  String get _displayName {
+    final profileName = accountProfile?.displayName.trim() ?? '';
+    if (profileName.isNotEmpty) return profileName;
+    final providerName = authState.user?.displayName?.trim() ?? '';
+    return providerName.isNotEmpty ? providerName : parentDisplayName;
+  }
+}
+
+class _AccountDetailsSheet extends StatefulWidget {
+  const _AccountDetailsSheet({
+    required this.name,
+    required this.email,
+    required this.onUpdateDisplayName,
+  });
+
+  final String name;
+  final String? email;
+  final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
+  onUpdateDisplayName;
+
+  @override
+  State<_AccountDetailsSheet> createState() => _AccountDetailsSheetState();
+}
+
+class _AccountDetailsSheetState extends State<_AccountDetailsSheet> {
+  late String _name = widget.name;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    return ZeniModalSheetContainer(
+      title: 'Minha conta',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SettingsMenuRow(
+            title: 'Nome',
+            subtitle: _name,
+            trailing: widget.onUpdateDisplayName == null
+                ? null
+                : const Icon(Icons.edit_outlined),
+            onTap: widget.onUpdateDisplayName == null ? null : _editName,
+          ),
+          const SizedBox(height: ZeniSpacing.sm),
+          _SettingsMenuRow(
+            title: 'E-mail',
+            subtitle: widget.email ?? 'E-mail não informado',
+            trailing: const _SettingsValueTrailing(value: 'Somente leitura'),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: ZeniSpacing.sm),
+            Text(
+              _error!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: ZeniSpacing.spaceSection),
+          ZeniSecondaryButton(
+            label: 'Sair da conta',
+            icon: Icons.logout_rounded,
+            onPressed: () => _confirmSignOut(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editName() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditAccountNameDialog(initialName: _name),
+    );
+    if (name == null || !mounted) return;
+    final result = await widget.onUpdateDisplayName!(name);
+    if (!mounted) return;
+    setState(() {
+      if (result.isSuccess && result.profile != null) {
+        _name = result.profile!.displayName;
+        _error = null;
+      } else {
+        _error = result.message ?? 'Não foi possível atualizar seu nome agora.';
+      }
+    });
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sair da conta?'),
+        content: const Text(
+          'Os dados desta família continuarão disponíveis neste aparelho.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _EditAccountNameDialog extends StatefulWidget {
+  const _EditAccountNameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_EditAccountNameDialog> createState() => _EditAccountNameDialogState();
+}
+
+class _EditAccountNameDialogState extends State<_EditAccountNameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialName,
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar nome'),
+      content: ZeniTextInput(
+        key: const Key('account-name-input'),
+        controller: _controller,
+        label: 'Nome',
+        textCapitalization: TextCapitalization.words,
+        errorText: _error,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(onPressed: _save, child: const Text('Salvar')),
+      ],
+    );
+  }
+
+  void _save() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Informe seu nome.');
+      return;
+    }
+    Navigator.of(context).pop(name);
   }
 }
 
@@ -1974,6 +2203,7 @@ class _CloudSyncSection extends StatefulWidget {
     required this.lastRewardRequestsSyncAt,
     required this.lastStarLedgerSyncAt,
     required this.lastFullSyncAt,
+    required this.isAvailable,
     required this.onSyncCloudData,
   });
 
@@ -2000,6 +2230,7 @@ class _CloudSyncSection extends StatefulWidget {
   final DateTime? lastRewardRequestsSyncAt;
   final DateTime? lastStarLedgerSyncAt;
   final DateTime? lastFullSyncAt;
+  final bool isAvailable;
   final Future<ZeniCloudSyncResult> Function() onSyncCloudData;
 
   @override
@@ -2076,6 +2307,7 @@ class _CloudDataSheetState extends State<_CloudDataSheet> {
 class _CloudSyncSectionState extends State<_CloudSyncSection> {
   bool _isSyncing = false;
   String? _errorText;
+  ZeniCloudSyncStatus? _lastResultStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -2085,11 +2317,9 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SettingsMenuRow(
-          title: _isSyncing ? 'Sincronizando...' : 'Sincronizar agora',
-          subtitle: simpleSummary,
-          leading: const Icon(Icons.sync_rounded),
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: _isSyncing ? null : _syncAll,
+          title: simpleSummary,
+          subtitle: _syncStatusLabel(widget.lastFullSyncAt),
+          leading: const Icon(Icons.cloud_done_outlined),
         ),
         Divider(height: 1, color: context.zeniColors.borderSubtle),
         if (_errorText != null) ...[
@@ -2102,97 +2332,35 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
           ),
         ],
         _SettingsMenuRow(
-          title: 'Detalhes da sincronização',
-          subtitle: _syncStatusLabel(widget.lastFullSyncAt),
-          leading: const Icon(Icons.info_outline_rounded),
+          title: _isSyncing ? 'Sincronizando...' : 'Sincronizar agora',
+          leading: const Icon(Icons.sync_rounded),
           trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: _openDetailsSheet,
+          onTap: _isSyncing || !widget.isAvailable ? null : _syncAll,
         ),
       ],
     );
   }
 
   String _buildSimpleSummary() {
+    if (!widget.isAvailable ||
+        _lastResultStatus == ZeniCloudSyncStatus.offline) {
+      return 'Aguardando internet';
+    }
+    if (_errorText != null || widget.cloudConsistencyErrorText != null) {
+      return 'Sincronização precisa de atenção';
+    }
     if (_hasPendingSync()) {
-      return 'Há dados aguardando sincronização';
+      return 'Há alterações para sincronizar';
     }
 
-    return 'Tudo salvo na sua conta';
-  }
-
-  String _buildSummary() {
-    final childrenLabel = widget.remoteChildrenCount == null
-        ? '${widget.localChildrenCount} crianças locais'
-        : '${widget.remoteChildrenCount} criança${widget.remoteChildrenCount == 1 ? '' : 's'} preparada${widget.remoteChildrenCount == 1 ? '' : 's'}';
-    final missionsLabel = widget.remoteMissionsCount == null
-        ? '${widget.localMissionsCount} missões locais'
-        : '${widget.remoteMissionsCount} miss${widget.remoteMissionsCount == 1 ? 'ão' : 'ões'} preparada${widget.remoteMissionsCount == 1 ? '' : 's'}';
-    final rewardsLabel = widget.remoteRewardsCount == null
-        ? '${widget.localRewardsCount} mimos locais'
-        : '${widget.remoteRewardsCount} mimo${widget.remoteRewardsCount == 1 ? '' : 's'} preparado${widget.remoteRewardsCount == 1 ? '' : 's'}';
-    final missionLogsLabel = widget.remoteMissionLogsCount == null
-        ? '${widget.localMissionLogsCount} conclus${widget.localMissionLogsCount == 1 ? 'ão local' : 'ões locais'}'
-        : '${widget.remoteMissionLogsCount} conclus${widget.remoteMissionLogsCount == 1 ? 'ão preparada' : 'ões preparadas'}';
-    final rewardRequestsLabel = widget.remoteRewardRequestsCount == null
-        ? '${widget.localRewardRequestsCount} pedido${widget.localRewardRequestsCount == 1 ? ' local' : 's locais'}'
-        : '${widget.remoteRewardRequestsCount} pedido${widget.remoteRewardRequestsCount == 1 ? ' preparado' : 's preparados'}';
-    final starLedgerLabel = widget.remoteStarLedgerCount == null
-        ? '${widget.localStarLedgerCount} evento${widget.localStarLedgerCount == 1 ? ' local' : 's locais'}'
-        : '${widget.remoteStarLedgerCount} evento${widget.remoteStarLedgerCount == 1 ? ' preparado' : 's preparados'}';
-    return '$childrenLabel · $missionsLabel · $rewardsLabel · $missionLogsLabel · $rewardRequestsLabel · $starLedgerLabel';
-  }
-
-  String _buildDetailsLabel() {
-    final children = widget.lastChildrenSyncAt == null
-        ? 'Crianças ainda não sincronizadas'
-        : 'Crianças preparadas';
-    final missions = widget.lastMissionsSyncAt == null
-        ? 'Missões pendentes'
-        : 'Missões preparadas';
-    final rewards = widget.lastRewardsSyncAt == null
-        ? 'Mimos pendentes'
-        : 'Mimos preparados';
-    final missionLogs = widget.lastMissionLogsSyncAt == null
-        ? 'Conclusões pendentes'
-        : 'Conclusões preparadas';
-    final rewardRequests = widget.lastRewardRequestsSyncAt == null
-        ? 'Pedidos pendentes'
-        : 'Pedidos preparados';
-    final starLedger = widget.lastStarLedgerSyncAt == null
-        ? 'Eventos pendentes'
-        : 'Eventos preparados';
-    return '$children · $missions · $rewards · $missionLogs · $rewardRequests · $starLedger';
-  }
-
-  Future<void> _openDetailsSheet() async {
-    final content = _CloudSyncDetailsSheet(
-      summary: _buildSummary(),
-      detailsLabel: _buildDetailsLabel(),
-      childBalanceDiagnostics: widget.childBalanceDiagnostics,
-      hasRemoteChildBalanceData: widget.hasRemoteChildBalanceData,
-      cloudConsistencyDiagnostic: widget.cloudConsistencyDiagnostic,
-      cloudConsistencyErrorText: widget.cloudConsistencyErrorText,
-    );
-    if (ZeniAdaptiveModal.usesDialog(context)) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => Dialog(child: ZeniAdaptiveModalFrame(child: content)),
-      );
-      return;
-    }
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => content,
-    );
+    return 'Tudo atualizado';
   }
 
   Future<void> _syncAll() async {
     setState(() {
       _isSyncing = true;
       _errorText = null;
+      _lastResultStatus = null;
     });
 
     final result = await widget.onSyncCloudData();
@@ -2200,6 +2368,7 @@ class _CloudSyncSectionState extends State<_CloudSyncSection> {
 
     setState(() {
       _isSyncing = false;
+      _lastResultStatus = result.status;
       _errorText = result.isSuccess ? null : result.message;
     });
   }
@@ -2235,6 +2404,9 @@ String _syncStatusLabel(DateTime? value) {
   return 'Última sincronização: $day/$month/$year às $hour:$minute';
 }
 
+// Kept for the support diagnostics surface; it is intentionally absent from
+// the normal Account and data flow.
+// ignore: unused_element
 class _CloudSyncDetailsSheet extends StatelessWidget {
   const _CloudSyncDetailsSheet({
     required this.summary,

@@ -48,6 +48,7 @@ void seedMockAppStateWith(ZeniAppState state) {
 
 Widget buildStaticSettingsHarness({
   required ZeniAuthState authState,
+  bool isFamilyLinked = false,
   String parentDisplayName = 'Responsável',
   AppSettings appSettings = const AppSettings(),
   bool isSupabaseConfigured = true,
@@ -56,6 +57,7 @@ Widget buildStaticSettingsHarness({
   bool isGoogleSignInAvailable = true,
   bool isAppleSignInAvailable = false,
   RemoteFamilySummary? remoteFamilySummary,
+  ZeniAccountProfile? accountProfile,
   Future<ZeniUpdateRemoteFamilyResult> Function({
     required String familyId,
     required String name,
@@ -90,8 +92,11 @@ Widget buildStaticSettingsHarness({
   String? historicalRestoreMessage,
   Future<HistoricalRestoreResult> Function()? onHistoricalRestore,
   VoidCallback? onManageAccountAndData,
+  VoidCallback? onSignOut,
   Future<void> Function()? onClearLocalDeviceData,
   Future<void> Function(String name)? onUpdateParentDisplayName,
+  Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
+  onUpdateAccountDisplayName,
 }) {
   return MaterialApp(
     home: Scaffold(
@@ -109,7 +114,9 @@ Widget buildStaticSettingsHarness({
         onConfigurePin: () {},
         onBiometricsChanged: (_) {},
         authState: authState,
+        isFamilyLinked: isFamilyLinked,
         remoteFamilySummary: remoteFamilySummary,
+        accountProfile: accountProfile,
         localChildrenCount: localChildrenCount,
         remoteChildrenCount: remoteChildrenCount,
         localMissionsCount: localMissionsCount,
@@ -146,7 +153,7 @@ Widget buildStaticSettingsHarness({
         canRunHistoricalRestore: canRunHistoricalRestore,
         historicalRestoreMessage: historicalRestoreMessage,
         onOpenAccount: () {},
-        onSignOut: () {},
+        onSignOut: onSignOut ?? () {},
         onManageAccountAndData: onManageAccountAndData ?? () {},
         onClearLocalDeviceData: onClearLocalDeviceData ?? () async {},
         onUpdateParentDisplayName: onUpdateParentDisplayName ?? (name) async {},
@@ -154,6 +161,7 @@ Widget buildStaticSettingsHarness({
             onUpdateRemoteFamilyName ??
             ({required familyId, required name}) async =>
                 const ZeniUpdateRemoteFamilyResult.failure('indisponível'),
+        onUpdateAccountDisplayName: onUpdateAccountDisplayName,
         onSyncCloudData:
             onSyncCloudData ??
             () async => const ZeniCloudSyncResult.failure('indisponível'),

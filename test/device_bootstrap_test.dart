@@ -362,10 +362,15 @@ class _TestBootstrapAuthRepository implements ZeniAuthRepository {
 
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
-    _currentUser = ZeniAuthUser(id: 'signed-up', email: email);
+    _currentUser = ZeniAuthUser(
+      id: 'signed-up',
+      email: email,
+      displayName: displayName,
+    );
     _controller.add(_currentUser);
     return ZeniAuthOperationResult.success(user: _currentUser);
   }
@@ -393,13 +398,37 @@ class _TestBootstrapAuthRepository implements ZeniAuthRepository {
   Future<void> dispose() => _controller.close();
 }
 
-class _TestBootstrapAccountRepository implements ZeniAccountRepository {
+class _TestBootstrapAccountRepository extends ZeniAccountRepository {
   const _TestBootstrapAccountRepository({required this.summary});
 
   final RemoteFamilySummary? summary;
 
   @override
   bool get isConfigured => true;
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniResolveCurrentFamilyResult.notFound(userId: 'test-user')
+        : ZeniResolveCurrentFamilyResult.found(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniCreateInitialFamilyResult.failure('indisponível')
+        : ZeniCreateInitialFamilyResult.alreadyExists(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async => summary;

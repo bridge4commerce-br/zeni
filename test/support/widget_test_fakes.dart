@@ -30,6 +30,8 @@ class FakeZeniAuthRepository implements ZeniAuthRepository {
   final Completer<ZeniAuthOperationResult>? appleSignInCompleter;
   ZeniAuthUser? _currentUser;
   int signOutCalls = 0;
+  int signUpCalls = 0;
+  String? lastSignUpDisplayName;
 
   @override
   ZeniAuthUser? get currentUser => _currentUser;
@@ -73,11 +75,22 @@ class FakeZeniAuthRepository implements ZeniAuthRepository {
     return const ZeniAuthOperationResult.success();
   }
 
+  void emitCurrentSessionRefresh() {
+    _controller.add(_currentUser);
+  }
+
+  void emitStaleAuthEvent(ZeniAuthUser user) {
+    _controller.add(user);
+  }
+
   @override
   Future<ZeniAuthOperationResult> signUpWithEmailPassword({
+    required String displayName,
     required String email,
     required String password,
   }) async {
+    signUpCalls += 1;
+    lastSignUpDisplayName = displayName;
     if (signUpCompleter != null) {
       final result = await signUpCompleter!.future;
       if (result.user != null) {
@@ -93,7 +106,11 @@ class FakeZeniAuthRepository implements ZeniAuthRepository {
       );
     }
 
-    _currentUser = ZeniAuthUser(id: 'signed-up', email: email);
+    _currentUser = ZeniAuthUser(
+      id: 'signed-up',
+      email: email,
+      displayName: displayName,
+    );
     _controller.add(_currentUser);
     return ZeniAuthOperationResult.success(user: _currentUser);
   }
@@ -149,7 +166,7 @@ class FakeZeniAuthRepository implements ZeniAuthRepository {
   }
 }
 
-class FakeZeniAccountRepository implements ZeniAccountRepository {
+class FakeZeniAccountRepository extends ZeniAccountRepository {
   FakeZeniAccountRepository({required this.summary});
 
   final RemoteFamilySummary? summary;
@@ -157,6 +174,30 @@ class FakeZeniAccountRepository implements ZeniAccountRepository {
 
   @override
   bool get isConfigured => true;
+
+  @override
+  Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniResolveCurrentFamilyResult.notFound(userId: 'test-user')
+        : ZeniResolveCurrentFamilyResult.found(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
+
+  @override
+  Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
+    final value = summary;
+    return value == null
+        ? const ZeniCreateInitialFamilyResult.failure('indisponível')
+        : ZeniCreateInitialFamilyResult.alreadyExists(
+            summary: value,
+            userId: 'test-user',
+            membershipId: 'membership-test',
+          );
+  }
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {

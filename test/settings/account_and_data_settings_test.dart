@@ -19,11 +19,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> openAccountAndData(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      find.text('Conta, backup e restauração'),
-      300,
-    );
-    await tester.tap(find.text('Conta, backup e restauração'));
+    await tester.scrollUntilVisible(find.text('Conta e dados').last, 300);
+    await tester.tap(find.text('Conta e dados').last);
     await tester.pumpAndSettle();
   }
 
@@ -32,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('responsible profile appears at the top with name and email', (
+  testWidgets('main settings points to the simplified account experience', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -46,8 +43,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Carla'), findsNothing);
-    expect(find.text('Conta, backup e restauração'), findsOneWidget);
-    expect(find.text('responsavel@zeni.app'), findsOneWidget);
+    expect(find.text('Conta e dados'), findsWidgets);
+    expect(find.text('responsavel@zeni.app'), findsNothing);
   });
 
   testWidgets('owner role appears as friendly responsible principal label', (
@@ -67,7 +64,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Conta, backup e restauração'), findsOneWidget);
+    expect(find.text('Conta e dados'), findsWidgets);
     expect(find.text('Minha família'), findsNothing);
   });
 
@@ -129,7 +126,7 @@ void main() {
     expect(find.text('Aparência e acessibilidade'), findsOneWidget);
     expect(find.text('Sincronização e backup'), findsNothing);
     expect(find.text('Ajuda e informações'), findsOneWidget);
-    expect(find.text('Conta e dados'), findsOneWidget);
+    expect(find.text('Conta e dados'), findsWidgets);
     expect(find.text('Zona de perigo'), findsNothing);
     expect(find.text('Sair da conta'), findsNothing);
     expect(find.text('Apagar dados deste aparelho'), findsNothing);
@@ -169,7 +166,7 @@ void main() {
     await tester.pump();
 
     await openAccountAndData(tester);
-    expect(find.text('Tudo salvo na sua conta'), findsOneWidget);
+    expect(find.text('Tudo atualizado'), findsOneWidget);
     expect(
       find.text('Última sincronização: 15/06/2026 às 10:30'),
       findsOneWidget,
@@ -180,7 +177,224 @@ void main() {
     );
   });
 
-  testWidgets('sync technical details appear only after tapping view details', (
+  testWidgets('blocked identity shows connected account without sync actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(
+            id: 'user-1',
+            email: 'responsavel@zeni.app',
+            displayName: 'Carla',
+          ),
+          familyIdentityAccess: ZeniFamilyIdentityAccess.blocked,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+
+    expect(find.text('Carla'), findsOneWidget);
+    expect(find.text('responsavel@zeni.app'), findsOneWidget);
+    expect(find.text('Conectado'), findsOneWidget);
+    expect(find.text(localFamilyConflictTitle), findsOneWidget);
+    expect(find.text(localFamilyConflictMessage), findsOneWidget);
+    expect(find.text('Sincronização'), findsNothing);
+    expect(find.text('Sincronizar agora'), findsNothing);
+  });
+
+  testWidgets('linked family never falls back to connect-account messaging', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.unauthenticated(),
+        isFamilyLinked: true,
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+
+    expect(find.text('Minha conta'), findsWidgets);
+    expect(find.text('Sessão encerrada neste aparelho'), findsWidgets);
+    expect(find.text('Conta não conectada'), findsNothing);
+    expect(find.textContaining('Conecte uma conta'), findsNothing);
+    expect(find.text('Sincronização'), findsOneWidget);
+    expect(
+      find.textContaining('Pausada até você entrar novamente'),
+      findsOneWidget,
+    );
+    expect(find.text('Dados neste aparelho'), findsOneWidget);
+  });
+
+  testWidgets('account row opens details without signing out', (tester) async {
+    var signOutCalls = 0;
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(
+            id: 'user-1',
+            email: 'responsavel@zeni.app',
+            displayName: 'Carla',
+          ),
+        ),
+        parentDisplayName: 'Nome local',
+        onSignOut: () => signOutCalls += 1,
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+    await tester.tap(find.text('Carla'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Minha conta'), findsWidgets);
+    expect(find.text('responsavel@zeni.app'), findsWidgets);
+    expect(find.text('Sair da conta'), findsOneWidget);
+    expect(signOutCalls, 0);
+  });
+
+  testWidgets('sign out requires an explicit action and confirmation', (
+    tester,
+  ) async {
+    var signOutCalls = 0;
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(
+            id: 'user-1',
+            email: 'responsavel@zeni.app',
+            displayName: 'Carla',
+          ),
+        ),
+        onSignOut: () => signOutCalls += 1,
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+    await tester.tap(find.text('Carla'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sair da conta'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sair da conta?'), findsOneWidget);
+    expect(
+      find.text(
+        'Os dados desta família continuarão disponíveis neste aparelho.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(signOutCalls, 0);
+
+    await tester.tap(find.text('Sair da conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Sair'));
+    await tester.pumpAndSettle();
+    expect(signOutCalls, 1);
+  });
+
+  testWidgets('profile name is the source and can be edited immediately', (
+    tester,
+  ) async {
+    var savedName = '';
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(
+            id: 'user-1',
+            email: 'responsavel@zeni.app',
+            displayName: 'Nome do Google',
+          ),
+        ),
+        accountProfile: const ZeniAccountProfile(
+          userId: 'user-1',
+          displayName: 'Nome escolhido no Zeni',
+          email: 'responsavel@zeni.app',
+        ),
+        onUpdateAccountDisplayName: (displayName) async {
+          savedName = displayName;
+          return ZeniUpdateAccountProfileResult.success(
+            ZeniAccountProfile(
+              userId: 'user-1',
+              displayName: displayName,
+              email: 'responsavel@zeni.app',
+            ),
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+    expect(find.text('Nome escolhido no Zeni'), findsOneWidget);
+    expect(find.text('Nome do Google'), findsNothing);
+    await tester.tap(find.text('Nome escolhido no Zeni'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nome'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('account-name-input')),
+      '  Carla Silva  ',
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(savedName, 'Carla Silva');
+    expect(find.text('Carla Silva'), findsOneWidget);
+  });
+
+  testWidgets('empty account name is rejected and email stays read-only', (
+    tester,
+  ) async {
+    var updateCalls = 0;
+    await tester.pumpWidget(
+      buildStaticSettingsHarness(
+        authState: const ZeniAuthState.authenticated(
+          ZeniAuthUser(id: 'user-1', email: 'responsavel@zeni.app'),
+        ),
+        accountProfile: const ZeniAccountProfile(
+          userId: 'user-1',
+          displayName: 'Carla',
+          email: 'responsavel@zeni.app',
+        ),
+        onUpdateAccountDisplayName: (displayName) async {
+          updateCalls++;
+          return ZeniUpdateAccountProfileResult.success(
+            ZeniAccountProfile(
+              userId: 'user-1',
+              displayName: displayName,
+              email: 'responsavel@zeni.app',
+            ),
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await openAccountAndData(tester);
+    await tester.tap(find.text('Carla'));
+    await tester.pumpAndSettle();
+    expect(find.text('Somente leitura'), findsOneWidget);
+    await tester.tap(find.text('E-mail'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('account-name-input')), findsNothing);
+
+    await tester.tap(find.text('Nome'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('account-name-input')), '   ');
+    await tester.tap(find.widgetWithText(TextButton, 'Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informe seu nome.'), findsOneWidget);
+    expect(updateCalls, 0);
+  });
+
+  testWidgets('main account view hides technical and restore tasks', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -214,23 +428,10 @@ void main() {
 
     await openAccountAndData(tester);
 
-    expect(
-      find.text(
-        'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
-      ),
-      findsNothing,
-    );
-
-    await revealInAccountData(tester, find.text('Detalhes da sincronização'));
-    await tester.tap(find.text('Detalhes da sincronização'));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        'Crianças preparadas · Missões preparadas · Mimos preparados · Conclusões preparadas · Pedidos preparados · Eventos preparados',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Detalhes da sincronização'), findsNothing);
+    expect(find.text('Backup e restauração'), findsNothing);
+    expect(find.text('Restaurar em aparelho novo'), findsNothing);
+    expect(find.text('Dados da nuvem'), findsNothing);
   });
 
   testWidgets('technical diagnostics show safe bootstrap and auth availability', (
@@ -345,7 +546,7 @@ void main() {
     );
   });
 
-  testWidgets('remote deletion area appears as unavailable and informative', (
+  testWidgets('remote deletion is not exposed as a main account task', (
     tester,
   ) async {
     seedMockAppState();
@@ -380,16 +581,8 @@ void main() {
 
     await openAccountAndData(tester);
 
-    await revealInAccountData(
-      tester,
-      find.text('Excluir conta e dados da nuvem'),
-    );
-    await tester.tap(find.text('Excluir conta e dados da nuvem'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Conta, backup e restauração'), findsWidgets);
-    expect(find.text('Indisponível nesta versão'), findsOneWidget);
-    expect(find.text('Indisponível nesta versão'), findsOneWidget);
+    expect(find.text('Excluir conta e dados da nuvem'), findsNothing);
+    expect(find.text('Dados da nuvem'), findsNothing);
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 
@@ -435,14 +628,8 @@ void main() {
 
     await openParentSettings(tester);
     await openAccountAndData(tester);
-    await revealInAccountData(
-      tester,
-      find.text('Excluir conta e dados da nuvem'),
-    );
-    await tester.pumpAndSettle();
-
     expect(fakeAccountRepository.deleteCalls, 0);
-    expect(find.text('Indisponível nesta versão'), findsOneWidget);
+    expect(find.text('Excluir conta e dados da nuvem'), findsNothing);
     expect(find.byKey(const Key('delete-account-confirm-input')), findsNothing);
   });
 

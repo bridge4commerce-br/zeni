@@ -67,7 +67,7 @@ void main() {
   );
 
   test(
-    'remote family ensure failure is returned in a controlled way',
+    'initial family creation failure is returned in a controlled way',
     () async {
       await ZeniSupabaseBootstrap.initialize(
         config: const ZeniSupabaseConfig(
@@ -102,7 +102,8 @@ void main() {
         result.message,
         'Não foi possível preparar a família remota agora.',
       );
-      expect(accountRepository.ensureCalls, 1);
+      expect(accountRepository.createCalls, 1);
+      expect(accountRepository.ensureCalls, 0);
     },
   );
 
