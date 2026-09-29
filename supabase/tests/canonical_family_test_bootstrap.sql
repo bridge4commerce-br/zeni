@@ -8,6 +8,10 @@ end $$;
 create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
+-- Mirror the broad Supabase table defaults observed before the ACL cutover so
+-- the forward migration must actually remove the privileges under test.
+alter default privileges in schema public
+grant all on tables to anon, authenticated, service_role;
 create schema auth;
 create table auth.users (id uuid primary key, email text);
 create function auth.uid() returns uuid language sql stable as $$

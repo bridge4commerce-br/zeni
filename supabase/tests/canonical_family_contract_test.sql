@@ -9,6 +9,28 @@ insert into auth.users(id) values
   ('00000000-0000-0000-0000-000000000001'),
   ('00000000-0000-0000-0000-000000000002'),
   ('00000000-0000-0000-0000-000000000003');
+
+-- Direct writes stay closed for every Data API role while SELECT remains.
+do $$
+declare
+  tested_role text;
+  tested_table text;
+  tested_privilege text;
+begin
+  foreach tested_role in array array['anon', 'authenticated', 'service_role'] loop
+    foreach tested_table in array array['public.families', 'public.family_members'] loop
+      assert has_table_privilege(tested_role, tested_table, 'SELECT'),
+        tested_role || ' lost SELECT on ' || tested_table;
+      foreach tested_privilege in array array[
+        'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'
+      ] loop
+        assert not has_table_privilege(tested_role, tested_table, tested_privilege),
+          tested_role || ' retained ' || tested_privilege || ' on ' || tested_table;
+      end loop;
+    end loop;
+  end loop;
+end $$;
+
 set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000001';
 
@@ -52,6 +74,95 @@ begin
   assert (select name from public.families where id = (a->>'family_id')::uuid)
     = 'Família Silva', 'invalid_name_changed_family';
 end $$;
+
+-- The authenticated role cannot use the old table-DML paths even when its RLS
+-- predicates would otherwise allow the operation.
+set local role authenticated;
+do $$
+begin
+  begin
+    insert into public.families(name, created_by)
+    values ('DML direto proibido', auth.uid());
+    raise exception 'authenticated_direct_family_insert_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    update public.families set name = 'DML direto proibido';
+    raise exception 'authenticated_direct_family_update_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    delete from public.families;
+    raise exception 'authenticated_direct_family_delete_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    insert into public.family_members(family_id, user_id, role)
+    values (
+      '00000000-0000-0000-0000-000000000099',
+      auth.uid(),
+      'owner'
+    );
+    raise exception 'authenticated_direct_member_insert_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    update public.family_members set role = 'responsible';
+    raise exception 'authenticated_direct_member_update_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    delete from public.family_members;
+    raise exception 'authenticated_direct_member_delete_allowed';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+-- anon has neither a policy nor a table privilege for direct writes.
+set local request.jwt.claim.role = 'anon';
+set local request.jwt.claim.sub = '';
+set local role anon;
+do $$
+begin
+  begin
+    insert into public.families(name) values ('anon proibido');
+    raise exception 'anon_direct_family_insert_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    update public.families set name = 'anon proibido';
+    raise exception 'anon_direct_family_update_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    delete from public.families;
+    raise exception 'anon_direct_family_delete_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    insert into public.family_members(family_id, user_id, role)
+    values (
+      '00000000-0000-0000-0000-000000000099',
+      '00000000-0000-0000-0000-000000000099',
+      'owner'
+    );
+    raise exception 'anon_direct_member_insert_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    update public.family_members set role = 'responsible';
+    raise exception 'anon_direct_member_update_allowed';
+  exception when insufficient_privilege then null; end;
+
+  begin
+    delete from public.family_members;
+    raise exception 'anon_direct_member_delete_allowed';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000001';
 
 -- Resolve a valid user as authenticated and verify the full profile is unchanged.
 create temporary table profile_before as select * from public.profiles;
