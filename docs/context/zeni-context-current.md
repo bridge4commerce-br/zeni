@@ -50,7 +50,8 @@ Detalhes importantes:
 - Auth opcional e progressivo.
 - Fluxos implementados para e-mail/senha, Google e Apple, com mensagens controladas.
 - Login não é pré-requisito para usar o app localmente.
-- `ensure_user_family()` é chamado após autenticação válida para preparar a família remota.
+- Após autenticação válida, o app chama `resolve_current_family()`; somente o
+  estado `not_found` com base local segura chama `create_initial_family()`.
 - Logout remove sessão sem apagar dados locais.
 
 ### Supabase
@@ -131,7 +132,10 @@ Detalhes importantes:
 
 ### Funções relevantes
 
-- `ensure_user_family()`
+- `resolve_current_family()`
+- `create_initial_family()`
+- `rename_current_family(text)`
+- `ensure_user_family()` (compatibilidade temporária com clientes legados)
 - helpers de RLS:
   - `is_family_member(uuid)`
   - `has_family_role(uuid, text[])`
@@ -142,7 +146,8 @@ Detalhes importantes:
 
 Notas:
 
-- `ensure_user_family()` cria ou reaproveita família remota para o usuário autenticado e garante `profile` + membership.
+- O cliente atual não chama `ensure_user_family()`. A função permanece no
+  backend somente por compatibilidade e será revogada/removida em fase posterior.
 - `child_star_balances` deriva saldo, créditos, débitos e contagem de eventos do ledger remoto.
 - `delete_current_owned_family_for_account_deletion()` existe para exclusão controlada da família remota, mas deve ser tratado como fora da UI atual e restrito a `service_role` após o hardening de grants.
 - A edge function `supabase/functions/delete-account` também existe, mas hoje o contexto correto do projeto é considerar exclusão remota como fluxo não liberado para a versão de beta interno.
@@ -207,7 +212,7 @@ O projeto atual é o Zeni/ZeniKids, um app Flutter familiar para crianças e res
 
 O app já passou por várias etapas: base local/offline, refatoração de telas, auth opcional, Supabase progressivo, sync de catálogos, sync de eventos, ledger remoto, diagnóstico de saldo, diagnóstico de consistência, bootstrap de novo aparelho, restauração histórica/saldo, Conta e dados, auditoria de RLS e endurecimento de grants `EXECUTE`, reorganização dos testes por feature e checklist de QA manual para beta interno. A leitura atual do código mostra que essas peças estão implementadas e integradas, com guard rails relevantes.
 
-Auth é opcional. Há fluxo de e-mail/senha, Google e Apple com mensagens controladas. Após login válido, o app chama `ensure_user_family()` para preparar a família remota. Logout remove só a sessão e preserva os dados locais. A UX e os testes reforçam essa decisão. O app também evita `SnackBar`/`ScaffoldMessenger`; feedbacks usam popups próprios, folhas e mensagens inline.
+Auth é opcional para a operação cotidiana depois que a família foi configurada. Há fluxo de e-mail/senha, Google e Apple com mensagens controladas. Após login válido, o app chama `resolve_current_family()` e só chama `create_initial_family()` quando recebe `not_found` e o estado local é seguro. `ensure_user_family()` permanece apenas no backend por compatibilidade temporária com clientes legados. Logout remove só a sessão e preserva os dados locais. O app também evita `SnackBar`/`ScaffoldMessenger`; feedbacks usam popups próprios, folhas e mensagens inline.
 
 No Supabase, existem `profiles`, `families`, `family_members`, `children`, `missions`, `rewards`, `mission_logs`, `reward_requests`, `star_ledger_entries` e a view `child_star_balances`. As políticas RLS usam helpers `security definer`: `is_family_member`, `has_family_role`, `child_belongs_to_family`, `mission_belongs_to_child` e `reward_available_to_child`. Há também `ensure_user_family()`. O ledger remoto usa `idempotency_key` e a view `child_star_balances` deriva saldo remoto para auditoria e restauração, mas esse saldo remoto não deve dirigir a UX principal do aparelho.
 

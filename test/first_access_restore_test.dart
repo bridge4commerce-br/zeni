@@ -540,7 +540,6 @@ class _TestAccountRepository extends ZeniAccountRepository {
 
   @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) {
     throw UnimplementedError();
@@ -548,15 +547,6 @@ class _TestAccountRepository extends ZeniAccountRepository {
 
   @override
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async => summary;
-
-  @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    if (summary == null) {
-      return const ZeniEnsureRemoteFamilyResult.failure('indisponível');
-    }
-    return ZeniEnsureRemoteFamilyResult.success(summary!);
-  }
 
   @override
   Future<ZeniDeleteAccountResult> deleteAccountAndRemoteFamily() {

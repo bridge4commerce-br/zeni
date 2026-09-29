@@ -58,10 +58,7 @@ Widget buildStaticSettingsHarness({
   bool isAppleSignInAvailable = false,
   RemoteFamilySummary? remoteFamilySummary,
   ZeniAccountProfile? accountProfile,
-  Future<ZeniUpdateRemoteFamilyResult> Function({
-    required String familyId,
-    required String name,
-  })?
+  Future<ZeniUpdateRemoteFamilyResult> Function(String name)?
   onUpdateRemoteFamilyName,
   int localChildrenCount = 2,
   int? remoteChildrenCount,
@@ -159,7 +156,7 @@ Widget buildStaticSettingsHarness({
         onUpdateParentDisplayName: onUpdateParentDisplayName ?? (name) async {},
         onUpdateRemoteFamilyName:
             onUpdateRemoteFamilyName ??
-            ({required familyId, required name}) async =>
+            (name) async =>
                 const ZeniUpdateRemoteFamilyResult.failure('indisponível'),
         onUpdateAccountDisplayName: onUpdateAccountDisplayName,
         onSyncCloudData:

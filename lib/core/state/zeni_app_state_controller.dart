@@ -186,6 +186,24 @@ class ZeniAppStateController extends AsyncNotifier<ZeniAppState> {
     await _save(updated);
   }
 
+  Future<bool> updateFamilyNameIfMatches({
+    required String familyId,
+    required String name,
+  }) async {
+    final trimmedName = name.trim();
+    final current = _requireState();
+    if (trimmedName.isEmpty || current.family.id != familyId) {
+      return false;
+    }
+
+    final updated = current.copyWith(
+      family: current.family.copyWith(name: trimmedName),
+    );
+    await _persist(updated);
+    state = AsyncData(updated);
+    return true;
+  }
+
   Future<Mission> createMission({
     required String familyId,
     required String childId,

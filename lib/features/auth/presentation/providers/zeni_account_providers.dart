@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/state/zeni_app_state_controller.dart';
 import '../../../../core/supabase/zeni_supabase.dart';
 import '../../../family/presentation/providers/remote_children_providers.dart';
 import '../../../rewards/presentation/providers/remote_reward_requests_providers.dart';
@@ -138,32 +139,7 @@ class ZeniAccountController {
     return result;
   }
 
-  @Deprecated('Use resolveCurrentFamily/createInitialFamily.')
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    if (!ZeniSupabaseBootstrap.state.isAvailable) {
-      return const ZeniEnsureRemoteFamilyResult.failure(
-        'Conta remota indisponível neste build.',
-      );
-    }
-
-    final authState = _ref.read(authStateProvider);
-    if (!authState.isAuthenticated) {
-      return const ZeniEnsureRemoteFamilyResult.failure(
-        'Faça login para preparar a família remota.',
-      );
-    }
-
-    final result = await _ref
-        .read(accountRepositoryProvider)
-        .ensureRemoteFamilyForCurrentUser();
-    _ref.invalidate(remoteFamilyResolutionProvider);
-    _ref.invalidate(remoteFamilySummaryProvider);
-    return result;
-  }
-
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     if (name.trim().isEmpty) {
@@ -187,7 +163,29 @@ class ZeniAccountController {
 
     final result = await _ref
         .read(accountRepositoryProvider)
-        .updateRemoteFamilyName(familyId: familyId, name: name);
+        .updateRemoteFamilyName(name: name);
+    final summary = result.summary;
+    if (!result.isSuccess || summary == null) {
+      return result;
+    }
+
+    bool wasPersisted;
+    try {
+      wasPersisted = await _ref
+          .read(zeniAppStateControllerProvider.notifier)
+          .updateFamilyNameIfMatches(
+            familyId: summary.familyId,
+            name: summary.familyName,
+          );
+    } catch (_) {
+      wasPersisted = false;
+    }
+    if (!wasPersisted) {
+      return const ZeniUpdateRemoteFamilyResult.failure(
+        'O nome foi atualizado na nuvem, mas não pôde ser salvo neste aparelho.',
+      );
+    }
+
     _ref.invalidate(remoteFamilyResolutionProvider);
     _ref.invalidate(remoteFamilySummaryProvider);
     return result;

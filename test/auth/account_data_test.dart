@@ -24,25 +24,6 @@ void main() {
   });
 
   test(
-    'ensureRemoteFamilyForCurrentUser with absent user fails safely',
-    () async {
-      final container = ProviderContainer(
-        overrides: [
-          accountRepositoryProvider.overrideWithValue(FakeAccountRepository()),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final result = await container
-          .read(zeniAccountControllerProvider)
-          .ensureRemoteFamilyForCurrentUser();
-
-      expect(result.isSuccess, isFalse);
-      expect(result.message, 'Conta remota indisponível neste build.');
-    },
-  );
-
-  test(
     'auth sign in does not ensure remote family when supabase is unavailable',
     () async {
       final accountRepository = FakeAccountRepository();
@@ -62,7 +43,7 @@ void main() {
           );
 
       expect(result.isSuccess, isTrue);
-      expect(accountRepository.ensureCalls, 0);
+      expect(accountRepository.resolveCalls, 0);
     },
   );
 
@@ -77,7 +58,7 @@ void main() {
         initializeOverride: ({required url, required anonKey}) async {},
       );
       final accountRepository = FakeAccountRepository(
-        ensureResult: const ZeniEnsureRemoteFamilyResult.failure(
+        createResult: const ZeniCreateInitialFamilyResult.failure(
           'Não foi possível preparar a família remota agora.',
         ),
       );
@@ -103,9 +84,65 @@ void main() {
         'Não foi possível preparar a família remota agora.',
       );
       expect(accountRepository.createCalls, 1);
-      expect(accountRepository.ensureCalls, 0);
     },
   );
+
+  test('rename RPC updated response is parsed explicitly', () {
+    final result = ZeniUpdateRemoteFamilyResult.fromRpcResponse({
+      'contract_version': 1,
+      'status': 'updated',
+      'reason': null,
+      'family_id': 'family-1',
+      'membership_id': 'membership-1',
+      'family_name': 'Família Silva',
+      'role': 'owner',
+      'updated_at': '2026-09-27T12:00:00Z',
+    });
+
+    expect(result.status, ZeniUpdateRemoteFamilyStatus.updated);
+    expect(result.summary?.familyName, 'Família Silva');
+    expect(result.membershipId, 'membership-1');
+    expect(result.updatedAt, DateTime.utc(2026, 9, 27, 12));
+  });
+
+  test('rename RPC maps invalid_name and forbidden', () {
+    Map<String, dynamic> response(String status, String reason) => {
+      'contract_version': 1,
+      'status': status,
+      'reason': reason,
+      'family_id': 'family-1',
+      'membership_id': 'membership-1',
+      'family_name': 'Família Silva',
+      'role': status == 'forbidden' ? 'responsible' : 'owner',
+      'updated_at': null,
+    };
+
+    final invalid = ZeniUpdateRemoteFamilyResult.fromRpcResponse(
+      response('invalid_name', 'invalid_family_name'),
+    );
+    final forbidden = ZeniUpdateRemoteFamilyResult.fromRpcResponse(
+      response('forbidden', 'owner_required'),
+    );
+
+    expect(invalid.status, ZeniUpdateRemoteFamilyStatus.invalidName);
+    expect(invalid.isSuccess, isFalse);
+    expect(forbidden.status, ZeniUpdateRemoteFamilyStatus.forbidden);
+    expect(forbidden.isSuccess, isFalse);
+  });
+
+  test('malformed rename RPC response fails safely', () {
+    final result = ZeniUpdateRemoteFamilyResult.fromRpcResponse({
+      'contract_version': 1,
+      'status': 'updated',
+      'family_id': 'family-1',
+    });
+
+    expect(result.status, ZeniUpdateRemoteFamilyStatus.failure);
+    expect(
+      result.message,
+      'A resposta de atualização da família remota é inválida.',
+    );
+  });
 
   test('updating remote family name without auth fails safely', () async {
     final container = ProviderContainer(
@@ -117,7 +154,7 @@ void main() {
 
     final result = await container
         .read(zeniAccountControllerProvider)
-        .updateRemoteFamilyName(familyId: 'family-1', name: 'Família da Luna');
+        .updateRemoteFamilyName(name: 'Família da Luna');
 
     expect(result.isSuccess, isFalse);
     expect(result.message, 'Conta remota indisponível neste build.');
@@ -153,7 +190,7 @@ void main() {
 
     final result = await container
         .read(zeniAccountControllerProvider)
-        .updateRemoteFamilyName(familyId: 'family-1', name: '   ');
+        .updateRemoteFamilyName(name: '   ');
 
     expect(result.isSuccess, isFalse);
     expect(result.message, 'Digite um nome para a família.');
@@ -196,10 +233,7 @@ void main() {
 
       final result = await container
           .read(zeniAccountControllerProvider)
-          .updateRemoteFamilyName(
-            familyId: 'family-1',
-            name: 'Família da Luna',
-          );
+          .updateRemoteFamilyName(name: 'Família da Luna');
 
       expect(result.isSuccess, isFalse);
       expect(
@@ -209,6 +243,178 @@ void main() {
       expect(accountRepository.updateCalls, 1);
     },
   );
+
+  test(
+    'normalized remote family name is persisted locally only after ACK',
+    () async {
+      final initial = ZeniAppState.seeded().copyWith(
+        family: ZeniAppState.seeded().family.copyWith(name: 'Nome anterior'),
+      );
+      SharedPreferences.setMockInitialValues({
+        'zeni_app_state_v1': jsonEncode(initial.toJson()),
+      });
+      await ZeniSupabaseBootstrap.initialize(
+        config: const ZeniSupabaseConfig(
+          url: 'https://example.supabase.co',
+          anonKey: 'anon',
+        ),
+        initializeOverride: ({required url, required anonKey}) async {},
+      );
+      final authRepository = TestAuthRepository();
+      final accountRepository = FakeAccountRepository(
+        updateResult: ZeniUpdateRemoteFamilyResult.success(
+          const RemoteFamilySummary(
+            familyId: 'family-1',
+            familyName: 'Família Silva',
+            role: 'owner',
+          ),
+          membershipId: 'membership-1',
+          updatedAt: DateTime.utc(2026, 9, 27, 12),
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(authRepository),
+          accountRepositoryProvider.overrideWithValue(accountRepository),
+        ],
+      );
+      addTearDown(() async {
+        await authRepository.dispose();
+        container.dispose();
+      });
+      await container
+          .read(zeniAuthControllerProvider)
+          .signInWithEmailPassword(
+            email: 'responsavel@zeni.app',
+            password: '123456',
+          );
+      await container.read(zeniAppStateControllerProvider.future);
+
+      final result = await container
+          .read(zeniAccountControllerProvider)
+          .updateRemoteFamilyName(name: '  Família   Silva  ');
+
+      expect(result.isSuccess, isTrue);
+      expect(
+        (await container.read(
+          zeniAppStateControllerProvider.future,
+        )).family.name,
+        'Família Silva',
+      );
+      final persisted = (await SharedPreferences.getInstance()).getString(
+        'zeni_app_state_v1',
+      );
+      expect(
+        ZeniAppState.fromJson(
+          jsonDecode(persisted!) as Map<String, dynamic>,
+        ).family.name,
+        'Família Silva',
+      );
+    },
+  );
+
+  test('rename failure preserves the previous local family name', () async {
+    final initial = ZeniAppState.seeded().copyWith(
+      family: ZeniAppState.seeded().family.copyWith(name: 'Nome anterior'),
+    );
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(initial.toJson()),
+    });
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final authRepository = TestAuthRepository();
+    final accountRepository = FakeAccountRepository(
+      updateResult: const ZeniUpdateRemoteFamilyResult.failure(
+        'Não foi possível atualizar a família remota agora.',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        accountRepositoryProvider.overrideWithValue(accountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await authRepository.dispose();
+      container.dispose();
+    });
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    await container.read(zeniAppStateControllerProvider.future);
+
+    final result = await container
+        .read(zeniAccountControllerProvider)
+        .updateRemoteFamilyName(name: 'Novo nome');
+
+    expect(result.isSuccess, isFalse);
+    expect(
+      (await container.read(zeniAppStateControllerProvider.future)).family.name,
+      'Nome anterior',
+    );
+    expect(accountRepository.updateCalls, 1);
+  });
+
+  test('remote ACK for another family preserves the local name', () async {
+    final initial = ZeniAppState.seeded().copyWith(
+      family: ZeniAppState.seeded().family.copyWith(name: 'Nome anterior'),
+    );
+    SharedPreferences.setMockInitialValues({
+      'zeni_app_state_v1': jsonEncode(initial.toJson()),
+    });
+    await ZeniSupabaseBootstrap.initialize(
+      config: const ZeniSupabaseConfig(
+        url: 'https://example.supabase.co',
+        anonKey: 'anon',
+      ),
+      initializeOverride: ({required url, required anonKey}) async {},
+    );
+    final authRepository = TestAuthRepository();
+    final accountRepository = FakeAccountRepository(
+      updateResult: ZeniUpdateRemoteFamilyResult.success(
+        const RemoteFamilySummary(
+          familyId: 'unexpected-family',
+          familyName: 'Nome remoto',
+          role: 'owner',
+        ),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        accountRepositoryProvider.overrideWithValue(accountRepository),
+      ],
+    );
+    addTearDown(() async {
+      await authRepository.dispose();
+      container.dispose();
+    });
+    await container
+        .read(zeniAuthControllerProvider)
+        .signInWithEmailPassword(
+          email: 'responsavel@zeni.app',
+          password: '123456',
+        );
+    await container.read(zeniAppStateControllerProvider.future);
+
+    final result = await container
+        .read(zeniAccountControllerProvider)
+        .updateRemoteFamilyName(name: 'Nome remoto');
+
+    expect(result.isSuccess, isFalse);
+    expect(
+      (await container.read(zeniAppStateControllerProvider.future)).family.name,
+      'Nome anterior',
+    );
+  });
 
   test(
     'remote account deletion succeeds, signs out, and preserves local data',

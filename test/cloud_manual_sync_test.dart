@@ -370,24 +370,15 @@ class _TestAccountRepository extends ZeniAccountRepository {
   }
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    return const ZeniEnsureRemoteFamilyResult.success(
-      RemoteFamilySummary(
-        familyId: 'family-remote-1',
-        familyName: 'Minha família',
-        role: 'owner',
-      ),
-    );
-  }
-
-  @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     return ZeniUpdateRemoteFamilyResult.success(
-      RemoteFamilySummary(familyId: familyId, familyName: name, role: 'owner'),
+      RemoteFamilySummary(
+        familyId: 'family-remote-1',
+        familyName: name,
+        role: 'owner',
+      ),
     );
   }
 
@@ -994,7 +985,6 @@ void familyIdentityTests() {
     );
     expect(h.account.resolveCalls, 1);
     expect(h.account.createCalls, 0);
-    expect(h.account.ensureCalls, 0);
   });
 
   test('Google name initializes the profile on first login', () async {
@@ -1036,7 +1026,6 @@ void familyIdentityTests() {
     expect(result.isSuccess, isTrue);
     expect(h.account.resolveCalls, 1);
     expect(h.account.createCalls, 1);
-    expect(h.account.ensureCalls, 0);
     final localState = await h.container.read(
       zeniAppStateControllerProvider.future,
     );
@@ -1147,7 +1136,6 @@ void familyIdentityTests() {
       );
       expect(h.auth.currentUser, isNotNull);
       expect(h.account.createCalls, 0);
-      expect(h.account.ensureCalls, 0);
       expect(
         jsonEncode(
           (await h.container.read(
@@ -1245,7 +1233,6 @@ void familyIdentityTests() {
       expect(h.children.pushes, 0);
       expect(h.children.reads, 0);
       expect(prefs.getString('zeni_app_state_v1'), before);
-      expect(h.account.ensureCalls, 0);
     },
   );
 
@@ -1261,7 +1248,6 @@ void familyIdentityTests() {
       }
       expect(h.children.pushes, 0);
       expect(h.children.reads, 0);
-      expect(h.account.ensureCalls, 0);
     },
   );
 
@@ -1592,7 +1578,6 @@ class _IdentityAccount extends _TestAccountRepository {
   Completer<void>? createGate;
   int resolveCalls = 0;
   int createCalls = 0;
-  int ensureCalls = 0;
   int profileInitializationCalls = 0;
   ZeniAccountProfile? profile;
 
@@ -1688,16 +1673,6 @@ class _IdentityAccount extends _TestAccountRepository {
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async {
     if (!hasRemoteFamily) return null;
     return _summary;
-  }
-
-  @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    ensureCalls++;
-    hasRemoteFamily = true;
-    return ZeniEnsureRemoteFamilyResult.success(
-      (await getCurrentRemoteFamilySummary())!,
-    );
   }
 }
 

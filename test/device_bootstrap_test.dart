@@ -434,20 +434,7 @@ class _TestBootstrapAccountRepository extends ZeniAccountRepository {
   Future<RemoteFamilySummary?> getCurrentRemoteFamilySummary() async => summary;
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    if (summary == null) {
-      return const ZeniEnsureRemoteFamilyResult.failure(
-        'Nenhuma família remota preparada foi encontrada.',
-      );
-    }
-
-    return ZeniEnsureRemoteFamilyResult.success(summary!);
-  }
-
-  @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     if (summary == null) {
@@ -458,7 +445,7 @@ class _TestBootstrapAccountRepository extends ZeniAccountRepository {
 
     return ZeniUpdateRemoteFamilyResult.success(
       RemoteFamilySummary(
-        familyId: familyId,
+        familyId: summary!.familyId,
         familyName: name,
         role: summary!.role,
         email: summary!.email,

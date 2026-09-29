@@ -1310,10 +1310,10 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
                   .read(zeniAppStateControllerProvider.notifier)
                   .updateParentDisplayName(name);
             },
-            onUpdateRemoteFamilyName: ({required familyId, required name}) {
+            onUpdateRemoteFamilyName: (name) {
               return ref
                   .read(zeniAccountControllerProvider)
-                  .updateRemoteFamilyName(familyId: familyId, name: name);
+                  .updateRemoteFamilyName(name: name);
             },
             onUpdateAccountDisplayName: (displayName) {
               return ref

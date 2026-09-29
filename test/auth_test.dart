@@ -5020,7 +5020,6 @@ class _TestAuthRepository implements ZeniAuthRepository {
 }
 
 class _FakeAccountRepository extends ZeniAccountRepository {
-  int ensureCalls = 0;
   int createCalls = 0;
   int updateCalls = 0;
   int deleteCalls = 0;
@@ -5053,21 +5052,7 @@ class _FakeAccountRepository extends ZeniAccountRepository {
   }
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    ensureCalls += 1;
-    return const ZeniEnsureRemoteFamilyResult.success(
-      RemoteFamilySummary(
-        familyId: 'family-1',
-        familyName: 'Minha família',
-        role: 'owner',
-      ),
-    );
-  }
-
-  @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     updateCalls += 1;

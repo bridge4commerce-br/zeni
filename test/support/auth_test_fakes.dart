@@ -87,12 +87,14 @@ class TestAuthRepository implements ZeniAuthRepository {
 
 class FakeAccountRepository extends ZeniAccountRepository {
   FakeAccountRepository({
-    this.ensureResult = const ZeniEnsureRemoteFamilyResult.success(
-      RemoteFamilySummary(
+    this.createResult = const ZeniCreateInitialFamilyResult.created(
+      summary: RemoteFamilySummary(
         familyId: 'family-1',
         familyName: 'Minha família',
         role: 'owner',
       ),
+      userId: 'test-user',
+      membershipId: 'membership-test',
     ),
     this.updateResult = const ZeniUpdateRemoteFamilyResult.success(
       RemoteFamilySummary(
@@ -107,10 +109,10 @@ class FakeAccountRepository extends ZeniAccountRepository {
     ),
   });
 
-  final ZeniEnsureRemoteFamilyResult ensureResult;
+  final ZeniCreateInitialFamilyResult createResult;
   final ZeniUpdateRemoteFamilyResult updateResult;
   final ZeniDeleteAccountResult deleteResult;
-  int ensureCalls = 0;
+  int resolveCalls = 0;
   int createCalls = 0;
   int updateCalls = 0;
   int deleteCalls = 0;
@@ -120,24 +122,14 @@ class FakeAccountRepository extends ZeniAccountRepository {
 
   @override
   Future<ZeniResolveCurrentFamilyResult> resolveCurrentFamily() async {
+    resolveCalls += 1;
     return const ZeniResolveCurrentFamilyResult.notFound(userId: 'test-user');
   }
 
   @override
   Future<ZeniCreateInitialFamilyResult> createInitialFamily() async {
     createCalls += 1;
-    final result = ensureResult;
-    final summary = result.summary;
-    if (!result.isSuccess || summary == null) {
-      return ZeniCreateInitialFamilyResult.failure(
-        result.message ?? 'indisponível',
-      );
-    }
-    return ZeniCreateInitialFamilyResult.created(
-      summary: summary,
-      userId: 'test-user',
-      membershipId: 'membership-test',
-    );
+    return createResult;
   }
 
   @override
@@ -146,15 +138,7 @@ class FakeAccountRepository extends ZeniAccountRepository {
   }
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    ensureCalls += 1;
-    return ensureResult;
-  }
-
-  @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     updateCalls += 1;

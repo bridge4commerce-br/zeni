@@ -146,10 +146,7 @@ class ParentSettingsTab extends StatelessWidget {
   final VoidCallback onManageAccountAndData;
   final Future<void> Function() onClearLocalDeviceData;
   final Future<void> Function(String name) onUpdateParentDisplayName;
-  final Future<ZeniUpdateRemoteFamilyResult> Function({
-    required String familyId,
-    required String name,
-  })
+  final Future<ZeniUpdateRemoteFamilyResult> Function(String name)
   onUpdateRemoteFamilyName;
   final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
   onUpdateAccountDisplayName;
@@ -376,10 +373,7 @@ class _ParentSettingsGroup extends StatelessWidget {
   final VoidCallback onManageAccountAndData;
   final Future<void> Function() onClearLocalDeviceData;
   final Future<void> Function(String name) onUpdateParentDisplayName;
-  final Future<ZeniUpdateRemoteFamilyResult> Function({
-    required String familyId,
-    required String name,
-  })
+  final Future<ZeniUpdateRemoteFamilyResult> Function(String name)
   onUpdateRemoteFamilyName;
   final Future<ZeniUpdateAccountProfileResult> Function(String displayName)?
   onUpdateAccountDisplayName;
@@ -1034,8 +1028,7 @@ class _ParentSettingsGroup extends StatelessWidget {
         ),
         child: _RemoteFamilyNameSheet(
           initialName: summary.familyName,
-          onSubmit: (name) =>
-              onUpdateRemoteFamilyName(familyId: summary.familyId, name: name),
+          onSubmit: onUpdateRemoteFamilyName,
         ),
       ),
     );

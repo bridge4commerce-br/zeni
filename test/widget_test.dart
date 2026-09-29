@@ -147,10 +147,7 @@ void main() {
     bool isGoogleSignInAvailable = true,
     bool isAppleSignInAvailable = false,
     RemoteFamilySummary? remoteFamilySummary,
-    Future<ZeniUpdateRemoteFamilyResult> Function({
-      required String familyId,
-      required String name,
-    })?
+    Future<ZeniUpdateRemoteFamilyResult> Function(String name)?
     onUpdateRemoteFamilyName,
     int localChildrenCount = 2,
     int? remoteChildrenCount,
@@ -244,7 +241,7 @@ void main() {
               onUpdateParentDisplayName ?? (name) async {},
           onUpdateRemoteFamilyName:
               onUpdateRemoteFamilyName ??
-              ({required familyId, required name}) async =>
+              (name) async =>
                   const ZeniUpdateRemoteFamilyResult.failure('indisponível'),
           onSyncCloudData:
               onSyncCloudData ??
@@ -3442,17 +3439,16 @@ void main() {
                   onManageAccountAndData: () {},
                   onClearLocalDeviceData: () async {},
                   onUpdateParentDisplayName: (name) async {},
-                  onUpdateRemoteFamilyName:
-                      ({required familyId, required name}) async {
-                        setState(() {
-                          summary = RemoteFamilySummary(
-                            familyId: familyId,
-                            familyName: name,
-                            role: summary.role,
-                          );
-                        });
-                        return ZeniUpdateRemoteFamilyResult.success(summary);
-                      },
+                  onUpdateRemoteFamilyName: (name) async {
+                    setState(() {
+                      summary = RemoteFamilySummary(
+                        familyId: summary.familyId,
+                        familyName: name,
+                        role: summary.role,
+                      );
+                    });
+                    return ZeniUpdateRemoteFamilyResult.success(summary);
+                  },
                   onSyncCloudData: () async =>
                       const ZeniCloudSyncResult.success(),
                   onDeviceBootstrap: () async =>
@@ -3489,11 +3485,10 @@ void main() {
             familyName: 'Minha família',
             role: 'owner',
           ),
-          onUpdateRemoteFamilyName:
-              ({required familyId, required name}) async =>
-                  const ZeniUpdateRemoteFamilyResult.failure(
-                    'Digite um nome para a família.',
-                  ),
+          onUpdateRemoteFamilyName: (name) async =>
+              const ZeniUpdateRemoteFamilyResult.failure(
+                'Digite um nome para a família.',
+              ),
         ),
       );
       await tester.pump();
@@ -4004,20 +3999,7 @@ class _FakeZeniAccountRepository extends ZeniAccountRepository {
   }
 
   @override
-  Future<ZeniEnsureRemoteFamilyResult>
-  ensureRemoteFamilyForCurrentUser() async {
-    if (summary == null) {
-      return const ZeniEnsureRemoteFamilyResult.failure(
-        'Nenhuma família remota preparada foi encontrada.',
-      );
-    }
-
-    return ZeniEnsureRemoteFamilyResult.success(summary!);
-  }
-
-  @override
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   }) async {
     if (summary == null) {
@@ -4028,7 +4010,7 @@ class _FakeZeniAccountRepository extends ZeniAccountRepository {
 
     return ZeniUpdateRemoteFamilyResult.success(
       RemoteFamilySummary(
-        familyId: familyId,
+        familyId: summary!.familyId,
         familyName: name,
         role: summary!.role,
         email: summary!.email,

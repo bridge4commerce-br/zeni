@@ -187,40 +187,139 @@ const canonicalFamilyPendingMessage =
 const canonicalFamilySessionChangedMessage =
     'A sessão mudou durante a preparação da família. Tente entrar novamente.';
 
-class ZeniEnsureRemoteFamilyResult {
-  const ZeniEnsureRemoteFamilyResult({
-    required this.isSuccess,
-    this.summary,
-    this.message,
-  });
-
-  const ZeniEnsureRemoteFamilyResult.success(RemoteFamilySummary summary)
-    : this(isSuccess: true, summary: summary);
-
-  const ZeniEnsureRemoteFamilyResult.failure(String message)
-    : this(isSuccess: false, message: message);
-
-  final bool isSuccess;
-  final RemoteFamilySummary? summary;
-  final String? message;
+enum ZeniUpdateRemoteFamilyStatus {
+  updated,
+  notFound,
+  ambiguous,
+  inconsistent,
+  forbidden,
+  invalidName,
+  failure,
 }
 
 class ZeniUpdateRemoteFamilyResult {
   const ZeniUpdateRemoteFamilyResult({
-    required this.isSuccess,
+    required this.status,
     this.summary,
+    this.membershipId,
+    this.reason,
+    this.updatedAt,
     this.message,
   });
 
-  const ZeniUpdateRemoteFamilyResult.success(RemoteFamilySummary summary)
-    : this(isSuccess: true, summary: summary);
+  const ZeniUpdateRemoteFamilyResult.success(
+    RemoteFamilySummary summary, {
+    String? membershipId,
+    DateTime? updatedAt,
+  }) : this(
+         status: ZeniUpdateRemoteFamilyStatus.updated,
+         summary: summary,
+         membershipId: membershipId,
+         updatedAt: updatedAt,
+       );
 
   const ZeniUpdateRemoteFamilyResult.failure(String message)
-    : this(isSuccess: false, message: message);
+    : this(status: ZeniUpdateRemoteFamilyStatus.failure, message: message);
 
-  final bool isSuccess;
+  factory ZeniUpdateRemoteFamilyResult.fromRpcResponse(Object? response) {
+    const malformedMessage =
+        'A resposta de atualização da família remota é inválida.';
+    if (response is! Map<String, dynamic> ||
+        response['contract_version'] != 1 ||
+        response['status'] is! String ||
+        !response.containsKey('reason') ||
+        !response.containsKey('family_id') ||
+        !response.containsKey('membership_id') ||
+        !response.containsKey('family_name') ||
+        !response.containsKey('role') ||
+        !response.containsKey('updated_at')) {
+      return const ZeniUpdateRemoteFamilyResult.failure(malformedMessage);
+    }
+
+    final status = response['status'] as String;
+    final reason = response['reason'];
+    final familyIdValue = response['family_id'];
+    final membershipIdValue = response['membership_id'];
+    final familyNameValue = response['family_name'];
+    final roleValue = response['role'];
+    final updatedAtValue = response['updated_at'];
+    if ((reason != null && reason is! String) ||
+        (familyIdValue != null && familyIdValue is! String) ||
+        (membershipIdValue != null && membershipIdValue is! String) ||
+        (familyNameValue != null && familyNameValue is! String) ||
+        (roleValue != null && roleValue is! String) ||
+        (updatedAtValue != null &&
+            (updatedAtValue is! String ||
+                DateTime.tryParse(updatedAtValue) == null))) {
+      return const ZeniUpdateRemoteFamilyResult.failure(malformedMessage);
+    }
+
+    if (status == 'updated') {
+      final familyId = familyIdValue;
+      final membershipId = membershipIdValue;
+      final familyName = familyNameValue;
+      final role = roleValue;
+      final updatedAt = updatedAtValue is String
+          ? DateTime.tryParse(updatedAtValue)
+          : null;
+      if (familyId is! String ||
+          membershipId is! String ||
+          familyName is! String ||
+          familyName.trim().isEmpty ||
+          role != 'owner' ||
+          updatedAt == null) {
+        return const ZeniUpdateRemoteFamilyResult.failure(malformedMessage);
+      }
+      return ZeniUpdateRemoteFamilyResult.success(
+        RemoteFamilySummary(
+          familyId: familyId,
+          familyName: familyName,
+          role: role as String,
+        ),
+        membershipId: membershipId,
+        updatedAt: updatedAt,
+      );
+    }
+
+    final mappedStatus = switch (status) {
+      'not_found' => ZeniUpdateRemoteFamilyStatus.notFound,
+      'ambiguous' => ZeniUpdateRemoteFamilyStatus.ambiguous,
+      'inconsistent' => ZeniUpdateRemoteFamilyStatus.inconsistent,
+      'forbidden' => ZeniUpdateRemoteFamilyStatus.forbidden,
+      'invalid_name' => ZeniUpdateRemoteFamilyStatus.invalidName,
+      _ => null,
+    };
+    if (mappedStatus == null) {
+      return const ZeniUpdateRemoteFamilyResult.failure(malformedMessage);
+    }
+
+    return ZeniUpdateRemoteFamilyResult(
+      status: mappedStatus,
+      reason: reason as String?,
+      message: switch (mappedStatus) {
+        ZeniUpdateRemoteFamilyStatus.notFound =>
+          'Não foi possível localizar a família desta conta.',
+        ZeniUpdateRemoteFamilyStatus.ambiguous =>
+          canonicalFamilyAmbiguousMessage,
+        ZeniUpdateRemoteFamilyStatus.inconsistent =>
+          canonicalFamilyInconsistentMessage,
+        ZeniUpdateRemoteFamilyStatus.forbidden =>
+          'Apenas o responsável principal pode alterar o nome da família.',
+        ZeniUpdateRemoteFamilyStatus.invalidName =>
+          'Use um nome entre 1 e 80 caracteres, sem caracteres de controle.',
+        _ => malformedMessage,
+      },
+    );
+  }
+
+  final ZeniUpdateRemoteFamilyStatus status;
   final RemoteFamilySummary? summary;
+  final String? membershipId;
+  final String? reason;
+  final DateTime? updatedAt;
   final String? message;
+
+  bool get isSuccess => status == ZeniUpdateRemoteFamilyStatus.updated;
 }
 
 class ZeniDeleteAccountResult {
@@ -276,10 +375,7 @@ abstract class ZeniAccountRepository {
     'Perfil remoto indisponível.',
   );
 
-  Future<ZeniEnsureRemoteFamilyResult> ensureRemoteFamilyForCurrentUser();
-
   Future<ZeniUpdateRemoteFamilyResult> updateRemoteFamilyName({
-    required String familyId,
     required String name,
   });
 
