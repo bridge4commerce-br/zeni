@@ -1254,29 +1254,17 @@ class _AccountAndDataSheet extends StatelessWidget {
                 style: typography.metadata,
               ),
             ],
-            const SizedBox(height: ZeniSpacing.spaceSection),
-            Text('Dados neste aparelho', style: typography.cardTitle),
-            const SizedBox(height: ZeniSpacing.spaceInline),
-            Text(
-              'Seus dados ficam disponíveis neste aparelho mesmo sem internet.',
-              style: typography.metadata,
-            ),
-            const SizedBox(height: ZeniSpacing.spaceInline),
-            _SettingsMenuRow(
-              title: 'Apagar dados deste aparelho',
-              leading: Icon(
-                Icons.delete_forever_rounded,
-                color: Theme.of(context).colorScheme.error,
+            if (_isAuthenticated) ...[
+              const SizedBox(height: ZeniSpacing.spaceSection),
+              _SettingsMenuRow(
+                title: 'Sair da conta',
+                leading: Icon(
+                  Icons.logout_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                onTap: () => _confirmSignOut(context),
               ),
-              trailing: Icon(
-                Icons.chevron_right_rounded,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              onTap: () async {
-                Navigator.of(context).pop();
-                await onClearLocalDeviceData();
-              },
-            ),
+            ],
           ],
         ),
       ),
@@ -1284,7 +1272,7 @@ class _AccountAndDataSheet extends StatelessWidget {
   }
 
   Future<void> _openAccountDetails(BuildContext context) async {
-    final shouldSignOut = await showModalBottomSheet<bool>(
+    final shouldClearLocalData = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -1295,7 +1283,32 @@ class _AccountAndDataSheet extends StatelessWidget {
         onUpdateDisplayName: onUpdateAccountDisplayName,
       ),
     );
-    if (shouldSignOut != true || !context.mounted) return;
+    if (shouldClearLocalData != true || !context.mounted) return;
+    Navigator.of(context).pop();
+    await onClearLocalDeviceData();
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sair da conta?'),
+        content: const Text(
+          'Os dados desta família continuarão disponíveis neste aparelho.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
     Navigator.of(context).pop();
     onSignOut();
   }
@@ -1330,6 +1343,7 @@ class _AccountDetailsSheetState extends State<_AccountDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ZeniTypography.of(context);
     return ZeniModalSheetContainer(
       title: 'Minha conta',
       child: Column(
@@ -1360,10 +1374,24 @@ class _AccountDetailsSheetState extends State<_AccountDetailsSheet> {
             ),
           ],
           const SizedBox(height: ZeniSpacing.spaceSection),
-          ZeniSecondaryButton(
-            label: 'Sair da conta',
-            icon: Icons.logout_rounded,
-            onPressed: () => _confirmSignOut(context),
+          Text('Dados neste aparelho', style: typography.cardTitle),
+          const SizedBox(height: ZeniSpacing.spaceInline),
+          Text(
+            'Seus dados ficam salvos localmente e disponíveis neste aparelho mesmo sem internet.',
+            style: typography.metadata,
+          ),
+          const SizedBox(height: ZeniSpacing.spaceInline),
+          _SettingsMenuRow(
+            title: 'Apagar dados deste aparelho',
+            leading: Icon(
+              Icons.delete_forever_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            onTap: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
@@ -1386,31 +1414,6 @@ class _AccountDetailsSheetState extends State<_AccountDetailsSheet> {
         _error = result.message ?? 'Não foi possível atualizar seu nome agora.';
       }
     });
-  }
-
-  Future<void> _confirmSignOut(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sair da conta?'),
-        content: const Text(
-          'Os dados desta família continuarão disponíveis neste aparelho.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sair'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      Navigator.of(context).pop(true);
-    }
   }
 }
 

@@ -227,7 +227,7 @@ void main() {
       find.textContaining('Pausada até você entrar novamente'),
       findsOneWidget,
     );
-    expect(find.text('Dados neste aparelho'), findsOneWidget);
+    expect(find.text('Dados neste aparelho'), findsNothing);
   });
 
   testWidgets('account row opens details without signing out', (tester) async {
@@ -253,7 +253,8 @@ void main() {
 
     expect(find.text('Minha conta'), findsWidgets);
     expect(find.text('responsavel@zeni.app'), findsWidgets);
-    expect(find.text('Sair da conta'), findsOneWidget);
+    expect(find.text('Dados neste aparelho'), findsOneWidget);
+    expect(find.text('Apagar dados deste aparelho'), findsOneWidget);
     expect(signOutCalls, 0);
   });
 
@@ -276,8 +277,7 @@ void main() {
     await tester.pump();
 
     await openAccountAndData(tester);
-    await tester.tap(find.text('Carla'));
-    await tester.pumpAndSettle();
+    await revealInAccountData(tester, find.text('Sair da conta'));
     await tester.tap(find.text('Sair da conta'));
     await tester.pumpAndSettle();
     expect(find.text('Sair da conta?'), findsOneWidget);
@@ -660,6 +660,8 @@ void main() {
 
       await openParentSettings(tester);
       await openAccountAndData(tester);
+      await tester.tap(find.text('responsavel@zeni.app'));
+      await tester.pumpAndSettle();
       await revealInAccountData(
         tester,
         find.text('Apagar dados deste aparelho'),
@@ -748,6 +750,8 @@ void main() {
 
     await openParentSettings(tester);
     await openAccountAndData(tester);
+    await tester.tap(find.text('responsavel@zeni.app'));
+    await tester.pumpAndSettle();
     await revealInAccountData(tester, find.text('Apagar dados deste aparelho'));
     await tester.tap(find.text('Apagar dados deste aparelho'));
     await tester.pumpAndSettle();
@@ -768,6 +772,47 @@ void main() {
 
     final after = await container.read(zeniAppStateControllerProvider.future);
     expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+  });
+
+  testWidgets('sign out preserves local data and returns to local entry', (
+    tester,
+  ) async {
+    seedMockAppState();
+    final fakeAuthRepository = FakeZeniAuthRepository(
+      initialUser: const ZeniAuthUser(
+        id: 'user-1',
+        email: 'responsavel@zeni.app',
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [authRepositoryProvider.overrideWithValue(fakeAuthRepository)],
+    );
+    addTearDown(() async {
+      await fakeAuthRepository.dispose();
+      container.dispose();
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const ZeniApp()),
+    );
+    await tester.pumpAndSettle();
+    final before = await container.read(zeniAppStateControllerProvider.future);
+
+    await openParentSettings(tester);
+    await openAccountAndData(tester);
+    await revealInAccountData(tester, find.text('Sair da conta'));
+    await tester.tap(find.text('Sair da conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Sair'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAuthRepository.signOutCalls, 1);
+    expect(container.read(authStateProvider).isAuthenticated, isFalse);
+    final after = await container.read(zeniAppStateControllerProvider.future);
+    expect(jsonEncode(after.toJson()), jsonEncode(before.toJson()));
+    expect(find.text('Quem vai usar o Zeni agora?'), findsOneWidget);
+    expect(find.text('Conta e dados'), findsNothing);
+    expect(find.text('Pequenas atitudes. Grandes conquistas.'), findsNothing);
   });
 
   testWidgets('account section opens cloud data sheet for manual sync', (

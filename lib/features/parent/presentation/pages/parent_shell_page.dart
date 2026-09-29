@@ -963,12 +963,7 @@ class _ParentShellPageState extends ConsumerState<ParentShellPage> {
     if (!mounted) return;
 
     if (result.isSuccess) {
-      await ZeniInfoPopup.show(
-        context,
-        title: 'Conta desconectada',
-        message:
-            'Sua sessão foi encerrada, mas a família e os dados locais continuam neste aparelho.',
-      );
+      context.go('/');
       return;
     }
 

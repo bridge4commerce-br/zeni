@@ -817,6 +817,24 @@ void main() {
     expect(find.text('Continuar sem conta'), findsNothing);
   });
 
+  testWidgets('family account back returns safely when opened at app root', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const ProviderScope(child: ZeniApp()));
+    await tester.pumpAndSettle();
+    await completeInstitutionalOnboarding(tester);
+
+    expect(find.text('Guarde as conquistas da sua família'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('family-account-back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pequenas atitudes. Grandes conquistas.'), findsOneWidget);
+    expect(find.text('Guarde as conquistas da sua família'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'initial start choice supports dark reduced motion on a narrow screen',
     (tester) async {

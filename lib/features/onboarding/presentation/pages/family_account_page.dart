@@ -35,7 +35,7 @@ class FamilyAccountPage extends ConsumerWidget {
             children: [
               IconButton(
                 key: const Key('family-account-back'),
-                onPressed: () => context.pop(),
+                onPressed: () => _goBack(context),
                 icon: const Icon(Icons.arrow_back_rounded),
                 tooltip: 'Voltar',
               ),
@@ -95,6 +95,15 @@ class FamilyAccountPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _goBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    context.go('/onboarding');
   }
 
   Future<void> _openAccountSheet(
